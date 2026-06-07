@@ -60,7 +60,7 @@ ws.onmessage = (event) => {
 
   if (msg.type === "state") {
     document.getElementById("game").innerHTML =
-      "<b>Комната:</b> " + msg.game.id + "<br><br>" +
+      "<b>Комната:</b> " + (msg.game.roomId || msg.game.id || document.getElementById("room").value) + "<br><br>" +
       "<b>Игроки:</b><br>" +
       msg.game.players.map(p => "- " + p.name).join("<br>");
   }
