@@ -149,10 +149,18 @@ wss.on('connection', ws => {
       }
 
       if (msg.type === 'startGame') {
-        const game = rooms.get(meta.roomId);
-        startGame(game);
-        broadcast(meta.roomId);
-      }
+  const game = rooms.get(meta.roomId);
+
+  try {
+    startGame(game);
+    broadcast(meta.roomId);
+  } catch (e) {
+    send(ws, {
+      type: 'error',
+      message: 'Ошибка старта: ' + e.message
+    });
+  }
+}
 
       if (msg.type === 'play') {
         const game = rooms.get(meta.roomId);
