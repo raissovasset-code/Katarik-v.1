@@ -8,10 +8,84 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send(`
-    <h1>Катарик</h1>
-    <button>Создать комнату</button>
-    <button>Войти в комнату</button>
+  res.type("html").send(`
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Катарик</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background:#111; color:white; }
+    button, input { width:100%; padding:14px; margin:8px 0; font-size:18px; border-radius:10px; }
+    button { background:#22c55e; border:0; font-weight:bold; }
+    input { box-sizing:border-box; }
+    .box { background:#222; padding:15px; border-radius:12px; margin-top:15px; }
+  </style>
+</head>
+<body>
+  <h1>Катарик</h1>
+
+  <input id="name" placeholder="Твоё имя" />
+
+  <button onclick="createRoom()">Создать комнату</button>
+
+  <input id="room" placeholder="Код комнаты" />
+  <button onclick="joinRoom()">Войти в комнату</button>
+
+  <div class="box" id="status">Не подключено</div>
+  <div class="box" id="game"></div>
+
+<script>
+const playerId = localStorage.playerId || (localStorage.playerId = Math.random().toString(36).slice(2));
+const ws = new WebSocket(location.origin.replace("http", "ws"));
+
+function send(data) {
+  ws.send(JSON.stringify(data));
+}
+
+ws.onopen = () => {
+  document.getElementById("status").innerText = "Подключено к серверу";
+};
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.type === "roomCreated") {
+    document.getElementById("room").value = msg.roomId;
+    document.getElementById("status").innerText = "Комната создана: " + msg.roomId;
+  }
+
+  if (msg.type === "state") {
+    document.getElementById("game").innerHTML =
+      "<b>Комната:</b> " + msg.game.id + "<br><br>" +
+      "<b>Игроки:</b><br>" +
+      msg.game.players.map(p => "- " + p.name).join("<br>");
+  }
+
+  if (msg.type === "error") {
+    alert(msg.message);
+  }
+};
+
+function createRoom() {
+  send({
+    type: "createRoom",
+    playerId,
+    name: document.getElementById("name").value || "Игрок"
+  });
+}
+
+function joinRoom() {
+  send({
+    type: "joinRoom",
+    playerId,
+    name: document.getElementById("name").value || "Игрок",
+    roomId: document.getElementById("room").value.toUpperCase()
+  });
+}
+</script>
+</body>
+</html>
   `);
 });
 
