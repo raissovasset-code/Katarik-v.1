@@ -20,6 +20,29 @@ app.get("/", (req, res) => {
     button { background:#22c55e; border:0; font-weight:bold; }
     input { box-sizing:border-box; }
     .box { background:#222; padding:15px; border-radius:12px; margin-top:15px; }
+  .card {
+  width: 58px;
+  height: 82px;
+  background: white;
+  color: #111;
+  border-radius: 10px;
+  border: 2px solid #ddd;
+  font-size: 20px;
+  font-weight: bold;
+  margin: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card.red {
+  color: #dc2626;
+}
+
+.card.selected {
+  background: #f59e0b;
+  transform: translateY(-8px);
+}
   </style>
 </head>
 <body>
@@ -77,8 +100,8 @@ const tableCards = msg.game.table?.cards
       ? msg.game.hand.map((c, i) => {
           const cardId = c.rank + (c.suit || "");
           const label = c.rank + (c.suit || "");
-          return "<button onclick='toggleCard(\\"" + cardId + "\\", " + i + ")' id='card_" + i + "'>" + label + "</button>";
-        }).join(" ")
+          return "<button class='card " + ((c.suit === "H" || c.suit === "D") ? "red" : "") + "' onclick='toggleCard(\\"" + cardId + "\\", " + i + ")' id='card_" + i + "'>" + label + "</button>";
+          }).join(" ")
       : "";
 
     document.getElementById("game").innerHTML =
