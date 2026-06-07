@@ -94,7 +94,29 @@ ws.onmessage = (event) => {
 const currentPlayer = msg.game.players.find(p => p.id === msg.game.currentPlayerId);
 const turnText = currentPlayer ? currentPlayer.name : "не определён";
 const tableCards = msg.game.table?.cards
-  ? msg.game.table.cards.map(c => c.rank + (c.suit || "")).join(", ")
+  ? msg.game.table.cards.map(c => {
+
+      const suitMap = {
+        H: "♥",
+        D: "♦",
+        C: "♣",
+        S: "♠"
+      };
+
+      const label =
+        c.rank === "BLACK_JOKER"
+          ? "<span style='color:black'>🃏</span>"
+        : c.rank === "RED_JOKER"
+          ? "<span style='color:red'>🃏</span>"
+        : c.rank === "DVK"
+          ? "⭐"
+        : c.rank + (suitMap[c.suit] || "");
+
+      return "<span class='card " +
+        ((c.suit === "H" || c.suit === "D") ? "red" : "") +
+        "'>" + label + "</span>";
+
+    }).join(" ")
   : "Пусто";
 
     const myCards = msg.game.hand
