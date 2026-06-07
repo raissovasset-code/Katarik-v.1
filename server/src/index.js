@@ -85,10 +85,12 @@ ws.onmessage = (event) => {
     "<br><br>" +
 
     (
-      msg.game.status === "lobby"
-        ? "<button onclick='startGame()'>Начать игру</button>"
-        : "<b>Мои карты:</b><br>" + myCards
-    );
+  msg.game.status === "lobby"
+    ? "<button onclick='startGame()'>Начать игру</button>"
+    : "<b>Мои карты:</b><br>" +
+      myCards +
+      "<br><br><button onclick='playSelected()'>Походить</button>"
+);
 }
 
   if (msg.type === "error") {
@@ -132,6 +134,16 @@ function toggleCard(index) {
     selectedCards.push(index);
     document.getElementById("card_" + index).style.background = "#f59e0b";
   }
+}
+
+function playSelected() {
+
+  send({
+    type: "play",
+    cardIds: selectedCards
+  });
+
+  selectedCards = [];
 }
 
 </script>
