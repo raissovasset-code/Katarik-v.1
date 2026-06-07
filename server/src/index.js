@@ -50,6 +50,24 @@ app.get("/", (req, res) => {
   <h1>Катарик</h1>
 
   <input id="name" placeholder="Твоё имя" />
+  <div class="box">
+  <b>Режим игры</b><br><br>
+
+  <label>
+    <input type="radio" name="mode" value="classic" checked>
+    Обычный
+  </label><br>
+
+  <label>
+    <input type="radio" name="mode" value="elimination">
+    На вылет
+  </label><br>
+
+  <label>
+    <input type="radio" name="mode" value="pogoni">
+    Погоны
+  </label>
+</div>
   <button onclick="createRoom()">Создать комнату</button>
 
   <input id="room" placeholder="Код комнаты" />
@@ -196,10 +214,13 @@ loser +
 };
 
 function createRoom() {
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+
   send({
     type: "createRoom",
     playerId,
-    name: document.getElementById("name").value || "Игрок"
+    name: document.getElementById("name").value || "Игрок",
+    mode
   });
 }
 
