@@ -8,7 +8,11 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Katarik server works!");
+  res.send(`
+    <h1>Катарик</h1>
+    <button>Создать комнату</button>
+    <button>Войти в комнату</button>
+  `);
 });
 
 const server = app.listen(3001, () => console.log('Katarik server on :3001'));
