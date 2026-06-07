@@ -37,7 +37,10 @@ app.get("/", (req, res) => {
 
 <script>
 const playerId = localStorage.playerId || (localStorage.playerId = Math.random().toString(36).slice(2));
-const ws = new WebSocket(location.origin.replace("http", "ws"));
+const ws = new WebSocket(location.protocol === "https:" 
+  ? "wss://" + location.host 
+  : "ws://" + location.host
+);
 
 function send(data) {
   ws.send(JSON.stringify(data));
