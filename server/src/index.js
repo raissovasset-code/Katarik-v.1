@@ -107,10 +107,13 @@ const suitMap = {
 };
 
 const label =
-  c.rank === "BLACK_JOKER" ? "🃏" :
-  c.rank === "RED_JOKER" ? "🃏" :
-  c.rank === "DVK" ? "⭐" :
-  c.rank + (suitMap[c.suit] || "");
+  c.rank === "BLACK_JOKER"
+    ? "<span style='color:black'>🃏</span>"
+  : c.rank === "RED_JOKER"
+    ? "<span style='color:red'>🃏</span>"
+  : c.rank === "DVK"
+    ? "⭐"
+  : c.rank + (suitMap[c.suit] || "");
 return "<button class='card " + ((c.suit === "H" || c.suit === "D") ? "red" : "") + "' onclick='toggleCard(\\"" + cardId + "\\", " + i + ")' id='card_" + i + "'>" + label + "</button>";
 }).join(" ")
 : "";
