@@ -59,11 +59,12 @@ ws.onmessage = (event) => {
   }
 
   if (msg.type === "state") {
-    document.getElementById("game").innerHTML =
-      "<b>Комната:</b> " + (msg.game.roomId || msg.game.id || document.getElementById("room").value) + "<br><br>" +
-      "<b>Игроки:</b><br>" +
-      msg.game.players.map(p => "- " + p.name).join("<br>");
-  }
+  document.getElementById("game").innerHTML =
+    "<b>Комната:</b> " + (msg.game.roomId || msg.game.id || document.getElementById("room").value) + "<br><br>" +
+    "<b>Игроки:</b><br>" +
+    msg.game.players.map(p => "- " + p.name).join("<br>") +
+    "<br><br><button onclick='startGame()'>Начать игру</button>";
+}
 
   if (msg.type === "error") {
     alert(msg.message);
@@ -86,6 +87,13 @@ function joinRoom() {
     roomId: document.getElementById("room").value.toUpperCase()
   });
 }
+
+function startGame() {
+  send({
+    type: "startGame"
+  });
+}
+
 </script>
 </body>
 </html>
