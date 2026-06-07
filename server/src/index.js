@@ -66,9 +66,9 @@ ws.onmessage = (event) => {
 
   const myCards = msg.game.hand
   ? msg.game.hand.map((c, i) =>
-      "<button onclick='toggleCard(" + i + ")' id='card_" + i + "'>" +
-      c.rank + (c.suit || "") +
-      "</button>"
+      "<button onclick='toggleCard(\"" + c.id + "\", " + i + ")' id='card_" + i + "'>" +
+c.rank + (c.suit || "") +
+"</button>"
     ).join(" ")
   : "";
 
@@ -123,15 +123,17 @@ function startGame() {
 
 let selectedCards = [];
 
-function toggleCard(index) {
+let selectedCards = [];
 
-  const pos = selectedCards.indexOf(index);
+function toggleCard(cardId, index) {
+
+  const pos = selectedCards.indexOf(cardId);
 
   if (pos >= 0) {
     selectedCards.splice(pos, 1);
     document.getElementById("card_" + index).style.background = "#22c55e";
   } else {
-    selectedCards.push(index);
+    selectedCards.push(cardId);
     document.getElementById("card_" + index).style.background = "#f59e0b";
   }
 }
