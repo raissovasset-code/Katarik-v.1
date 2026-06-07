@@ -67,6 +67,10 @@ ws.onmessage = (event) => {
       "- " + p.name + " — карт: " + (p.handCount ?? 0)
     ).join("<br>");
 
+const tableCards = msg.game.table?.cards
+  ? msg.game.table.cards.map(c => c.rank + (c.suit || "")).join(", ")
+  : "Пусто";
+
     const myCards = msg.game.hand
       ? msg.game.hand.map((c, i) => {
           const cardId = c.rank + (c.suit || "");
@@ -79,10 +83,12 @@ ws.onmessage = (event) => {
       "<b>Комната:</b> " + (msg.game.roomId || msg.game.id || document.getElementById("room").value) + "<br><br>" +
       "<b>Статус:</b> " + msg.game.status + "<br><br>" +
       "<b>Игроки:</b><br>" + players + "<br><br>" +
+      "<b>Стол:</b><br>" + tableCards + "<br><br>" +
       (
         msg.game.status === "lobby"
           ? "<button onclick='startGame()'>Начать игру</button>"
-          : "<b>Мои карты:</b><br>" + myCards + "<br><br><button onclick='playSelected()'>Походить</button>"
+          : "<b>Мои карты:</b><br>" + myCards + "<br><br><button onclick='playSelected()'>Походить</button>" +
+"<button onclick='passTurn()'>Пас</button>"
       );
   }
 
@@ -132,6 +138,13 @@ function playSelected() {
 
   selectedCards = [];
 }
+
+function passTurn() {
+  send({
+    type: "pass"
+  });
+}
+
 </script>
 </body>
 </html>
