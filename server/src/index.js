@@ -105,9 +105,9 @@ const tableCards = msg.game.table?.cards
 
       const label =
         c.rank === "BLACK_JOKER"
-          ? "<span style='color:black'>🃏</span>"
-        : c.rank === "RED_JOKER"
-          ? "<span style='color:red'>🃏</span>"
+  ? "<span style='color:black'>🃏♠</span>"
+: c.rank === "RED_JOKER"
+  ? "<span style='color:red'>🃏♥</span>"
         : c.rank === "DVK"
           ? "⭐"
         : c.rank + (suitMap[c.suit] || "");
