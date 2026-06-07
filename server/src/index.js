@@ -158,9 +158,27 @@ return "<button class='card " + ((c.suit === "H" || c.suit === "D") ? "red" : ""
 
   return rank + suitMap[suit];
 };
+    const winners = msg.game.places?.length
+  ? "<b>Вышли:</b><br>" +
+    msg.game.places.map((id, index) => {
+      const p = msg.game.players.find(x => x.id === id);
+      return (index + 1) + ". " + (p?.name || "Игрок");
+    }).join("<br>") + "<br><br>"
+  : "";
+
+const loser = msg.game.loserId
+  ? (() => {
+      const p = msg.game.players.find(x => x.id === msg.game.loserId);
+      return "<div style='color:#ef4444;font-size:22px;font-weight:bold'>Проиграл: " +
+        (p?.name || "Игрок") +
+        "</div><br>";
+    })()
+  : "";
     document.getElementById("game").innerHTML =
       "<b>Комната:</b> " + (msg.game.roomId || msg.game.id || document.getElementById("room").value) + "<br><br>" +
       "<b>Статус:</b> " + msg.game.status + "<br><br>" +
+      winners +
+loser +
       "<b>Ходит:</b> " + turnText + "<br><br>" +
       "<b>Игроки:</b><br>" + players + "<br><br>" +
       "<b>Стол:</b><br>" + tableCards + "<br><br>" +
