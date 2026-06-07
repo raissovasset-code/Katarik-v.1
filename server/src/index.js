@@ -26,7 +26,6 @@ app.get("/", (req, res) => {
   <h1>Катарик</h1>
 
   <input id="name" placeholder="Твоё имя" />
-
   <button onclick="createRoom()">Создать комнату</button>
 
   <input id="room" placeholder="Код комнаты" />
@@ -37,9 +36,12 @@ app.get("/", (req, res) => {
 
 <script>
 const playerId = sessionStorage.playerId || (sessionStorage.playerId = Math.random().toString(36).slice(2));
-const ws = new WebSocket(location.protocol === "https:" 
-  ? "wss://" + location.host 
-  : "ws://" + location.host
+let selectedCards = [];
+
+const ws = new WebSocket(
+  location.protocol === "https:" 
+    ? "wss://" + location.host 
+    : "ws://" + location.host
 );
 
 function send(data) {
@@ -59,39 +61,30 @@ ws.onmessage = (event) => {
   }
 
   if (msg.type === "state") {
+    selectedCards = [];
 
-  const players = msg.game.players.map(p =>
-    "- " + p.name + " — карт: " + (p.handCount ?? 0)
-  ).join("<br>");
+    const players = msg.game.players.map(p =>
+      "- " + p.name + " — карт: " + (p.handCount ?? 0)
+    ).join("<br>");
 
-  const myCards = msg.game.hand
-  ? msg.game.hand.map((c, i) =>
-      "<button onclick='toggleCard(\"" + c.id + "\", " + i + ")' id='card_" + i + "'>" +
-c.rank + (c.suit || "") +
-"</button>"
-    ).join(" ")
-  : "";
+    const myCards = msg.game.hand
+      ? msg.game.hand.map((c, i) => {
+          const cardId = c.rank + (c.suit || "");
+          const label = c.rank + (c.suit || "");
+          return "<button onclick='toggleCard(\\"" + cardId + "\\", " + i + ")' id='card_" + i + "'>" + label + "</button>";
+        }).join(" ")
+      : "";
 
-  document.getElementById("game").innerHTML =
-    "<b>Комната:</b> " +
-    (msg.game.roomId || msg.game.id || document.getElementById("room").value) +
-    "<br><br>" +
-
-    "<b>Статус:</b> " + msg.game.status +
-    "<br><br>" +
-
-    "<b>Игроки:</b><br>" +
-    players +
-    "<br><br>" +
-
-    (
-  msg.game.status === "lobby"
-    ? "<button onclick='startGame()'>Начать игру</button>"
-    : "<b>Мои карты:</b><br>" +
-      myCards +
-      "<br><br><button onclick='playSelected()'>Походить</button>"
-);
-}
+    document.getElementById("game").innerHTML =
+      "<b>Комната:</b> " + (msg.game.roomId || msg.game.id || document.getElementById("room").value) + "<br><br>" +
+      "<b>Статус:</b> " + msg.game.status + "<br><br>" +
+      "<b>Игроки:</b><br>" + players + "<br><br>" +
+      (
+        msg.game.status === "lobby"
+          ? "<button onclick='startGame()'>Начать игру</button>"
+          : "<b>Мои карты:</b><br>" + myCards + "<br><br><button onclick='playSelected()'>Походить</button>"
+      );
+  }
 
   if (msg.type === "error") {
     alert(msg.message);
@@ -111,22 +104,15 @@ function joinRoom() {
     type: "joinRoom",
     playerId,
     name: document.getElementById("name").value || "Игрок",
-    roomId: document.getElementById("room").value.toUpperCase()
+    roomId: document.getElementById("room").value.trim().toUpperCase()
   });
 }
 
 function startGame() {
-  send({
-    type: "startGame"
-  });
+  send({ type: "startGame" });
 }
 
-let selectedCards = [];
-
-let selectedCards = [];
-
 function toggleCard(cardId, index) {
-
   const pos = selectedCards.indexOf(cardId);
 
   if (pos >= 0) {
@@ -139,7 +125,6 @@ function toggleCard(cardId, index) {
 }
 
 function playSelected() {
-
   send({
     type: "play",
     cardIds: selectedCards
@@ -147,7 +132,6 @@ function playSelected() {
 
   selectedCards = [];
 }
-
 </script>
 </body>
 </html>
@@ -163,14 +147,21 @@ function roomCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
-function send(ws, data) {
+function sendTo(ws, data) {
   ws.send(JSON.stringify(data));
 }
 
 function broadcast(roomId) {
   const game = rooms.get(roomId);
+  if (!game) return;
+
   for (const [ws, meta] of sockets.entries()) {
-    if (meta.roomId === roomId) send(ws, { type: 'state', game: publicGameState(game, meta.playerId) });
+    if (meta.roomId === roomId) {
+      sendTo(ws, {
+        type: 'state',
+        game: publicGameState(game, meta.playerId)
+      });
+    }
   }
 }
 
@@ -186,49 +177,52 @@ wss.on('connection', ws => {
         const code = roomCode();
         const game = createGame(code);
         rooms.set(code, game);
+
         const player = { id: msg.playerId, name: msg.name || 'Игрок' };
         addPlayer(game, player);
+
         sockets.set(ws, { roomId: code, playerId: player.id });
-        send(ws, { type: 'roomCreated', roomId: code });
+
+        sendTo(ws, { type: 'roomCreated', roomId: code });
         broadcast(code);
       }
 
       if (msg.type === 'joinRoom') {
         const game = rooms.get(msg.roomId);
         if (!game) throw new Error('Комната не найдена');
+
         const player = { id: msg.playerId, name: msg.name || 'Игрок' };
         addPlayer(game, player);
+
         sockets.set(ws, { roomId: msg.roomId, playerId: player.id });
         broadcast(msg.roomId);
       }
 
       if (msg.type === 'startGame') {
-  const game = rooms.get(meta.roomId);
+        const game = rooms.get(meta.roomId);
+        if (!game) throw new Error('Комната не найдена');
 
-  try {
-    startGame(game);
-    broadcast(meta.roomId);
-  } catch (e) {
-    send(ws, {
-      type: 'error',
-      message: 'Ошибка старта: ' + e.message
-    });
-  }
-}
+        startGame(game);
+        broadcast(meta.roomId);
+      }
 
       if (msg.type === 'play') {
         const game = rooms.get(meta.roomId);
+        if (!game) throw new Error('Комната не найдена');
+
         playCards(game, meta.playerId, msg.cardIds, msg.declaredRanks || {});
         broadcast(meta.roomId);
       }
 
       if (msg.type === 'pass') {
         const game = rooms.get(meta.roomId);
+        if (!game) throw new Error('Комната не найдена');
+
         pass(game, meta.playerId);
         broadcast(meta.roomId);
       }
     } catch (e) {
-      send(ws, { type: 'error', message: e.message });
+      sendTo(ws, { type: 'error', message: e.message });
     }
   });
 
