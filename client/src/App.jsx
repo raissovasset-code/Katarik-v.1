@@ -61,9 +61,22 @@ function App() {
       <p className="muted">Онлайн-карточная игра для друзей</p>
       <button onClick={() => send('createRoom')}>Создать комнату</button>
       <div className="join">
-        <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder="Код комнаты" />
-        <button onClick={() => send('joinRoom', { roomId: joinCode })}>Войти</button>
-      </div>
+  <input
+    value={joinCode}
+    onChange={e => setJoinCode(e.target.value.toUpperCase())}
+    placeholder="Код комнаты"
+  />
+
+  <button
+    disabled={!joinCode}
+    onClick={() => {
+      console.log(joinCode);
+      send('joinRoom', { roomId: joinCode.trim() });
+    }}
+  >
+    Войти в комнату
+  </button>
+</div>
       {error && <p className="error">{error}</p>}
     </main>;
   }
