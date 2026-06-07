@@ -7,6 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("Katarik server works!");
+});
+
 const server = app.listen(3001, () => console.log('Katarik server on :3001'));
 const wss = new WebSocketServer({ server });
 const rooms = new Map();
