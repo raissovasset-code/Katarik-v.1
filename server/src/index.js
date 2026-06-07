@@ -65,8 +65,12 @@ ws.onmessage = (event) => {
   ).join("<br>");
 
   const myCards = msg.game.hand
-    ? msg.game.hand.map(c => c.rank + (c.suit || "")).join(", ")
-    : "";
+  ? msg.game.hand.map((c, i) =>
+      "<button onclick='toggleCard(" + i + ")' id='card_" + i + "'>" +
+      c.rank + (c.suit || "") +
+      "</button>"
+    ).join(" ")
+  : "";
 
   document.getElementById("game").innerHTML =
     "<b>Комната:</b> " +
@@ -113,6 +117,21 @@ function startGame() {
   send({
     type: "startGame"
   });
+}
+
+let selectedCards = [];
+
+function toggleCard(index) {
+
+  const pos = selectedCards.indexOf(index);
+
+  if (pos >= 0) {
+    selectedCards.splice(pos, 1);
+    document.getElementById("card_" + index).style.background = "#22c55e";
+  } else {
+    selectedCards.push(index);
+    document.getElementById("card_" + index).style.background = "#f59e0b";
+  }
 }
 
 </script>
