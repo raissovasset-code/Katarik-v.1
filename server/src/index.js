@@ -97,13 +97,41 @@ const tableCards = msg.game.table?.cards
   : "Пусто";
 
     const myCards = msg.game.hand
-      ? msg.game.hand.map((c, i) => {
-          const cardId = c.rank + (c.suit || "");
-          const label = c.rank + (c.suit || "");
-          return "<button class='card " + ((c.suit === "H" || c.suit === "D") ? "red" : "") + "' onclick='toggleCard(\\"" + cardId + "\\", " + i + ")' id='card_" + i + "'>" + label + "</button>";
-          }).join(" ")
-      : "";
+? msg.game.hand.map((c, i) => {
+const cardId = c.rank + (c.suit || "");
+const suitMap = {
+  H: "♥",
+  D: "♦",
+  C: "♣",
+  S: "♠"
+};
 
+const label =
+  c.rank === "BLACK_JOKER" ? "🃏" :
+  c.rank === "RED_JOKER" ? "🃏" :
+  c.rank === "DVK" ? "⭐" :
+  c.rank + (suitMap[c.suit] || "");
+return "<button class='card " + ((c.suit === "H" || c.suit === "D") ? "red" : "") + "' onclick='toggleCard(\\"" + cardId + "\\", " + i + ")' id='card_" + i + "'>" + label + "</button>";
+}).join(" ")
+: "";
+
+    const prettyCard = (card) => {
+  if (card === "BLACK_JOKER") return "🃏";
+  if (card === "RED_JOKER") return "🃏";
+  if (card === "DVK") return "⭐";
+
+  const suitMap = {
+    H: "♥",
+    D: "♦",
+    C: "♣",
+    S: "♠"
+  };
+
+  const rank = card.slice(0, -1);
+  const suit = card.slice(-1);
+
+  return rank + suitMap[suit];
+};
     document.getElementById("game").innerHTML =
       "<b>Комната:</b> " + (msg.game.roomId || msg.game.id || document.getElementById("room").value) + "<br><br>" +
       "<b>Статус:</b> " + msg.game.status + "<br><br>" +
