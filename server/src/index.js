@@ -67,6 +67,8 @@ ws.onmessage = (event) => {
       "- " + p.name + " — карт: " + (p.handCount ?? 0)
     ).join("<br>");
 
+const currentPlayer = msg.game.players.find(p => p.id === msg.game.currentPlayerId);
+const turnText = currentPlayer ? currentPlayer.name : "не определён";
 const tableCards = msg.game.table?.cards
   ? msg.game.table.cards.map(c => c.rank + (c.suit || "")).join(", ")
   : "Пусто";
@@ -82,6 +84,7 @@ const tableCards = msg.game.table?.cards
     document.getElementById("game").innerHTML =
       "<b>Комната:</b> " + (msg.game.roomId || msg.game.id || document.getElementById("room").value) + "<br><br>" +
       "<b>Статус:</b> " + msg.game.status + "<br><br>" +
+      "<b>Ходит:</b> " + turnText + "<br><br>" +
       "<b>Игроки:</b><br>" + players + "<br><br>" +
       "<b>Стол:</b><br>" + tableCards + "<br><br>" +
       (
