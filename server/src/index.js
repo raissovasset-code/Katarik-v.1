@@ -40,8 +40,9 @@ app.get("/", (req, res) => {
 }
 
 .card.selected {
-  background: #f59e0b;
-  transform: translateY(-8px);
+  background: #f59e0b !important;
+  transform: translateY(-14px);
+  border: 3px solid #fff;
 }
   </style>
 </head>
@@ -180,10 +181,10 @@ function toggleCard(cardId, index) {
 
   if (pos >= 0) {
     selectedCards.splice(pos, 1);
-    document.getElementById("card_" + index).style.background = "#22c55e";
+    document.getElementById("card_" + index).classList.remove("selected");
   } else {
     selectedCards.push(cardId);
-    document.getElementById("card_" + index).style.background = "#f59e0b";
+    document.getElementById("card_" + index).classList.add("selected");
   }
 }
 
