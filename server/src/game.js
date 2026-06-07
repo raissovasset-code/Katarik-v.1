@@ -290,3 +290,36 @@ export function publicGameState(game, viewerId) {
     burned: undefined,
   };
 }
+
+export function restartGame(game) {
+  if (!game) throw new Error('Комната не найдена');
+
+  const deck = createDeck();
+  const dealSlots = game.players.length === 2 ? 3 : game.players.length;
+  const hands = Array.from({ length: dealSlots }, () => []);
+
+  deck.forEach((card, index) => hands[index % dealSlots].push(card));
+
+  game.players.forEach((p, index) => {
+    p.hand = sortHand(hands[index]);
+    p.active = true;
+  });
+
+  if (game.players.length === 2) {
+    game.burned = hands[2];
+  } else {
+    game.burned = [];
+  }
+
+  const starterId = game.places?.[0];
+  const starter = game.players.find(p => p.id === starterId) || game.players[0];
+
+  game.status = 'playing';
+  game.currentPlayerId = starter.id;
+  game.roundStarterId = starter.id;
+  game.lastPlayedPlayerId = null;
+  game.table = null;
+  game.passedPlayerIds = [];
+  game.places = [];
+  game.loserId = null;
+}
