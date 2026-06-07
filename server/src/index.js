@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
-import { addPlayer, createGame, pass, playCards, publicGameState, startGame } from './game.js';
+import { addPlayer, createGame, pass, playCards, publicGameState, startGame, restartGame } from './game.js';
 
 const app = express();
 app.use(cors());
@@ -202,9 +202,11 @@ loser +
       "<b>Стол:</b><br>" + tableCards + "<br><br>" +
       (
         msg.game.status === "lobby"
-          ? "<button onclick='startGame()'>Начать игру</button>"
-          : "<b>Мои карты:</b><br>" + myCards + "<br><br><button onclick='playSelected()'>Походить</button>" +
-"<button onclick='passTurn()'>Пас</button>"
+  ? "<button onclick='startGame()'>Начать игру</button>"
+  : msg.game.status === "finished"
+    ? "<button onclick='restartGame()'>Играть заново</button>"
+    : "<b>Мои карты:</b><br>" + myCards + "<br><br><button onclick='playSelected()'>Походить</button>" +
+      "<button onclick='passTurn()'>Пас</button>"
       );
   }
 
@@ -235,6 +237,10 @@ function joinRoom() {
 
 function startGame() {
   send({ type: "startGame" });
+}
+
+function restartGame() {
+  send({ type: "restartGame" });
 }
 
 function toggleCard(cardId, index) {
@@ -337,6 +343,14 @@ wss.on('connection', ws => {
         startGame(game);
         broadcast(meta.roomId);
       }
+
+      if (msg.type === 'restartGame') {
+  const game = rooms.get(meta.roomId);
+  if (!game) throw new Error('Комната не найдена');
+
+  restartGame(game);
+  broadcast(meta.roomId);
+}
 
       if (msg.type === 'play') {
         const game = rooms.get(meta.roomId);
