@@ -59,11 +59,32 @@ ws.onmessage = (event) => {
   }
 
   if (msg.type === "state") {
+
+  const players = msg.game.players.map(p =>
+    "- " + p.name + " — карт: " + (p.handCount ?? 0)
+  ).join("<br>");
+
+  const myCards = msg.game.hand
+    ? msg.game.hand.map(c => c.rank + (c.suit || "")).join(", ")
+    : "";
+
   document.getElementById("game").innerHTML =
-    "<b>Комната:</b> " + (msg.game.roomId || msg.game.id || document.getElementById("room").value) + "<br><br>" +
+    "<b>Комната:</b> " +
+    (msg.game.roomId || msg.game.id || document.getElementById("room").value) +
+    "<br><br>" +
+
+    "<b>Статус:</b> " + msg.game.status +
+    "<br><br>" +
+
     "<b>Игроки:</b><br>" +
-    msg.game.players.map(p => "- " + p.name).join("<br>") +
-    "<br><br><button onclick='startGame()'>Начать игру</button>";
+    players +
+    "<br><br>" +
+
+    (
+      msg.game.status === "lobby"
+        ? "<button onclick='startGame()'>Начать игру</button>"
+        : "<b>Мои карты:</b><br>" + myCards
+    );
 }
 
   if (msg.type === "error") {
