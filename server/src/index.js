@@ -225,6 +225,9 @@ wss.on('connection', ws => {
       if (msg.type === 'play') {
         const game = rooms.get(meta.roomId);
         if (!game) throw new Error('Комната не найдена');
+        if (game.currentPlayerId !== meta.playerId) {
+  throw new Error('Сейчас ход другого игрока');
+}
 
         playCards(game, meta.playerId, msg.cardIds, msg.declaredRanks || {});
         broadcast(meta.roomId);
@@ -233,6 +236,9 @@ wss.on('connection', ws => {
       if (msg.type === 'pass') {
         const game = rooms.get(meta.roomId);
         if (!game) throw new Error('Комната не найдена');
+        if (game.currentPlayerId !== meta.playerId) {
+  throw new Error('Сейчас ход другого игрока');
+}
 
         pass(game, meta.playerId);
         broadcast(meta.roomId);
