@@ -413,9 +413,14 @@ export function restartGame(game) {
 
 export function nextRound(game) {
   if (!game) throw new Error('Комната не найдена');
-  if (game.mode !== 'elimination') throw new Error('Это не режим На вылет');
+  if (!['elimination', 'pogoni'].includes(game.mode)) {
+  throw new Error('Следующий кон доступен только для режимов На вылет и Погоны');
+}
 
-  const alivePlayers = game.players.filter(p => !game.eliminatedIds.includes(p.id));
+  const alivePlayers =
+  game.mode === 'elimination'
+    ? game.players.filter(p => !game.eliminatedIds.includes(p.id))
+    : game.players;
 
   if (alivePlayers.length <= 1) {
     game.status = 'finished';
@@ -430,16 +435,18 @@ export function nextRound(game) {
   deck.forEach((card, index) => hands[index % dealSlots].push(card));
 
   alivePlayers.forEach((p, index) => {
-    p.hand = sortHand(hands[index]);
-    p.active = true;
-  });
+  p.hand = sortHand(hands[index]);
+  p.active = true;
+});
 
+if (game.mode === 'elimination') {
   game.players
-  .filter(p => game.eliminatedIds.includes(p.id))
-  .forEach(p => {
-    p.hand = [];
-    p.active = false;
-  });
+    .filter(p => game.eliminatedIds.includes(p.id))
+    .forEach(p => {
+      p.hand = [];
+      p.active = false;
+    });
+}
   
   if (alivePlayers.length === 2) {
     game.burned = hands[2];
