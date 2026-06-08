@@ -154,9 +154,23 @@ export function playCards(game, playerId, cardIds, declaredRanks = {}) {
   game.passedPlayerIds = [];
 
   if (player.hand.length === 0 && !game.places.includes(playerId)) {
-    game.places.push(playerId);
-    player.active = false;
+  game.places.push(playerId);
+
+  if (game.mode === 'pogoni') {
+    const pogonResult = checkPogon(player, cards);
+
+    if (pogonResult.success) {
+      player.pogonRank = pogonResult.nextRank;
+
+      game.status = pogonResult.finished ? 'finished' : 'round_finished';
+      game.roundWinnerId = playerId;
+      player.active = false;
+      return;
+    }
   }
+
+  player.active = false;
+}
 
   const remaining = activePlayers(game);
   if (remaining.length === 1) {
@@ -444,4 +458,38 @@ export function nextRound(game) {
   game.passedPlayerIds = [];
   game.places = [];
   game.loserId = null;
+}
+
+function checkPogon(player, cards) {
+  const pogonOrder = ['4','5','6','7','8','9','10','J','Q','K','A'];
+  const current = player.pogonRank || '4';
+
+  if (!cards.length) {
+    return { success: false };
+  }
+
+  if (cards.some(c => c.type === 'wild' || c.type === 'joker')) {
+    return { success: false };
+  }
+
+  if (!cards.every(c => c.rank === current)) {
+    return { success: false };
+  }
+
+  if (current === 'A') {
+    return {
+      success: true,
+      finished: true,
+      nextRank: 'A'
+    };
+  }
+
+  const index = pogonOrder.indexOf(current);
+  const nextIndex = Math.min(index + cards.length, pogonOrder.length - 1);
+
+  return {
+    success: true,
+    finished: false,
+    nextRank: pogonOrder[nextIndex]
+  };
 }
