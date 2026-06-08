@@ -313,7 +313,7 @@ wss.on('connection', ws => {
 
       if (msg.type === 'createRoom') {
         const code = roomCode();
-        const game = createGame(code);
+        const game = createGame(code, msg.mode || 'classic');
         rooms.set(code, game);
 
         const player = { id: msg.playerId, name: msg.name || 'Игрок' };
