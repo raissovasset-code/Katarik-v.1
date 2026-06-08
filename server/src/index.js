@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
-import { addPlayer, createGame, pass, playCards, publicGameState, startGame, restartGame } from './game.js';
+import { addPlayer, createGame, pass, playCards, publicGameState, startGame, restartGame, nextRound } from './game.js';
 
 const app = express();
 app.use(cors());
@@ -358,6 +358,14 @@ wss.on('connection', ws => {
   broadcast(meta.roomId);
 }
 
+if (msg.type === 'nextRound') {
+  const game = rooms.get(meta.roomId);
+  if (!game) throw new Error('Комната не найдена');
+
+  nextRound(game);
+  broadcast(meta.roomId);
+}
+      
       if (msg.type === 'play') {
         const game = rooms.get(meta.roomId);
         if (!game) throw new Error('Комната не найдена');
