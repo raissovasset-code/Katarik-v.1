@@ -49,6 +49,33 @@ app.get("/", (req, res) => {
 <body>
   <h1>Катарик</h1>
 
+  <button onclick="showRules()">Правила</button>
+
+<div class="box" id="rules" style="display:none">
+  <h2>Правила Катарик</h2>
+
+  <b>Цель</b><br>
+  Сбросить все карты. Проигрывает последний игрок с картами.<br><br>
+
+  <b>Колода</b><br>
+  52 карты + чёрный джокер + красный джокер + ДВК.<br><br>
+
+  <b>Старшинство</b><br>
+  4, 5, 6, 7, 8, 9, 10, J, Q, K, A, 2, 3, чёрный джокер, красный джокер.<br><br>
+
+  <b>Комбинации</b><br>
+  1 карта, пара, сет, каре, ряд от 4 карт, двойной ряд от 3 пар.<br><br>
+
+  <b>ДВК</b><br>
+  ДВК заменяет любую карту, кроме джокеров. Сам по себе ходить не может.<br><br>
+
+  <b>Пасы</b><br>
+  Можно пасовать. Если все пасовали, новый ход начинает тот, кто последним положил карту.<br><br>
+
+  <b>Особое правило</b><br>
+  3333 не бьётся ничем.
+</div>
+
   <input id="name" placeholder="Твоё имя" />
   <div class="box">
   <b>Режим игры</b><br><br>
@@ -77,6 +104,15 @@ app.get("/", (req, res) => {
   <div class="box" id="game"></div>
 
 <script>
+function showRules() {
+  const block = document.getElementById("rules");
+
+  block.style.display =
+    block.style.display === "none"
+      ? "block"
+      : "none";
+}
+
 const playerId = sessionStorage.playerId || (sessionStorage.playerId = Math.random().toString(36).slice(2));
 let selectedCards = [];
 
