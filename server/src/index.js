@@ -145,12 +145,13 @@ ws.onmessage = (event) => {
   const eliminated = msg.game.eliminatedIds?.includes(p.id);
 
   return eliminated
-  ? "❌ " + p.name + " — вылетел"
-  : "- " + p.name +
-    " — карт: " + (p.handCount ?? 0) +
-    (msg.game.mode === "pogoni"
-      ? " — погон: " + p.pogonRank
-      : "");
+    ? "❌ " + p.name + " — вылетел"
+    : "- " + p.name +
+      " — карт: " + (p.handCount ?? 0) +
+      (msg.game.mode === "pogoni"
+        ? " — погон: " + p.pogonRank
+        : "");
+}).join("<br>");
 
 const currentPlayer = msg.game.players.find(p => p.id === msg.game.currentPlayerId);
 const turnText = currentPlayer ? currentPlayer.name : "не определён";
@@ -370,7 +371,7 @@ wss.on('connection', ws => {
 
         sockets.set(ws, { roomId: code, playerId: player.id });
 
-        send(ws, { type: 'roomCreated', roomId: code });
+        sendTo(ws, { type: 'roomCreated', roomId: code });
         broadcast(code);
       }
 
