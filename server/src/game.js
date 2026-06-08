@@ -50,7 +50,12 @@ export function addPlayer(game, player) {
   if (game.status !== 'lobby') throw new Error('Игра уже началась');
   if (game.players.length >= 11) throw new Error('Максимум 11 игроков');
   if (!game.players.some(p => p.id === player.id)) {
-    game.players.push({ ...player, hand: [], active: true });
+    game.players.push({
+  ...player,
+  hand: [],
+  active: true,
+  pogonRank: '4'
+});
   }
 }
 
