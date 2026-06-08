@@ -203,10 +203,12 @@ loser +
       (
         msg.game.status === "lobby"
   ? "<button onclick='startGame()'>Начать игру</button>"
-  : msg.game.status === "finished"
-    ? "<button onclick='restartGame()'>Играть заново</button>"
-    : "<b>Мои карты:</b><br>" + myCards + "<br><br><button onclick='playSelected()'>Походить</button>" +
-      "<button onclick='passTurn()'>Пас</button>"
+  : msg.game.status === "round_finished"
+    ? "<button onclick='nextRound()'>Следующий кон</button>"
+    : msg.game.status === "finished"
+      ? "<button onclick='restartGame()'>Играть заново</button>"
+      : "<b>Мои карты:</b><br>" + myCards + "<br><br><button onclick='playSelected()'>Походить</button>" +
+        "<button onclick='passTurn()'>Пас</button>"
       );
   }
 
@@ -241,6 +243,10 @@ function startGame() {
 
 function restartGame() {
   send({ type: "restartGame" });
+}
+
+function nextRound() {
+  send({ type: "nextRound" });
 }
 
 function toggleCard(cardId, index) {
