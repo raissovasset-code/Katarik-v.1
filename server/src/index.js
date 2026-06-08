@@ -370,7 +370,7 @@ wss.on('connection', ws => {
 
         sockets.set(ws, { roomId: code, playerId: player.id });
 
-        sendTo(ws, { type: 'roomCreated', roomId: code });
+        send(ws, { type: 'roomCreated', roomId: code });
         broadcast(code);
       }
 
