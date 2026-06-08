@@ -173,14 +173,12 @@ export function playCards(game, playerId, cardIds, declaredRanks = {}) {
 }
 
   const remaining = activePlayers(game);
-  if (remaining.length === 1) {
 
+if (remaining.length === 1) {
   const loser = remaining[0];
-
   game.loserId = loser.id;
 
   if (game.mode === 'elimination') {
-
     if (!game.eliminatedIds.includes(loser.id)) {
       game.eliminatedIds.push(loser.id);
     }
@@ -197,20 +195,22 @@ export function playCards(game, playerId, cardIds, declaredRanks = {}) {
       game.roundWinnerId = game.places[0] || null;
     }
 
+  } else if (game.mode === 'pogoni') {
+    game.status = 'round_finished';
+    game.roundWinnerId = game.places[0] || null;
+
   } else {
-
     game.status = 'finished';
-
   }
 
   return;
 }
 
-  if (combo.type === 'quad' && combo.high === RANK_VALUE['3']) {
-    finishTrick(game);
-  } else {
-    game.currentPlayerId = nextActivePlayerId(game, playerId);
-  }
+if (combo.type === 'quad' && combo.high === RANK_VALUE['3']) {
+  finishTrick(game);
+} else {
+  game.currentPlayerId = nextActivePlayerId(game, playerId);
+}
 }
 
 function finishTrick(game) {
