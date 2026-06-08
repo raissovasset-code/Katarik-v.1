@@ -26,9 +26,10 @@ function shuffle(cards) {
   return arr;
 }
 
-export function createGame(roomId) {
+export function createGame(roomId, mode = 'classic') {
   return {
     roomId,
+    mode,
     status: 'lobby',
     players: [],
     burned: [],
