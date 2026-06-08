@@ -52,7 +52,7 @@ app.get("/", (req, res) => {
   <button onclick="showRules()">Правила</button>
 
 <div class="box" id="rules" style="display:none">
-  <h2>Правила Катарик</h2>
+  <h2>Правила от Зибулама</h2>
 
   <b>Цель</b><br>
   Сбросить все карты. Проигрывает последний игрок с картами.<br><br>
