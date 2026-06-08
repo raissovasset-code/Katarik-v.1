@@ -30,6 +30,8 @@ export function createGame(roomId, mode = 'classic') {
   return {
     roomId,
     mode,
+    eliminatedIds: [],
+roundWinnerId: null,
     status: 'lobby',
     players: [],
     burned: [],
@@ -123,10 +125,37 @@ export function playCards(game, playerId, cardIds, declaredRanks = {}) {
 
   const remaining = activePlayers(game);
   if (remaining.length === 1) {
-    game.loserId = remaining[0].id;
+
+  const loser = remaining[0];
+
+  game.loserId = loser.id;
+
+  if (game.mode === 'elimination') {
+
+    if (!game.eliminatedIds.includes(loser.id)) {
+      game.eliminatedIds.push(loser.id);
+    }
+
+    loser.active = false;
+
+    const alive = game.players.filter(p => !game.eliminatedIds.includes(p.id));
+
+    if (alive.length === 1) {
+      game.status = 'finished';
+      game.roundWinnerId = alive[0].id;
+    } else {
+      game.status = 'round_finished';
+      game.roundWinnerId = game.places[0] || null;
+    }
+
+  } else {
+
     game.status = 'finished';
-    return;
+
   }
+
+  return;
+}
 
   if (combo.type === 'quad' && combo.high === RANK_VALUE['3']) {
     finishTrick(game);
