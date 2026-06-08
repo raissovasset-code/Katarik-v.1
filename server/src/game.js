@@ -353,3 +353,45 @@ export function restartGame(game) {
   game.places = [];
   game.loserId = null;
 }
+
+export function nextRound(game) {
+  if (!game) throw new Error('Комната не найдена');
+  if (game.mode !== 'elimination') throw new Error('Это не режим На вылет');
+
+  const alivePlayers = game.players.filter(p => !game.eliminatedIds.includes(p.id));
+
+  if (alivePlayers.length <= 1) {
+    game.status = 'finished';
+    game.roundWinnerId = alivePlayers[0]?.id || null;
+    return;
+  }
+
+  const deck = createDeck();
+  const dealSlots = alivePlayers.length === 2 ? 3 : alivePlayers.length;
+  const hands = Array.from({ length: dealSlots }, () => []);
+
+  deck.forEach((card, index) => hands[index % dealSlots].push(card));
+
+  alivePlayers.forEach((p, index) => {
+    p.hand = sortHand(hands[index]);
+    p.active = true;
+  });
+
+  if (alivePlayers.length === 2) {
+    game.burned = hands[2];
+  } else {
+    game.burned = [];
+  }
+
+  const starterId = game.roundWinnerId;
+  const starter = alivePlayers.find(p => p.id === starterId) || alivePlayers[0];
+
+  game.status = 'playing';
+  game.currentPlayerId = starter.id;
+  game.roundStarterId = starter.id;
+  game.lastPlayedPlayerId = null;
+  game.table = null;
+  game.passedPlayerIds = [];
+  game.places = [];
+  game.loserId = null;
+}
