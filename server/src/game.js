@@ -377,6 +377,13 @@ export function nextRound(game) {
     p.active = true;
   });
 
+  game.players
+  .filter(p => game.eliminatedIds.includes(p.id))
+  .forEach(p => {
+    p.hand = [];
+    p.active = false;
+  });
+  
   if (alivePlayers.length === 2) {
     game.burned = hands[2];
   } else {
