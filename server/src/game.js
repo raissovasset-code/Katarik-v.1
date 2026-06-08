@@ -353,11 +353,12 @@ export function publicGameState(game, viewerId) {
     hand: me ? me.hand : [],
 
     players: game.players.map(p => ({
-      id: p.id,
-      name: p.name,
-      active: p.active,
-      handCount: p.hand.length,
-    })),
+  id: p.id,
+  name: p.name,
+  active: p.active,
+  handCount: p.hand.length,
+  pogonRank: p.pogonRank,
+})),
 
     burned: undefined,
   };
