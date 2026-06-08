@@ -105,9 +105,13 @@ ws.onmessage = (event) => {
   if (msg.type === "state") {
     selectedCards = [];
 
-    const players = msg.game.players.map(p =>
-      "- " + p.name + " — карт: " + (p.handCount ?? 0)
-    ).join("<br>");
+    const players = msg.game.players.map(p => {
+  const eliminated = msg.game.eliminatedIds?.includes(p.id);
+
+  return eliminated
+    ? "❌ " + p.name + " — вылетел"
+    : "- " + p.name + " — карт: " + (p.handCount ?? 0);
+}).join("<br>");
 
 const currentPlayer = msg.game.players.find(p => p.id === msg.game.currentPlayerId);
 const turnText = currentPlayer ? currentPlayer.name : "не определён";
