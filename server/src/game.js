@@ -106,6 +106,36 @@ export function pass(game, playerId) {
 export function playCards(game, playerId, cardIds, declaredRanks = {}) {
   ensureTurn(game, playerId);
   const player = game.players.find(p => p.id === playerId);
+  if (hasOnlyDVK(player)) {
+
+  if (game.mode === 'elimination') {
+
+    if (!game.eliminatedIds.includes(player.id)) {
+      game.eliminatedIds.push(player.id);
+    }
+
+    player.active = false;
+
+    const alive = game.players.filter(
+      p => !game.eliminatedIds.includes(p.id)
+    );
+
+    if (alive.length === 1) {
+      game.roundWinnerId = alive[0].id;
+      game.status = 'finished';
+    } else {
+      game.status = 'round_finished';
+    }
+
+  } else {
+
+    game.loserId = player.id;
+    game.status = 'finished';
+
+  }
+
+  return;
+}
   const cards = cardIds.map(id => player.hand.find(c => c.id === id));
   if (cards.some(c => !c)) throw new Error('Карты не найдены в руке');
 
@@ -188,6 +218,13 @@ function nextActivePlayerId(game, fromPlayerId) {
     if (next.active) return next.id;
   }
   return null;
+}
+
+function hasOnlyDVK(player) {
+  return (
+    player.hand.length === 1 &&
+    player.hand[0]?.type === 'wild'
+  );
 }
 
 function ensureTurn(game, playerId) {
