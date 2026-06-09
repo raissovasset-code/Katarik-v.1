@@ -404,7 +404,7 @@ wss.on('connection', ws => {
         const player = { id: msg.playerId, name: msg.name || 'Игрок' };
         addPlayer(game, player);
 
-        sockets.set(ws, { roomId: code, playerId: player.id });
+        bindPlayerSocket(ws, code, player.id);
 
         sendTo(ws, { type: 'roomCreated', roomId: code });
         broadcast(code);
