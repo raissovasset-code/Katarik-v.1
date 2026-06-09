@@ -496,5 +496,13 @@ if (msg.type === 'nextRound') {
     }
   });
 
-  ws.on('close', () => sockets.delete(ws));
+  ws.on('close', () => {
+  const meta = sockets.get(ws);
+
+  if (meta?.playerId && playerSockets.get(meta.playerId) === ws) {
+    playerSockets.delete(meta.playerId);
+  }
+
+  sockets.delete(ws);
+});
 });
