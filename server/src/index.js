@@ -77,6 +77,7 @@ app.get("/", (req, res) => {
 </div>
 
   <input id="name" placeholder="Твоё имя" />
+<div id="tgName" class="box" style="display:none"></div>
   <div class="box">
   <b>Режим игры</b><br><br>
 
@@ -122,6 +123,11 @@ const playerId = tgUser?.id
 
 if (tgUser?.first_name) {
   document.getElementById("name").value = tgUser.first_name;
+  document.getElementById("name").style.display = "none";
+
+  document.getElementById("tgName").style.display = "block";
+  document.getElementById("tgName").innerText =
+    "Игрок: " + tgUser.first_name;
 }
 let selectedCards = [];
 
