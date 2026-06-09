@@ -127,6 +127,14 @@ const playerId = tgUser?.id
   ? String(tgUser.id)
   : localStorage.playerId || (localStorage.playerId = Math.random().toString(36).slice(2));
 
+  const params = new URLSearchParams(window.location.search);
+const roomFromLink = params.get("room");
+
+if (roomFromLink) {
+  document.getElementById("room").value = roomFromLink.toUpperCase();
+  localStorage.roomId = roomFromLink.toUpperCase();
+}
+
 if (tgUser?.first_name) {
   document.getElementById("name").value = tgUser.first_name;
   document.getElementById("name").style.display = "none";
