@@ -130,7 +130,7 @@ ws.onopen = () => {
 
   document.getElementById("status").innerText = "Подключено к серверу";
 
-  const savedRoom = sessionStorage.roomId;
+  const savedRoom = localStorage.roomId;
 
   if (savedRoom) {
 
