@@ -128,7 +128,9 @@ const playerId = tgUser?.id
   : localStorage.playerId || (localStorage.playerId = Math.random().toString(36).slice(2));
 
   const params = new URLSearchParams(window.location.search);
-const roomFromLink = params.get("room");
+const roomFromLink =
+  tg?.initDataUnsafe?.start_param ||
+  params.get("room");
 
 if (roomFromLink) {
   document.getElementById("room").value = roomFromLink.toUpperCase();
@@ -375,7 +377,7 @@ function copyInvite() {
   const roomId = document.getElementById("room").value;
 
   const link =
-    location.origin + "?room=" + roomId;
+  "https://t.me/katarik_game_bot?startapp=" + roomId;
 
   navigator.clipboard.writeText(link);
 
