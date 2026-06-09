@@ -134,9 +134,10 @@ ws.onmessage = (event) => {
   const msg = JSON.parse(event.data);
 
   if (msg.type === "roomCreated") {
-    document.getElementById("room").value = msg.roomId;
-    document.getElementById("status").innerText = "Комната создана: " + msg.roomId;
-  }
+  document.getElementById("room").value = msg.roomId;
+  sessionStorage.roomId = msg.roomId;
+  document.getElementById("status").innerText = "Комната создана: " + msg.roomId;
+}
 
   if (msg.type === "state") {
     selectedCards = [];
