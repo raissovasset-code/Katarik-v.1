@@ -115,6 +115,12 @@ function showRules() {
 }
 
 const tg = window.Telegram?.WebApp;
+
+if (tg) {
+  tg.expand();
+  tg.ready();
+}
+
 const tgUser = tg?.initDataUnsafe?.user;
 
 const playerId = tgUser?.id
