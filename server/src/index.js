@@ -284,6 +284,7 @@ const loser = msg.game.loserId
   : "";
     document.getElementById("game").innerHTML =
       "<b>Комната:</b> " + (msg.game.roomId || msg.game.id || document.getElementById("room").value) + "<br><br>" +
+      "<button onclick='copyInvite()'>Пригласить друга</button><br><br>" +
       "<b>Статус:</b> " + msg.game.status + "<br><br>" +
       winners +
 loser +
