@@ -113,7 +113,16 @@ function showRules() {
       : "none";
 }
 
-const playerId = sessionStorage.playerId || (sessionStorage.playerId = Math.random().toString(36).slice(2));
+const tg = window.Telegram?.WebApp;
+const tgUser = tg?.initDataUnsafe?.user;
+
+const playerId = tgUser?.id
+  ? String(tgUser.id)
+  : localStorage.playerId || (localStorage.playerId = Math.random().toString(36).slice(2));
+
+if (tgUser?.first_name) {
+  document.getElementById("name").value = tgUser.first_name;
+}
 let selectedCards = [];
 
 const ws = new WebSocket(
