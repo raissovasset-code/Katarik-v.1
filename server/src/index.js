@@ -371,6 +371,16 @@ function passTurn() {
   });
 }
 
+function copyInvite() {
+  const roomId = document.getElementById("room").value;
+
+  const link =
+    location.origin + "?room=" + roomId;
+
+  navigator.clipboard.writeText(link);
+
+  alert("Ссылка скопирована");
+}
 </script>
 </body>
 </html>
