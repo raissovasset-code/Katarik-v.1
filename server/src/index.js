@@ -396,15 +396,46 @@ wss.on('connection', ws => {
       }
 
       if (msg.type === 'joinRoom') {
-        const game = rooms.get(msg.roomId);
-        if (!game) throw new Error('Комната не найдена');
 
-        const player = { id: msg.playerId, name: msg.name || 'Игрок' };
-        addPlayer(game, player);
+  const game = rooms.get(msg.roomId);
 
-        sockets.set(ws, { roomId: msg.roomId, playerId: player.id });
-        broadcast(msg.roomId);
-      }
+  if (!game) {
+    throw new Error('Комната не найдена');
+  }
+
+  const existingPlayer = game.players.find(
+    p => p.id === msg.playerId
+  );
+
+  if (existingPlayer) {
+
+    sockets.set(ws, {
+      roomId: msg.roomId,
+      playerId: existingPlayer.id
+    });
+
+    broadcast(msg.roomId);
+    return;
+  }
+
+  if (game.status !== 'lobby') {
+    throw new Error('Игра уже началась');
+  }
+
+  const player = {
+    id: msg.playerId,
+    name: msg.name || 'Игрок'
+  };
+
+  addPlayer(game, player);
+
+  sockets.set(ws, {
+    roomId: msg.roomId,
+    playerId: player.id
+  });
+
+  broadcast(msg.roomId);
+}
 
       if (msg.type === 'startGame') {
         const game = rooms.get(meta.roomId);
