@@ -127,7 +127,22 @@ function send(data) {
 }
 
 ws.onopen = () => {
+
   document.getElementById("status").innerText = "Подключено к серверу";
+
+  const savedRoom = sessionStorage.roomId;
+
+  if (savedRoom) {
+
+    document.getElementById("room").value = savedRoom;
+
+    send({
+      type: "joinRoom",
+      playerId,
+      name: document.getElementById("name").value || "Игрок",
+      roomId: savedRoom
+    });
+  }
 };
 
 ws.onmessage = (event) => {
@@ -274,11 +289,15 @@ function createRoom() {
 }
 
 function joinRoom() {
+  const roomId = document.getElementById("room").value.trim().toUpperCase();
+
+  sessionStorage.roomId = roomId;
+
   send({
     type: "joinRoom",
     playerId,
     name: document.getElementById("name").value || "Игрок",
-    roomId: document.getElementById("room").value.trim().toUpperCase()
+    roomId
   });
 }
 
