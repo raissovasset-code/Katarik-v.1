@@ -173,6 +173,7 @@ ws.onmessage = (event) => {
   document.getElementById("room").value = msg.roomId;
   sessionStorage.roomId = msg.roomId;
   document.getElementById("status").innerText = "Комната создана: " + msg.roomId;
+  window.history.replaceState(null, "", "?room=" + msg.roomId);
 }
 
   if (msg.type === "state") {
