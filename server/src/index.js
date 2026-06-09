@@ -424,10 +424,7 @@ wss.on('connection', ws => {
 
   if (existingPlayer) {
 
-    sockets.set(ws, {
-      roomId: msg.roomId,
-      playerId: existingPlayer.id
-    });
+    bindPlayerSocket(ws, msg.roomId, existingPlayer.id);
 
     broadcast(msg.roomId);
     return;
