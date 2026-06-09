@@ -350,6 +350,7 @@ const server = app.listen(3001, () => console.log('Katarik server on :3001'));
 const wss = new WebSocketServer({ server });
 const rooms = new Map();
 const sockets = new Map();
+const playerSockets = new Map();
 
 function roomCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -357,6 +358,20 @@ function roomCode() {
 
 function sendTo(ws, data) {
   ws.send(JSON.stringify(data));
+}
+
+function bindPlayerSocket(ws, roomId, playerId) {
+  const oldWs = playerSockets.get(playerId);
+
+  if (oldWs && oldWs !== ws) {
+    try {
+      oldWs.close();
+    } catch (e) {}
+    sockets.delete(oldWs);
+  }
+
+  playerSockets.set(playerId, ws);
+  sockets.set(ws, { roomId, playerId });
 }
 
 function broadcast(roomId) {
