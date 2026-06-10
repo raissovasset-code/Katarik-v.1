@@ -320,16 +320,27 @@ const loser = msg.game.loserId
 loser +
       "<b>Ходит:</b> " + turnText + "<br><br>" +
       "<b>Игроки:</b><br>" + players + "<br><br>" +
-      "<b>Стол:</b><br>" + tableCards + "<br><br>" +
-      (
+      "<div class='game-area'>" +
+"<b>Стол:</b><br>" + tableCards +
+"</div>" +
+
+(
         msg.game.status === "lobby"
   ? "<button onclick='startGame()'>Начать игру</button>"
   : msg.game.status === "round_finished"
     ? "<button onclick='nextRound()'>Следующий кон</button>"
     : msg.game.status === "finished"
       ? "<button onclick='restartGame()'>Играть заново</button>"
-      : "<b>Мои карты:</b><br>" + myCards + "<br><br><button onclick='playSelected()'>Походить</button>" +
-        "<button onclick='passTurn()'>Пас</button>"
+      : "<div class='hand-fixed'>" +
+    "<b>Мои карты:</b><br>" +
+    "<div class='hand-cards'>" + myCards + "</div><br>" +
+
+    "<div class='action-row'>" +
+      "<button onclick='playSelected()'>Походить</button>" +
+      "<button onclick='passTurn()'>Пас</button>" +
+    "</div>" +
+
+  "</div>"
       );
   }
 
