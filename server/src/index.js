@@ -44,6 +44,34 @@ app.get("/", (req, res) => {
   transform: translateY(-14px);
   border: 3px solid #fff;
 }
+.game-area {
+  padding-bottom: 170px;
+}
+
+.hand-fixed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #111;
+  border-top: 1px solid #333;
+  padding: 10px;
+  z-index: 10;
+}
+
+.hand-cards {
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.action-row {
+  display: flex;
+  gap: 8px;
+}
+
+.action-row button {
+  flex: 1;
+}
   </style>
 </head>
 <body>
