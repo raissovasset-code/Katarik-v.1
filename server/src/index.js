@@ -32,7 +32,7 @@ transition: 0.15s;
   border: 2px solid #ddd;
   font-size: 20px;
   font-weight: bold;
-  margin: 4px;
+  margin: 4px 0 4px -18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
