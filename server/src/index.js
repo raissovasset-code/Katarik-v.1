@@ -21,6 +21,9 @@ app.get("/", (req, res) => {
     input { box-sizing:border-box; }
     .box { background:#222; padding:15px; border-radius:12px; margin-top:15px; }
   .card {
+  margin-right: -18px;
+transition: 0.15s;
+
   width: 58px;
   height: 82px;
   background: white;
@@ -40,6 +43,9 @@ app.get("/", (req, res) => {
 }
 
 .card.selected {
+margin-right: -18px;
+z-index: 5;
+position: relative;
   background: #f59e0b !important;
   transform: translateY(-14px);
   border: 3px solid #fff;
