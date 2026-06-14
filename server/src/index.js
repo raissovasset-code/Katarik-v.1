@@ -124,6 +124,10 @@ position: relative;
 .player-pill.turn {
   outline: 2px solid #22c55e;
 }
+
+.table-card {
+  transform: rotate(calc(var(--r) * 1deg));
+}
   </style>
 </head>
 <body>
@@ -302,9 +306,11 @@ const tableCards = msg.game.table?.cards
           ? "⭐"
         : c.rank + (suitMap[c.suit] || "");
 
-      return "<span class='card " +
+      return "<span class='card table-card " +
         ((c.suit === "H" || c.suit === "D") ? "red" : "") +
-        "'>" + label + "</span>";
+        "' style='--r:" + ((Math.random() * 16) - 8) + "'>" +
+label +
+"</span>";
 
     }).join(" ")
   : "Пусто";
