@@ -295,21 +295,22 @@ button {
 }
 
 .hand-fan {
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  min-height: 140px;
-  padding: 0 30px;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 0;
+  min-height: 210px;
+  padding: 0 10px;
+  align-items: end;
 }
 
 .playing-card {
-  width: 74px;
-  height: 108px;
+  width: 72px;
+  height: 104px;
   border-radius: 16px;
   background: linear-gradient(180deg, #ffffff, #ececec);
   color: #111;
   border: 2px solid rgba(0,0,0,0.08);
-  margin-left: -24px;
+  margin-left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -321,10 +322,6 @@ button {
     box-shadow 0.18s;
   box-shadow:
     0 8px 18px rgba(0,0,0,0.25);
-}
-
-.playing-card:first-child {
-  margin-left: 0;
 }
 
 .playing-card.red {
@@ -407,9 +404,9 @@ button {
 
 @media (max-width: 700px) {
   .playing-card {
-    width: 62px;
-    height: 92px;
-    font-size: 22px;
+    width: 66px;
+    height: 98px;
+    font-size: 24px;
   }
 
   .hand-fan {
