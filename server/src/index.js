@@ -370,10 +370,28 @@ const loser = msg.game.loserId
       "<b>Статус:</b> " + msg.game.status + "<br><br>" +
       winners +
 loser +
-      "<b>Ходит:</b> " + turnText + "<br><br>" +
-      "<b>Игроки:</b><br>" + players + "<br><br>" +
-      "<div class='game-area'>" +
-"<b>Стол:</b><br>" + tableCards +
+      "<div class='table-ui'>" +
+
+  "<div class='turn-badge'>Ходит: <b>" + turnText + "</b></div>" +
+
+  "<div class='players-row'>" +
+    msg.game.players.map(p => {
+      const eliminated = msg.game.eliminatedIds?.includes(p.id);
+      const isTurn = p.id === msg.game.currentPlayerId;
+
+      return "<div class='player-pill " + (isTurn ? "turn" : "") + "'>" +
+        (eliminated
+          ? "❌ " + p.name
+          : p.name + " · " + (p.handCount ?? 0) + " карт"
+        ) +
+      "</div>";
+    }).join("") +
+  "</div>" +
+
+  "<div class='table-center'>" +
+    tableCards +
+  "</div>" +
+
 "</div>" +
 
 (
