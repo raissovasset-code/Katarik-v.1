@@ -78,6 +78,52 @@ position: relative;
 .action-row button {
   flex: 1;
 }
+.table-ui {
+  background: radial-gradient(circle, #126b34 0%, #06451f 70%);
+  border: 10px solid #5b2f12;
+  border-radius: 28px;
+  padding: 20px;
+  min-height: 360px;
+  box-shadow: inset 0 0 40px #000, 0 0 30px #000;
+}
+
+.turn-badge {
+  background: rgba(0,0,0,0.55);
+  padding: 10px 16px;
+  border-radius: 999px;
+  text-align: center;
+  margin: 10px auto 20px;
+  width: fit-content;
+}
+
+.table-center {
+  text-align: center;
+  min-height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.players-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.player-pill {
+  background: rgba(0,0,0,0.55);
+  border-radius: 14px;
+  padding: 8px 12px;
+  font-size: 15px;
+}
+
+.player-pill.turn {
+  outline: 2px solid #22c55e;
+}
   </style>
 </head>
 <body>
