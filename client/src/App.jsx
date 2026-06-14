@@ -29,6 +29,7 @@ function App() {
   const [game, setGame] = useState(null);
   const [selected, setSelected] = useState([]);
   const [error, setError] = useState('');
+  const [demoHand, setDemoHand] = useState(false);
   const wsRef = useRef(null);
 
   useEffect(() => {
@@ -220,7 +221,7 @@ function App() {
         </div>
 
         <div className="hand-fan">
-          {game.hand?.map((card, index) => (
+  {(demoHand ? demoCards : game.hand)?.map((card, index) => (
             <Card
               key={card.id}
               card={card}
@@ -239,6 +240,10 @@ function App() {
           <button disabled={!isMyTurn || !game.table} onClick={() => send('pass')}>
             Пас
           </button>
+          
+          <button onClick={() => setDemoHand(v => !v)}>
+  Демо рука
+</button>
         </div>
 
         <div className={isMyTurn ? 'hint your-turn' : 'hint'}>
@@ -251,7 +256,26 @@ function App() {
   );
 }
 
-function PlayerBadge({ player, game, position }) {
+const demoCards = [
+  { id: '4D', rank: '4', suit: 'D' },
+  { id: '4S', rank: '4', suit: 'S' },
+  { id: '5C', rank: '5', suit: 'C' },
+  { id: '6C', rank: '6', suit: 'C' },
+  { id: '6S', rank: '6', suit: 'S' },
+  { id: '7H', rank: '7', suit: 'H' },
+  { id: '8H', rank: '8', suit: 'H' },
+  { id: '10C', rank: '10', suit: 'C' },
+  { id: 'JH', rank: 'J', suit: 'H' },
+  { id: 'QS', rank: 'Q', suit: 'S' },
+  { id: 'KD', rank: 'K', suit: 'D' },
+  { id: 'AS', rank: 'A', suit: 'S' },
+  { id: '2D', rank: '2', suit: 'D' },
+  { id: '3S', rank: '3', suit: 'S' },
+  { id: 'RED_JOKER', rank: 'RED_JOKER', suit: null },
+  { id: 'DVK', rank: 'DVK', suit: null },
+];
+
+      function PlayerBadge({ player, game, position }) {
   const isTurn = player.id === game.currentPlayerId;
   const eliminated = game.eliminatedIds?.includes(player.id);
 
