@@ -157,7 +157,7 @@ button {
   position: relative;
 
   width: 100%;
-  height: 58vh;
+  height: 66vh;
 
   background-image: url('/table.png');
   background-size: 100% 100%;
@@ -201,14 +201,6 @@ button {
       rgba(0,0,0,0.28) 100%);
 
   pointer-events: none;
-}
-
-.table-shell::before {
-  content: "";
-  position: absolute;
-  inset: 12px;
-  border-radius: 24px;
-  border: 2px solid rgba(255,255,255,0.06);
 }
 
 .turn-pill {
@@ -309,12 +301,25 @@ button {
 }
 
 .my-zone {
-  height: 38vh;
-  padding: 10px 12px 18px;
-  z-index: 5;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 42vh;
+  padding: 8px 12px 16px;
+  z-index: 20;
+
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+
+  background: linear-gradient(
+    180deg,
+    rgba(2,27,16,0) 0%,
+    rgba(2,27,16,0.95) 32%,
+    #021b10 100%
+  );
 }
 
 .me-badge {
@@ -397,14 +402,6 @@ border-color:
     0 18px 30px rgba(0,0,0,0.45);
 }
 
-.table-area {
-  position: relative;
-
-  min-height: 58vh;
-
-  margin-top: 12px;
-}
-
 .playing-card.table-card {
   margin-left: -18px;
 }
@@ -421,11 +418,12 @@ border-color:
 
 .action-bar button {
   flex: 1;
-  padding: 16px;
+  height: 58px;
   border-radius: 18px;
   background: linear-gradient(180deg, #22c55e, #15803d);
   color: white;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
 }
 
 .action-bar button:disabled {
