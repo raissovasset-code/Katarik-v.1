@@ -221,17 +221,21 @@ function App() {
         </div>
 
         <div className="hand-fan">
-  {(demoHand ? demoCards : game.hand)?.map((card, index) => (
-            <Card
-              key={card.id}
-              card={card}
-              selected={selected.includes(card.id)}
-              onClick={() => toggle(card.id)}
-              index={index}
-              total={game.hand.length}
-            />
-          ))}
-        </div>
+  {chunkCards(demoHand ? demoCards : game.hand, 8).map((row, rowIndex) => (
+    <div className="hand-row" key={rowIndex}>
+      {row.map((card, index) => (
+        <Card
+          key={card.id}
+          card={card}
+          selected={selected.includes(card.id)}
+          onClick={() => toggle(card.id)}
+          index={index}
+          total={row.length}
+        />
+      ))}
+    </div>
+  ))}
+</div>
 
         <div className="action-bar">
           <button disabled={!isMyTurn || selected.length === 0} onClick={play}>
