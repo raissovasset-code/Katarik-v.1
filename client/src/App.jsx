@@ -314,9 +314,15 @@ function Card({ card, selected, onClick, table, index = 0, total = 1 }) {
 
   const fanOffset = total > 1 ? index - (total - 1) / 2 : 0;
 
-  const style = table
-    ? { transform: `rotate(${(index - 1) * 7}deg)` }
-    : { transform: `translateX(${fanOffset * -10}px) rotate(${fanOffset * 3}deg)` };
+  const rotate = table
+  ? (index - 1) * 7
+  : (index - (total - 1) / 2) * 4;
+
+const style = {
+  transform: table
+    ? `rotate(${rotate}deg)`
+    : `translateX(${(index - (total - 1) / 2) * -8}px) rotate(${rotate}deg)`
+};
 
   return (
     <button
