@@ -312,6 +312,7 @@ button {
   height: 128px;
   border-radius: 18px;
   background: linear-gradient(180deg, #ffffff, #ececec);
+  cursor: pointer;
   color: #111;
   border: 2px solid rgba(0,0,0,0.08);
   margin-left: -10px;
@@ -327,6 +328,10 @@ button {
     0 10px 20px rgba(0,0,0,0.28);
 }
 
+.playing-card:active {
+  transform: scale(0.96);
+}
+
 .hand-fan .playing-card:nth-child(odd) {
   transform: translateY(-10px);
 }
@@ -340,7 +345,18 @@ button {
 }
 
 .playing-card.selected {
-  transform: translateY(-28px) scale(1.06) !important;
+  transform:
+    translateY(-34px)
+    scale(1.12) !important;
+
+  z-index: 20;
+
+  box-shadow:
+    0 0 24px rgba(255,255,255,0.45),
+    0 18px 30px rgba(0,0,0,0.45);
+
+  border-color: rgba(255,255,255,0.8);
+}
 
 .playing-card.table-card {
   margin-left: -18px;
