@@ -362,6 +362,14 @@ border-color:
     0 18px 30px rgba(0,0,0,0.45);
 }
 
+.table-area {
+  position: relative;
+
+  min-height: 58vh;
+
+  margin-top: 12px;
+}
+
 .playing-card.table-card {
   margin-left: -18px;
 }
