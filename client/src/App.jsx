@@ -221,7 +221,7 @@ function App() {
         </div>
 
         <div className="hand-fan">
-  {chunkCards(demoHand ? demoCards : game.hand, 8).map((row, rowIndex) => (
+  {splitHandRows(demoHand ? demoCards : game.hand).map((row, rowIndex) => (
     <div className="hand-row" key={rowIndex}>
       {row.map((card, index) => (
         <Card
@@ -293,6 +293,19 @@ const demoCards = [
       </div>
     </div>
   );
+}
+
+function splitHandRows(cards = []) {
+  if (cards.length <= 10) {
+    return [cards];
+  }
+
+  const firstRowCount = Math.ceil(cards.length / 2);
+
+  return [
+    cards.slice(0, firstRowCount),
+    cards.slice(firstRowCount)
+  ];
 }
 
 function Card({ card, selected, onClick, table, index = 0, total = 1 }) {
