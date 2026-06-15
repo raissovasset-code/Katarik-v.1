@@ -346,8 +346,8 @@ button {
 
 .playing-card.selected {
   transform:
-    translateY(-34px)
-    scale(1.12) !important;
+    translateY(-42px)
+    scale(1.08) !important;
 
   z-index: 20;
 
