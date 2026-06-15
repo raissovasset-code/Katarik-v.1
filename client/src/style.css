@@ -160,7 +160,7 @@ button {
 
   margin: 0 12px;
 
-  border-radius: 42px;
+  border-radius: 90px;
 
   background:
     radial-gradient(circle at center,
@@ -177,6 +177,15 @@ button {
     0 18px 40px rgba(0,0,0,0.55);
 
   overflow: hidden;
+
+  transform: perspective(1200px) rotateX(4deg);
+
+  background:
+  radial-gradient(circle at center,
+    #2cb565 0%,
+    #178545 40%,
+    #0b4e2a 72%,
+    #052515 100%);
 }
 
 .table-shell::before {
@@ -186,7 +195,7 @@ button {
 
   inset: 10px;
 
-  border-radius: 34px;
+  border-radius: 78px;
 
   border:
     2px solid rgba(255,255,255,0.08);
