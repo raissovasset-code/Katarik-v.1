@@ -154,38 +154,20 @@ button {
 }
 
 .table-shell {
-  height: 52vh;
-
   position: relative;
+  width: 100%;
+  height: 62vh;
 
-  margin: 0 12px;
+  background-image: url('/table.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 
-  border-radius: 90px;
+  margin: 0 auto;
 
-  background:
-    radial-gradient(circle at center,
-      #239b56 0%,
-      #15703d 45%,
-      #0a3f22 100%);
-
-  border:
-    14px solid #5a2d12;
-
-  box-shadow:
-    inset 0 0 80px rgba(0,0,0,0.55),
-    inset 0 0 25px rgba(255,255,255,0.05),
-    0 18px 40px rgba(0,0,0,0.55);
-
-  overflow: hidden;
-
-  transform: perspective(1200px) rotateX(4deg);
-
-  background:
-  radial-gradient(circle at center,
-    #2cb565 0%,
-    #178545 40%,
-    #0b4e2a 72%,
-    #052515 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .table-shell::before {
