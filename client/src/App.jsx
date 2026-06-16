@@ -279,17 +279,26 @@ const demoCards = [
   { id: 'DVK', rank: 'DVK', suit: null },
 ];
 
-      function PlayerBadge({ player, game, position }) {
+function PlayerBadge({ player, game, position }) {
   const isTurn = player.id === game.currentPlayerId;
   const eliminated = game.eliminatedIds?.includes(player.id);
+  const count = player.handCount ?? 0;
 
   return (
-    <div className={`opponent opponent-${position} ${isTurn ? 'turn' : ''} ${eliminated ? 'eliminated' : ''}`}>
-      <div className="avatar">{player.name?.[0] || '?'}</div>
-      <div>
-        <b>{player.name}</b>
-        <span>{eliminated ? 'вылетел' : `${player.handCount ?? 0} карт`}</span>
-        {game.mode === 'pogoni' && <small>Погон: {player.pogonRank}</small>}
+    <div className={`seat seat-${position} ${isTurn ? 'turn' : ''} ${eliminated ? 'eliminated' : ''}`}>
+      <div className="opponent-backs">
+        {Array.from({ length: Math.min(count, 7) }).map((_, i) => (
+          <span key={i} className="card-back" />
+        ))}
+      </div>
+
+      <div className="seat-info">
+        <div className="avatar">{player.name?.[0] || '?'}</div>
+        <div>
+          <b>{player.name}</b>
+          <span>{eliminated ? 'вылетел' : `${count} карт`}</span>
+          {game.mode === 'pogoni' && <small>Погон: {player.pogonRank}</small>}
+        </div>
       </div>
     </div>
   );
