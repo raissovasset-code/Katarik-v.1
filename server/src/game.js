@@ -157,17 +157,22 @@ export function playCards(game, playerId, cardIds, declaredRanks = {}) {
   game.places.push(playerId);
 
   if (game.mode === 'pogoni') {
-    const pogonResult = checkPogon(player, cards);
+  const pogonResult = checkPogon(game, player, cards);
 
-    if (pogonResult.success) {
-      player.pogonRank = pogonResult.nextRank;
-
-      game.status = pogonResult.finished ? 'finished' : 'round_finished';
-      game.roundWinnerId = playerId;
-      player.active = false;
-      return;
-    }
+  if (pogonResult.success) {
+    player.pogonRank = pogonResult.nextRank;
   }
+
+  if (player.hand.length === 0) {
+    game.status = pogonResult.finished ? 'finished' : 'round_finished';
+
+    // победитель кона = кто первым вышел
+    game.roundWinnerId = game.places[0] || playerId;
+
+    player.active = false;
+    return;
+  }
+}
 
   player.active = false;
 }
@@ -206,11 +211,7 @@ if (remaining.length === 1) {
   return;
 }
 
-if (combo.type === 'quad' && combo.high === RANK_VALUE['3']) {
-  finishTrick(game);
-} else {
-  game.currentPlayerId = nextActivePlayerId(game, playerId);
-}
+game.currentPlayerId = nextActivePlayerId(game, playerId);
 }
 
 function finishTrick(game) {
@@ -330,9 +331,6 @@ function detectDoubleStraight(cards, declaredRanks) {
 
 export function canBeat(prev, next) {
   if (!prev) return true;
-
-  // 3333 не бьётся ничем
-  if (prev.type === 'quad' && prev.high === RANK_VALUE['3']) return false;
 
   // красный джокер одиночный бьётся только каре
   if (prev.type === 'single' && prev.high === RANK_VALUE.RED_JOKER) {
@@ -467,9 +465,13 @@ if (game.mode === 'elimination') {
   game.loserId = null;
 }
 
-function checkPogon(player, cards) {
+function checkPogon(game, player, cards) {
   const pogonOrder = ['4','5','6','7','8','9','10','J','Q','K','A'];
   const current = player.pogonRank || '4';
+  // погон только если игрок забрал ход
+if (!game.table || game.lastPlayedPlayerId !== player.id) {
+  return { success: false };
+}
 
   if (!cards.length) {
     return { success: false };
