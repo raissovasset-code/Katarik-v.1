@@ -493,3 +493,90 @@ border-color:
     margin: 0 8px;
   }
 }
+
+.seat {
+  position: absolute;
+  z-index: 25;
+}
+
+.seat-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  background: rgba(0,0,0,0.58);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 8px 10px;
+
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+}
+
+.seat-info span,
+.seat-info small {
+  display: block;
+  opacity: 0.75;
+  font-size: 12px;
+}
+
+.seat.turn .seat-info {
+  border-color: rgba(80,255,140,0.95);
+  box-shadow:
+    0 0 18px rgba(80,255,140,0.35),
+    0 8px 18px rgba(0,0,0,0.35);
+}
+
+.seat.eliminated {
+  opacity: 0.45;
+}
+
+.opponent-backs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: -6px;
+}
+
+.card-back {
+  width: 30px;
+  height: 44px;
+  margin-left: -12px;
+  border-radius: 6px;
+
+  background:
+    linear-gradient(135deg, #0f3d25, #0b2618);
+
+  border: 1px solid rgba(255,255,255,0.5);
+
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+}
+
+.card-back:first-child {
+  margin-left: 0;
+}
+
+.seat-0 {
+  top: 9%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.seat-1 {
+  top: 37%;
+  right: 4%;
+}
+
+.seat-2 {
+  top: 37%;
+  left: 4%;
+}
+
+.seat-3 {
+  top: 20%;
+  right: 8%;
+}
+
+.seat-4 {
+  top: 20%;
+  left: 8%;
+}
