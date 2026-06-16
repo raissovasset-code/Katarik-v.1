@@ -286,14 +286,9 @@ function PlayerBadge({ player, game, position }) {
 
   return (
     <div className={`seat seat-${position} ${isTurn ? 'turn' : ''} ${eliminated ? 'eliminated' : ''}`}>
-      <div className="opponent-backs">
-        {Array.from({ length: Math.min(count, 7) }).map((_, i) => (
-          <span key={i} className="card-back" />
-        ))}
-      </div>
-
       <div className="seat-info">
         <div className="avatar">{player.name?.[0] || '?'}</div>
+
         <div>
           <b>{player.name}</b>
           <span>{eliminated ? 'вылетел' : `${count} карт`}</span>
