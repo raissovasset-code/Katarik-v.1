@@ -318,7 +318,10 @@ function splitHandRows(cards = []) {
 }
 
 function Card({ card, selected, onClick, table, index = 0, total = 1 }) {
-  const red = card.suit === 'H' || card.suit === 'D';
+  const red =
+  card.suit === 'H' ||
+  card.suit === 'D' ||
+  card.rank === 'RED_JOKER';
   const label = cardLabel(card);
 
   const fanOffset = total > 1 ? index - (total - 1) / 2 : 0;
