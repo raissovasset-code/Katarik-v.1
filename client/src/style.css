@@ -578,3 +578,79 @@ border-color:
   top: 58%;
   left: 4%;
 }
+
+@media (orientation: landscape) {
+
+  .game-screen {
+    flex-direction: row;
+  }
+
+  .table-shell {
+    width: 72vw;
+    height: 100vh;
+
+    margin: 0;
+  }
+
+  .my-zone {
+    position: absolute;
+
+    left: auto;
+    right: 0;
+    top: 0;
+
+    width: 34vw;
+    height: 100vh;
+
+    padding: 12px;
+
+    background:
+      linear-gradient(
+        90deg,
+        rgba(2,27,16,0.1) 0%,
+        rgba(2,27,16,0.92) 24%,
+        #021b10 100%
+      );
+  }
+
+  .hand-fan {
+    transform: none;
+    margin-bottom: 18px;
+  }
+
+  .hand-row {
+    justify-content: flex-end;
+  }
+
+  .playing-card {
+    width: 78px;
+    height: 116px;
+
+    margin-left: -34px;
+  }
+
+  .action-bar {
+    flex-direction: column;
+  }
+
+  .action-bar button {
+    height: 58px;
+    font-size: 20px;
+  }
+
+  .topbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .top-actions,
+  .topbar button {
+    pointer-events: auto;
+  }
+
+}
