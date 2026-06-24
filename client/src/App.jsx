@@ -337,7 +337,11 @@ const style = {
       onClick={onClick}
       style={style}
     >
-      <span>{label}</span>
+      <img
+  src={`/cards/${cardImage(card)}`}
+  alt={label}
+  className="card-image"
+/>
     </button>
   );
 }
@@ -348,6 +352,14 @@ function cardLabel(card) {
   if (card.rank === 'DVK') return '⭐';
 
   return `${card.rank}${suit(card.suit)}`;
+}
+
+function cardImage(card) {
+  if (card.rank === 'BLACK_JOKER') return 'BLACK_JOKER.png';
+  if (card.rank === 'RED_JOKER') return 'RED_JOKER.png';
+  if (card.rank === 'DVK') return 'DVK.png';
+
+  return `${card.rank}${card.suit}.png`;
 }
 
 function suit(s) {
