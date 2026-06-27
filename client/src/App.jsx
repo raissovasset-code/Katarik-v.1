@@ -2,56 +2,109 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001';
+function defaultWsUrl() {
+  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  const host = isLocal ? `${window.location.hostname}:3001` : window.location.host;
 
-function getTelegramUser() {
-  const tg = window.Telegram?.WebApp;
+  return `${protocol}://${host}`;
+}
 
-  if (tg) {
-    tg.ready?.();
-    tg.expand?.();
+const WS_URL = import.meta.env.VITE_WS_URL || defaultWsUrl();
+const DESKTOP_GAME_WIDTH = 1600;
+const DESKTOP_GAME_HEIGHT = 900;
+const MIN_DESKTOP_SCALE = 0.72;
+
+function createLocalUser() {
+  const savedId = sessionStorage.getItem('katarik_user_id');
+  const id = savedId || createId();
+
+  if (!savedId) {
+    sessionStorage.setItem('katarik_user_id', id);
   }
 
-  const u = tg?.initDataUnsafe?.user;
-
   return {
-    id: u?.id ? String(u.id) : localStorage.getItem('katarik_user_id') || crypto.randomUUID(),
-    name: u?.first_name || localStorage.getItem('katarik_name') || 'Игрок',
+    id,
+    name: localStorage.getItem('katarik_name') || 'Игрок',
   };
 }
 
+function createId() {
+  if (crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return `player_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+function getRoomFromUrl() {
+  return new URLSearchParams(window.location.search).get('room')?.trim().toUpperCase() || '';
+}
+
+function getLayoutFromUrl() {
+  return new URLSearchParams(window.location.search).get('view') === 'mobile' ? 'mobile' : 'desktop';
+}
+
 function App() {
-  const user = useMemo(getTelegramUser, []);
-  const [roomId, setRoomId] = useState('');
-  const [joinCode, setJoinCode] = useState('');
+  const user = useMemo(createLocalUser, []);
+  const initialRoom = useMemo(getRoomFromUrl, []);
+  const initialLayout = useMemo(getLayoutFromUrl, []);
+  const [joinCode, setJoinCode] = useState(initialRoom);
   const [name, setName] = useState(user.name);
   const [mode, setMode] = useState('classic');
   const [game, setGame] = useState(null);
   const [selected, setSelected] = useState([]);
   const [error, setError] = useState('');
-  const [demoHand, setDemoHand] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [viewport, setViewport] = useState(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }));
   const wsRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem('katarik_user_id', user.id);
     localStorage.setItem('katarik_name', name);
-  }, [user.id, name]);
+  }, [name]);
+
+  useEffect(() => {
+    function updateViewport() {
+      setViewport({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
 
   useEffect(() => {
     const socket = new WebSocket(WS_URL);
     wsRef.current = socket;
 
+    socket.onopen = () => setConnected(true);
+
     socket.onmessage = event => {
       const msg = JSON.parse(event.data);
 
       if (msg.type === 'roomCreated') {
-        setRoomId(msg.roomId);
         setJoinCode(msg.roomId);
         localStorage.setItem('katarik_room', msg.roomId);
+        window.history.replaceState(null, '', `?room=${msg.roomId}`);
       }
 
       if (msg.type === 'state') {
         setGame(msg.game);
+        setSelected([]);
+      }
+
+      if (msg.type === 'leftRoom') {
+        setGame(null);
+        setSelected([]);
+        setJoinCode('');
+        localStorage.removeItem('katarik_room');
+        window.history.replaceState(null, '', window.location.pathname);
       }
 
       if (msg.type === 'error') {
@@ -60,7 +113,8 @@ function App() {
     };
 
     socket.onclose = () => {
-      setError('Соединение потеряно. Обнови игру.');
+      setConnected(false);
+      setError('Соединение потеряно. Обнови страницу.');
     };
 
     return () => socket.close();
@@ -69,7 +123,12 @@ function App() {
   function send(type, payload = {}) {
     setError('');
 
-    wsRef.current?.send(JSON.stringify({
+    if (wsRef.current?.readyState !== WebSocket.OPEN) {
+      setError('Нет соединения с сервером.');
+      return;
+    }
+
+    wsRef.current.send(JSON.stringify({
       type,
       playerId: user.id,
       name: name || user.name,
@@ -85,8 +144,20 @@ function App() {
     const code = joinCode.trim().toUpperCase();
     if (!code) return;
 
+    setJoinCode(code);
     localStorage.setItem('katarik_room', code);
+    window.history.replaceState(null, '', `?room=${code}`);
     send('joinRoom', { roomId: code });
+  }
+
+  async function copyInvite() {
+    const roomId = game?.roomId || joinCode;
+    if (!roomId) return;
+
+    const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
+    await navigator.clipboard.writeText(inviteUrl);
+    setInviteCopied(true);
+    window.setTimeout(() => setInviteCopied(false), 1500);
   }
 
   function toggle(cardId) {
@@ -102,99 +173,228 @@ function App() {
     setSelected([]);
   }
 
+  function leaveRoom() {
+    send('leaveRoom');
+  }
+
   const me = game?.players?.find(p => p.id === user.id);
   const isMyTurn = game?.currentPlayerId === user.id;
+  const isHost = game?.hostPlayerId === user.id;
   const currentPlayer = game?.players?.find(p => p.id === game.currentPlayerId);
+  const clockwiseOpponents = game ? getClockwiseOpponents(game.players, user.id) : [];
+  const canStartGame = isHost && game?.players?.length >= 2;
+  const isMobileLayout = initialLayout === 'mobile';
+  const gameScale = Math.max(
+    MIN_DESKTOP_SCALE,
+    Math.min(
+      1,
+      viewport.width / DESKTOP_GAME_WIDTH,
+      viewport.height / DESKTOP_GAME_HEIGHT
+    )
+  );
 
   if (!game) {
     return (
       <main className="welcome">
-        <div className="brand">
-          <div className="brand-cards">♠ ♥ ♦ ♣</div>
-          <h1>Катарик</h1>
-          <p>Онлайн-карточная игра для друзей</p>
-        </div>
-
-        <section className="panel">
-          <input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="Твоё имя"
-          />
-
-          <div className="mode-grid">
-            <button className={mode === 'classic' ? 'active' : ''} onClick={() => setMode('classic')}>
-              Обычный
-            </button>
-            <button className={mode === 'elimination' ? 'active' : ''} onClick={() => setMode('elimination')}>
-              На вылет
-            </button>
-            <button className={mode === 'pogoni' ? 'active' : ''} onClick={() => setMode('pogoni')}>
-              Погоны
-            </button>
+        <section className="welcome-card">
+          <div className="brand">
+            <div className="brand-mark">♠ ♥ ♦ ♣</div>
+            <h1>Катарик</h1>
+            <p>Онлайн-карточная игра для друзей</p>
           </div>
 
-          <button className="primary" onClick={createRoom}>Создать комнату</button>
+          <div className="lobby-form">
+            <label>
+              <span>Имя</span>
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Твое имя"
+              />
+            </label>
 
-          <div className="join-row">
-            <input
-              value={joinCode}
-              onChange={e => setJoinCode(e.target.value.toUpperCase())}
-              placeholder="Код комнаты"
-            />
-            <button onClick={joinRoom}>Войти</button>
+            <div className="mode-grid" aria-label="Режим игры">
+              <button className={mode === 'classic' ? 'active' : ''} onClick={() => setMode('classic')}>
+                Обычный
+              </button>
+              <button className={mode === 'elimination' ? 'active' : ''} onClick={() => setMode('elimination')}>
+                На вылет
+              </button>
+              <button className={mode === 'pogoni' ? 'active' : ''} onClick={() => setMode('pogoni')}>
+                Погоны
+              </button>
+            </div>
+
+            <button className="primary" disabled={!connected} onClick={createRoom}>
+              Создать комнату
+            </button>
+
+            <div className="join-row">
+              <input
+                value={joinCode}
+                onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                placeholder="Код комнаты"
+              />
+              <button disabled={!connected} onClick={joinRoom}>Войти</button>
+            </div>
+
+            <div className={connected ? 'connection online' : 'connection'}>
+              {connected ? 'Сервер подключен' : 'Подключение...'}
+            </div>
+
+            {error && <div className="toast error">{error}</div>}
           </div>
-
-          {error && <div className="toast error">{error}</div>}
         </section>
       </main>
     );
   }
 
   return (
-    <main className="game-screen">
+    <div
+      className={`game-page ${isMobileLayout ? 'mobile-layout' : 'desktop-layout'}`}
+      style={{ '--game-scale': isMobileLayout ? 1 : gameScale }}
+    >
+      <div className="game-frame">
+        <main className="game-screen game-scale">
       <header className="topbar">
-        <div>
-          <div className="room-label">Комната</div>
+        <div className="room-chip">
+          <span>Комната</span>
           <b>{game.roomId}</b>
         </div>
 
-        <div className="top-actions">
-          <span>{modeName(game.mode)}</span>
-          {game.status === 'lobby' && (
-            <button onClick={() => send('startGame')}>Начать</button>
+        <div className={`top-actions ${game.status === 'lobby' ? 'lobby-actions' : ''}`}>
+          <div className="side-room-info">
+            <span>Комната</span>
+            <b>{game.roomId}</b>
+          </div>
+          <span className="mode-chip">{modeName(game.mode)}</span>
+          <button className="ghost-button" onClick={copyInvite}>
+            {inviteCopied ? 'Скопировано' : 'Пригласить'}
+          </button>
+          <button className="ghost-button leave-button" onClick={leaveRoom}>
+            Выйти
+          </button>
+          {isHost && game.status === 'round_finished' && (
+            <button className="solid-button" onClick={() => send('nextRound')}>Следующий кон</button>
           )}
-          {game.status === 'round_finished' && (
-            <button onClick={() => send('nextRound')}>Следующий кон</button>
+          {isHost && game.status === 'finished' && (
+            <button className="solid-button" onClick={() => send('restartGame')}>Играть заново</button>
           )}
-          {game.status === 'finished' && (
-            <button onClick={() => send('restartGame')}>Играть заново</button>
+          {!isHost && ['lobby', 'round_finished', 'finished'].includes(game.status) && (
+            <span className="host-wait">Ждем хозяина</span>
           )}
         </div>
       </header>
 
-      <section className="table-shell">
-        <div className="opponents">
-          {game.players
-            .filter(p => p.id !== user.id)
-            .map((p, index) => (
-              <PlayerBadge
-                key={p.id}
-                player={p}
-                game={game}
-                position={index}
-              />
+      {game.status === 'lobby' && (
+        <aside className="waiting-sidebar">
+          <div className="waiting-sidebar-title">
+            <span>Игроки</span>
+            <b>{game.players.length}/11</b>
+          </div>
+
+          <div className="waiting-list">
+            {game.players.map(player => (
+              <div
+                className={`waiting-player ${player.id === user.id ? 'me' : ''}`}
+                key={player.id}
+              >
+                <div className="avatar">{player.name?.[0] || '?'}</div>
+                <div>
+                  <b>{player.name}</b>
+                  <span>{player.id === game.hostPlayerId ? 'Хозяин комнаты' : 'Игрок'}</span>
+                </div>
+                {player.id === user.id && <em>Вы</em>}
+              </div>
             ))}
+          </div>
+        </aside>
+      )}
+
+      {game.status === 'lobby' ? (
+        <section className="waiting-room">
+          <div className="waiting-panel">
+            <div className="waiting-kicker">{modeName(game.mode)}</div>
+            <h2>Комната готовится</h2>
+            <p>
+              Игроки заходят по ссылке приглашения. Начать игру сможет хозяин комнаты.
+            </p>
+
+            <div className="waiting-code">
+              <span>Код комнаты</span>
+              <b>{game.roomId}</b>
+            </div>
+
+            <div className="waiting-list">
+              {game.players.map(player => (
+                <div
+                  className={`waiting-player ${player.id === user.id ? 'me' : ''}`}
+                  key={player.id}
+                >
+                  <div className="avatar">{player.name?.[0] || '?'}</div>
+                  <div>
+                    <b>{player.name}</b>
+                    <span>{player.id === game.hostPlayerId ? 'Хозяин комнаты' : 'Игрок'}</span>
+                  </div>
+                  {player.id === user.id && <em>Вы</em>}
+                </div>
+              ))}
+            </div>
+
+            <div className="waiting-actions">
+              <button className="ghost-button" onClick={copyInvite}>
+                {inviteCopied ? 'Ссылка скопирована' : 'Пригласить'}
+              </button>
+              {isHost ? (
+                <button
+                  className="solid-button"
+                  disabled={!canStartGame}
+                  onClick={() => send('startGame')}
+                >
+                  Начать игру
+                </button>
+              ) : (
+                <span className="host-wait">Ждем хозяина</span>
+              )}
+            </div>
+
+            {isHost && !canStartGame && (
+              <div className="waiting-note">Нужен еще один игрок</div>
+            )}
+          </div>
+        </section>
+      ) : (
+        <>
+      <section className="table-shell">
+        <div className={`opponents opponents-${clockwiseOpponents.length}`}>
+          {clockwiseOpponents.map((p, index) => (
+            <PlayerBadge
+              key={p.id}
+              player={p}
+              game={game}
+              position={index}
+            />
+          ))}
         </div>
 
-        <div className="turn-pill">
+        <div className={isMyTurn ? 'turn-pill your-turn' : 'turn-pill'}>
           Ходит: <b>{currentPlayer?.name || '—'}</b>
         </div>
 
-        <div className="table-cards">
+        <div className={`table-cards ${game.table?.cards?.length > 5 ? 'multi-row' : ''}`}>
           {game.table?.cards?.length ? (
-            game.table.cards.map((card, i) => (
-              <Card key={card.id} card={card} table index={i} />
+            splitTableRows(game.table.cards).map((row, rowIndex) => (
+              <div className="table-card-row" key={rowIndex}>
+                {row.map((card, i) => (
+                  <Card
+                    key={card.id}
+                    card={card}
+                    table
+                    tableCompact={game.table.cards.length > 5}
+                    index={i}
+                  />
+                ))}
+              </div>
             ))
           ) : (
             <div className="empty-table">Стол пустой</div>
@@ -202,7 +402,7 @@ function App() {
         </div>
 
         {game.table?.combo && (
-          <div className="combo-pill">{comboText(game.table.combo)}</div>
+          <div className="combo-pill">{comboText(game.table.combo, game.table.cards)}</div>
         )}
 
         {game.status === 'finished' && (
@@ -212,72 +412,54 @@ function App() {
           </div>
         )}
       </section>
-
       <section className="my-zone">
-        <div className="me-badge">
-          <span>{me?.name || name}</span>
-          <b>{me?.handCount ?? 0} карт</b>
-          {game.mode === 'pogoni' && <small>Погон: {me?.pogonRank}</small>}
-        </div>
-
         <div className="hand-fan">
-  {splitHandRows(demoHand ? demoCards : game.hand).map((row, rowIndex) => (
-    <div className="hand-row" key={rowIndex}>
-      {row.map((card, index) => (
-        <Card
-          key={card.id}
-          card={card}
-          selected={selected.includes(card.id)}
-          onClick={() => toggle(card.id)}
-          index={index}
-          total={row.length}
-        />
-      ))}
-    </div>
-  ))}
-</div>
-
-        <div className="action-bar">
-          <button disabled={!isMyTurn || selected.length === 0} onClick={play}>
-            Походить
-          </button>
-          <button disabled={!isMyTurn || !game.table} onClick={() => send('pass')}>
-            Пас
-          </button>
-          
-          <button onClick={() => setDemoHand(v => !v)}>
-  Демо рука
-</button>
-        </div>
-
-        <div className={isMyTurn ? 'hint your-turn' : 'hint'}>
-          {isMyTurn ? 'Ваш ход' : 'Ждём ход другого игрока'}
+          {splitHandRows(game.hand).map((row, rowIndex) => (
+            <div className="hand-row" key={rowIndex}>
+              {row.map((card, index) => (
+                <Card
+                  key={card.id}
+                  card={card}
+                  selected={selected.includes(card.id)}
+                  onClick={() => toggle(card.id)}
+                  index={index}
+                  total={row.length}
+                />
+              ))}
+            </div>
+          ))}
         </div>
       </section>
 
+      <div className="me-badge">
+        <div>
+          <span>{me?.name || name}</span>
+          {game.mode === 'pogoni' && <small>Погон: {me?.pogonRank}</small>}
+        </div>
+        <b>{me?.handCount ?? 0} карт</b>
+      </div>
+
+        <div className="action-bar">
+          <button className="play-button" disabled={!isMyTurn || selected.length === 0} onClick={play}>
+            Походить{selected.length ? ` (${selected.length})` : ''}
+          </button>
+          <button className="pass-button" disabled={!isMyTurn || !game.table} onClick={() => send('pass')}>
+            Пас
+          </button>
+        </div>
+
+        <div className={isMyTurn ? 'hint your-turn' : 'hint'}>
+          {isMyTurn ? 'Ваш ход' : 'Ждем ход другого игрока'}
+        </div>
+        </>
+      )}
+
       {error && <div className="toast error floating">{error}</div>}
     </main>
+      </div>
+    </div>
   );
 }
-
-const demoCards = [
-  { id: '4D', rank: '4', suit: 'D' },
-  { id: '4S', rank: '4', suit: 'S' },
-  { id: '5C', rank: '5', suit: 'C' },
-  { id: '6C', rank: '6', suit: 'C' },
-  { id: '6S', rank: '6', suit: 'S' },
-  { id: '7H', rank: '7', suit: 'H' },
-  { id: '8H', rank: '8', suit: 'H' },
-  { id: '10C', rank: '10', suit: 'C' },
-  { id: 'JH', rank: 'J', suit: 'H' },
-  { id: 'QS', rank: 'Q', suit: 'S' },
-  { id: 'KD', rank: 'K', suit: 'D' },
-  { id: 'AS', rank: 'A', suit: 'S' },
-  { id: '2D', rank: '2', suit: 'D' },
-  { id: '3S', rank: '3', suit: 'S' },
-  { id: 'RED_JOKER', rank: 'RED_JOKER', suit: null },
-  { id: 'DVK', rank: 'DVK', suit: null },
-];
 
 function PlayerBadge({ player, game, position }) {
   const isTurn = player.id === game.currentPlayerId;
@@ -299,6 +481,18 @@ function PlayerBadge({ player, game, position }) {
   );
 }
 
+function getClockwiseOpponents(players = [], viewerId) {
+  const viewerIndex = players.findIndex(p => p.id === viewerId);
+
+  if (viewerIndex < 0) {
+    return players.filter(p => p.id !== viewerId);
+  }
+
+  return players
+    .slice(viewerIndex + 1)
+    .concat(players.slice(0, viewerIndex));
+}
+
 function splitHandRows(cards = []) {
   if (cards.length <= 10) {
     return [cards];
@@ -308,48 +502,53 @@ function splitHandRows(cards = []) {
 
   return [
     cards.slice(0, firstRowCount),
-    cards.slice(firstRowCount)
+    cards.slice(firstRowCount),
   ];
 }
 
-function Card({ card, selected, onClick, table, index = 0, total = 1 }) {
-  const red =
-  card.suit === 'H' ||
-  card.suit === 'D' ||
-  card.rank === 'RED_JOKER';
+function splitTableRows(cards = []) {
+  if (cards.length <= 5) {
+    return [cards];
+  }
+
+  const firstRowCount = Math.ceil(cards.length / 2);
+
+  return [
+    cards.slice(0, firstRowCount),
+    cards.slice(firstRowCount),
+  ];
+}
+
+function Card({ card, selected, onClick, table, tableCompact, index = 0, total = 1 }) {
+  const red = card.suit === 'H' || card.suit === 'D' || card.rank === 'RED_JOKER';
   const label = cardLabel(card);
 
-  const fanOffset = total > 1 ? index - (total - 1) / 2 : 0;
-
-  const rotate = table
-  ? (index - 1) * 7
-  : (index - (total - 1) / 2) * 4;
-
-const style = {
-  transform: table
-    ? `rotate(${rotate}deg)`
-    : `translateX(${(index - (total - 1) / 2) * -8}px) rotate(${rotate}deg)`
-};
+  const style = {
+    '--card-transform': table
+      ? 'rotate(0deg)'
+      : `translateX(${(index - (total - 1) / 2) * -7}px) rotate(0deg)`,
+  };
 
   return (
     <button
-      className={`playing-card ${red ? 'red' : ''} ${selected ? 'selected' : ''} ${table ? 'table-card' : ''}`}
+      className={`playing-card ${red ? 'red' : ''} ${selected ? 'selected' : ''} ${table ? 'table-card' : ''} ${tableCompact ? 'compact' : ''}`}
       onClick={onClick}
       style={style}
+      aria-label={label}
     >
       <img
-  src={`/cards/${cardImage(card)}`}
-  alt={label}
-  className="card-image"
-/>
+        src={`/cards/${cardImage(card)}`}
+        alt={label}
+        className="card-image"
+      />
     </button>
   );
 }
 
 function cardLabel(card) {
-  if (card.rank === 'BLACK_JOKER') return '🃏♠';
-  if (card.rank === 'RED_JOKER') return '🃏♥';
-  if (card.rank === 'DVK') return '⭐';
+  if (card.rank === 'BLACK_JOKER') return 'Joker ♠';
+  if (card.rank === 'RED_JOKER') return 'Joker ♥';
+  if (card.rank === 'DVK') return 'DVK';
 
   return `${card.rank}${suit(card.suit)}`;
 }
@@ -366,19 +565,70 @@ function suit(s) {
   return { S: '♠', H: '♥', D: '♦', C: '♣' }[s] || '';
 }
 
-function comboText(c) {
+function comboText(c, cards = []) {
   if (!c) return '';
 
   const map = {
     single: 'одна карта',
-    pair: 'пара',
-    triple: 'сет',
-    quad: 'каре',
-    straight: 'ряд',
-    doubleStraight: 'двойной ряд',
+    pair: 'двойник',
+    triple: 'три одинаковых',
+    quad: 'четыре одинаковых',
+    straight: 'катарик',
+    doubleStraight: 'бомба',
   };
 
-  return map[c.type] || c.type;
+  const name = map[c.type] || c.type;
+  const detail = comboDetail(c, cards);
+
+  return detail ? `${name}: ${detail}` : name;
+}
+
+function comboDetail(c, cards) {
+  if (c.type === 'single') {
+    return cardRankText(cards[0]) || rankFromValue(c.high);
+  }
+
+  if (['pair', 'triple', 'quad'].includes(c.type)) {
+    return rankFromValue(c.high);
+  }
+
+  if (['straight', 'doubleStraight'].includes(c.type)) {
+    const from = rankFromValue(c.high - c.length + 1);
+    const to = rankFromValue(c.high);
+    return from && to ? `от ${from} до ${to}` : '';
+  }
+
+  return '';
+}
+
+function cardRankText(card) {
+  if (!card) return '';
+  if (card.rank === 'BLACK_JOKER') return 'черный джокер';
+  if (card.rank === 'RED_JOKER') return 'красный джокер';
+  if (card.rank === 'DVK') return 'ДВК';
+  return card.rank;
+}
+
+function rankFromValue(value) {
+  const ranks = {
+    1: '4',
+    2: '5',
+    3: '6',
+    4: '7',
+    5: '8',
+    6: '9',
+    7: '10',
+    8: 'J',
+    9: 'Q',
+    10: 'K',
+    11: 'A',
+    12: '2',
+    13: '3',
+    14: 'черный джокер',
+    15: 'красный джокер',
+  };
+
+  return ranks[value] || '';
 }
 
 function modeName(mode) {
