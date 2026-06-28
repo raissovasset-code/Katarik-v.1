@@ -1194,23 +1194,25 @@ button:disabled {
 }
 
 .mobile-layout .side-room-info {
-  min-height: 48px;
-  padding: 8px 12px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: 12px;
 }
 
 .mobile-layout .side-room-info span {
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .mobile-layout .side-room-info b {
-  font-size: 18px;
+  font-size: 15px;
 }
 
 .mobile-layout .top-actions .leave-button {
-  min-width: 84px;
-  min-height: 48px;
-  padding: 0 12px;
-  font-size: 16px;
+  min-width: 72px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 12px;
+  font-size: 14px;
 }
 
 .mobile-layout .mode-chip {
@@ -1326,19 +1328,19 @@ button:disabled {
   left: auto;
   top: auto;
   width: 100%;
-  height: clamp(330px, 46svh, 430px);
+  height: clamp(330px, 45svh, 420px);
   min-height: 330px;
   margin-top: 2px;
   background-image: url('/table.png');
-  background-size: auto 100%;
+  background-size: auto 106%;
   background-position: center 56%;
 }
 
 .mobile-layout .turn-pill {
-  top: 17%;
+  top: 14%;
   transform: translate(-50%, 0);
-  padding: 8px 12px;
-  font-size: 14px;
+  padding: 7px 11px;
+  font-size: 13px;
 }
 
 .mobile-layout .table-cards {
@@ -1381,7 +1383,7 @@ button:disabled {
 }
 
 .mobile-layout .opponents-1 .seat-0 {
-  top: 2%;
+  top: -2%;
 }
 
 .mobile-layout .opponents-2 .seat-0 {
@@ -1400,7 +1402,7 @@ button:disabled {
 }
 
 .mobile-layout .opponents-3 .seat-1 {
-  top: 2%;
+  top: -2%;
 }
 
 .mobile-layout .opponents-3 .seat-2 {
@@ -1410,7 +1412,7 @@ button:disabled {
 
 .mobile-layout .my-zone {
   position: relative;
-  order: 2;
+  order: 3;
   left: auto;
   bottom: auto;
   width: 100%;
@@ -1449,20 +1451,28 @@ button:disabled {
 
 .mobile-layout .me-badge {
   position: relative;
-  order: 3;
+  order: 2;
   right: auto;
   bottom: auto;
   width: 100%;
-  padding: 10px 12px;
-  margin-top: 0;
+  min-height: 42px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-top: -2px;
+  border-radius: 12px;
 }
 
 .mobile-layout .me-badge span {
   font-size: 16px;
+  white-space: nowrap;
 }
 
 .mobile-layout .me-badge small {
-  font-size: 13px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .mobile-layout .action-bar {
