@@ -992,9 +992,9 @@ button:disabled {
   margin-left: -31px;
   padding: 0;
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  background: #fff;
-  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.34);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
   transform-origin: center 90%;
   transform: var(--card-transform);
   transition: transform 0.18s, box-shadow 0.18s, filter 0.18s;
@@ -1006,19 +1006,18 @@ button:disabled {
 
 .playing-card:hover:not(.table-card) {
   filter: brightness(1.05);
-  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
 }
 
 .playing-card.selected {
   transform: translateY(-36px) var(--card-transform);
-  border-color: rgba(37, 198, 111, 0.95);
-  box-shadow: 0 0 0 3px rgba(37, 198, 111, 0.22), 0 20px 34px rgba(0, 0, 0, 0.46);
+  box-shadow: none;
 }
 
 .playing-card.table-card {
   width: 90px;
   margin-left: -16px;
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.36);
+  box-shadow: none;
 }
 
 .playing-card.table-card.compact {
@@ -1032,7 +1031,18 @@ button:disabled {
   display: block;
   object-fit: contain;
   border-radius: inherit;
+  filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.34));
   pointer-events: none;
+}
+
+.playing-card.table-card .card-image {
+  filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.36));
+}
+
+.playing-card.selected .card-image {
+  filter:
+    drop-shadow(0 0 8px rgba(37, 198, 111, 0.78))
+    drop-shadow(0 18px 18px rgba(0, 0, 0, 0.46));
 }
 
 .action-bar {
