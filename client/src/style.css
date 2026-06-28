@@ -1375,52 +1375,107 @@ button:disabled {
 }
 
 .mobile-layout .seat-info {
-  min-width: 94px;
-  max-width: 132px;
-  padding: 6px 8px;
+  min-width: 82px;
+  max-width: 112px;
+  gap: 6px;
+  padding: 5px 7px;
 }
 
 .mobile-layout .seat-info .avatar {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
 }
 
 .mobile-layout .seat-info b {
-  max-width: 80px;
-  font-size: 13px;
+  max-width: 68px;
+  font-size: 12px;
 }
 
 .mobile-layout .seat-info span,
 .mobile-layout .seat-info small {
-  font-size: 12px;
+  margin-top: 2px;
+  font-size: 11px;
+}
+
+.mobile-layout .seat-0 {
+  top: 67%;
+  left: -1%;
+}
+
+.mobile-layout .seat-1 {
+  top: 49%;
+  left: -2%;
+}
+
+.mobile-layout .seat-2 {
+  top: 31%;
+  left: -1%;
+}
+
+.mobile-layout .seat-3 {
+  top: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.mobile-layout .seat-4 {
+  top: 31%;
+  right: -1%;
+  left: auto;
+  transform: none;
+}
+
+.mobile-layout .seat-5 {
+  top: 49%;
+  right: -2%;
+}
+
+.mobile-layout .seat-6 {
+  top: 67%;
+  right: -1%;
+}
+
+.mobile-layout .seat-7,
+.mobile-layout .seat-8,
+.mobile-layout .seat-9 {
+  display: none;
 }
 
 .mobile-layout .opponents-1 .seat-0 {
   top: -5%;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .mobile-layout .opponents-2 .seat-0 {
   top: 42%;
-  left: 0;
+  left: -1%;
+  transform: none;
 }
 
 .mobile-layout .opponents-2 .seat-1 {
   top: 42%;
-  right: 0;
+  right: -1%;
+  left: auto;
 }
 
 .mobile-layout .opponents-3 .seat-0 {
   top: 42%;
-  left: 0;
+  left: -1%;
+  transform: none;
 }
 
 .mobile-layout .opponents-3 .seat-1 {
   top: -5%;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .mobile-layout .opponents-3 .seat-2 {
   top: 42%;
-  right: 0;
+  right: -1%;
+  left: auto;
 }
 
 .mobile-layout .my-zone {
