@@ -455,11 +455,9 @@ function App() {
       </section>
 
       <div className="me-badge">
-        <div>
-          <span>{me?.name || name}</span>
-          {game.mode === 'pogoni' && <small>Погон: {me?.pogonRank}</small>}
-        </div>
-        <b>{me?.handCount ?? 0} карт</b>
+        <span>{me?.name || name}</span>
+        <small>Количество карт: {me?.handCount ?? 0} карт</small>
+        {game.mode === 'pogoni' && <small>Погон: {me?.pogonRank}</small>}
       </div>
 
         <div className="action-bar">
@@ -477,7 +475,11 @@ function App() {
         </>
       )}
 
-      {error && <div className="toast error floating">{error}</div>}
+      {error && (
+        <div className={`toast error floating ${game.status === 'finished' ? 'finished-toast' : ''}`}>
+          {error}
+        </div>
+      )}
     </main>
       </div>
     </div>
