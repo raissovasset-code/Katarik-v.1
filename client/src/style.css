@@ -1077,7 +1077,7 @@ button:disabled {
   gap: 10px;
   overflow: visible;
   transform: none;
-  padding: 10px;
+  padding: max(28px, calc(env(safe-area-inset-top) + 18px)) 10px 18px;
 }
 
 .mobile-layout .game-screen::before,
@@ -1116,6 +1116,10 @@ button:disabled {
   min-height: 40px;
 }
 
+.mobile-layout .top-actions.lobby-actions .mode-chip {
+  display: none;
+}
+
 .mobile-layout .waiting-sidebar {
   position: relative;
   order: 2;
@@ -1129,7 +1133,7 @@ button:disabled {
   order: 1;
   inset: auto;
   width: 100%;
-  padding: 12px 0 0;
+  padding: 24px 0 0;
 }
 
 .mobile-layout .waiting-panel {
