@@ -1326,19 +1326,19 @@ button:disabled {
   left: auto;
   top: auto;
   width: 100%;
-  height: clamp(500px, 64svh, 700px);
-  min-height: 500px;
-  margin-top: 8px;
+  height: clamp(330px, 46svh, 430px);
+  min-height: 330px;
+  margin-top: 2px;
   background-image: url('/table.png');
   background-size: auto 100%;
   background-position: center 56%;
 }
 
 .mobile-layout .turn-pill {
-  top: 18%;
+  top: 17%;
   transform: translate(-50%, 0);
-  padding: 9px 14px;
-  font-size: 16px;
+  padding: 8px 12px;
+  font-size: 14px;
 }
 
 .mobile-layout .table-cards {
@@ -1350,34 +1350,34 @@ button:disabled {
 }
 
 .mobile-layout .combo-pill {
-  top: calc(50% + 104px);
-  padding: 9px 14px;
-  font-size: 15px;
+  top: calc(50% + 78px);
+  padding: 8px 12px;
+  font-size: 14px;
 }
 
 .mobile-layout .empty-table {
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .mobile-layout .seat-info {
-  min-width: 116px;
-  max-width: 160px;
-  padding: 8px 10px;
+  min-width: 104px;
+  max-width: 148px;
+  padding: 7px 9px;
 }
 
 .mobile-layout .seat-info .avatar {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
 }
 
 .mobile-layout .seat-info b {
-  max-width: 96px;
-  font-size: 16px;
+  max-width: 88px;
+  font-size: 15px;
 }
 
 .mobile-layout .seat-info span,
 .mobile-layout .seat-info small {
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .mobile-layout .opponents-1 .seat-0 {
@@ -1415,36 +1415,36 @@ button:disabled {
   bottom: auto;
   width: 100%;
   height: auto;
-  min-height: 252px;
-  padding: 8px 6px 12px;
+  min-height: 150px;
+  padding: 0 6px 4px;
   background: linear-gradient(180deg, rgba(3, 18, 11, 0), rgba(3, 18, 11, 0.72) 22%, #03120b 100%);
 }
 
 .mobile-layout .hand-fan {
-  min-height: 244px;
-  gap: 10px;
-  padding: 0 10px;
+  min-height: 146px;
+  gap: 4px;
+  padding: 0 8px;
   transform: none;
 }
 
 .mobile-layout .playing-card {
-  width: clamp(66px, 16vw, 88px);
-  margin-left: clamp(-28px, -6vw, -18px);
+  width: clamp(48px, 12vw, 64px);
+  margin-left: clamp(-22px, -5vw, -14px);
   border-radius: 10px;
 }
 
 .mobile-layout .playing-card.selected {
-  transform: translateY(-30px) var(--card-transform);
+  transform: translateY(-24px) var(--card-transform);
 }
 
 .mobile-layout .playing-card.table-card {
-  width: clamp(58px, 13vw, 72px);
-  margin-left: -12px;
+  width: clamp(52px, 12vw, 64px);
+  margin-left: -10px;
 }
 
 .mobile-layout .playing-card.table-card.compact {
-  width: clamp(50px, 11vw, 60px);
-  margin-left: -10px;
+  width: clamp(44px, 10vw, 54px);
+  margin-left: -8px;
 }
 
 .mobile-layout .me-badge {
@@ -1453,12 +1453,16 @@ button:disabled {
   right: auto;
   bottom: auto;
   width: 100%;
-  padding: 14px 16px;
-  margin-top: 2px;
+  padding: 10px 12px;
+  margin-top: 0;
 }
 
 .mobile-layout .me-badge span {
-  font-size: 18px;
+  font-size: 16px;
+}
+
+.mobile-layout .me-badge small {
+  font-size: 13px;
 }
 
 .mobile-layout .action-bar {
@@ -1467,12 +1471,13 @@ button:disabled {
   right: auto;
   bottom: auto;
   width: 100%;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
 .mobile-layout .action-bar button {
-  min-height: 62px;
-  font-size: 20px;
+  min-height: 50px;
+  font-size: 17px;
 }
 
 .mobile-layout .hint {
@@ -1481,7 +1486,8 @@ button:disabled {
   right: auto;
   bottom: auto;
   width: 100%;
-  padding-bottom: 8px;
+  padding-bottom: 4px;
+  font-size: 14px;
 }
 
 .mobile-layout .toast.floating {
