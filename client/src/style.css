@@ -214,6 +214,64 @@ button:disabled {
   color: #8ff1b8;
 }
 
+.mobile-welcome {
+  min-height: 100svh;
+  padding: max(22px, calc(env(safe-area-inset-top) + 18px)) 14px max(24px, calc(env(safe-area-inset-bottom) + 18px));
+  place-items: center;
+}
+
+.mobile-welcome .welcome-card {
+  width: min(100%, 520px);
+  padding: 28px 18px;
+  border-radius: 20px;
+}
+
+.mobile-welcome .brand {
+  margin-bottom: 24px;
+}
+
+.mobile-welcome .brand-mark {
+  font-size: 28px;
+}
+
+.mobile-welcome .brand h1 {
+  font-size: 40px;
+}
+
+.mobile-welcome .brand p {
+  font-size: 16px;
+}
+
+.mobile-welcome .lobby-form {
+  gap: 16px;
+}
+
+.mobile-welcome .lobby-form label {
+  font-size: 15px;
+}
+
+.mobile-welcome .lobby-form input,
+.mobile-welcome .join-row input {
+  min-height: 56px;
+  padding: 16px;
+  font-size: 17px;
+}
+
+.mobile-welcome .mode-grid {
+  gap: 10px;
+}
+
+.mobile-welcome .mode-grid button,
+.mobile-welcome .join-row button,
+.mobile-welcome .primary {
+  min-height: 54px;
+  font-size: 16px;
+}
+
+.mobile-welcome .connection {
+  font-size: 14px;
+}
+
 .game-page {
   width: max(100vw, calc(1600px * var(--game-scale)));
   height: max(100vh, calc(900px * var(--game-scale)));

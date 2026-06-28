@@ -218,7 +218,7 @@ function App() {
 
   if (!game) {
     return (
-      <main className="welcome">
+      <main className={`welcome ${isMobileLayout ? 'mobile-welcome' : ''}`}>
         <section className="welcome-card">
           <div className="brand">
             <div className="brand-mark">♠ ♥ ♦ ♣</div>
