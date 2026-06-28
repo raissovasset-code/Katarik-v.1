@@ -42,7 +42,30 @@ function getRoomFromUrl() {
 }
 
 function getLayoutFromUrl() {
-  return new URLSearchParams(window.location.search).get('view') === 'mobile' ? 'mobile' : 'desktop';
+  const forcedView = new URLSearchParams(window.location.search).get('view');
+
+  if (forcedView === 'mobile' || forcedView === 'desktop') {
+    return forcedView;
+  }
+
+  return isLikelyMobileDevice() ? 'mobile' : 'desktop';
+}
+
+function isLikelyMobileDevice() {
+  const userAgent = navigator.userAgent || '';
+  const hasMobileUserAgent = /Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini/i.test(userAgent);
+  const hasTouch = navigator.maxTouchPoints > 1;
+  const hasCoarsePointer = window.matchMedia?.('(pointer: coarse)').matches;
+  const narrowScreen = Math.min(window.screen.width, window.screen.height) <= 820;
+
+  return hasMobileUserAgent || (hasTouch && hasCoarsePointer && narrowScreen);
+}
+
+function roomPath(roomId) {
+  const params = new URLSearchParams(window.location.search);
+  params.set('room', roomId);
+
+  return `${window.location.pathname}?${params.toString()}`;
 }
 
 function App() {
@@ -91,7 +114,7 @@ function App() {
       if (msg.type === 'roomCreated') {
         setJoinCode(msg.roomId);
         localStorage.setItem('katarik_room', msg.roomId);
-        window.history.replaceState(null, '', `?room=${msg.roomId}`);
+        window.history.replaceState(null, '', roomPath(msg.roomId));
       }
 
       if (msg.type === 'state') {
@@ -146,7 +169,7 @@ function App() {
 
     setJoinCode(code);
     localStorage.setItem('katarik_room', code);
-    window.history.replaceState(null, '', `?room=${code}`);
+    window.history.replaceState(null, '', roomPath(code));
     send('joinRoom', { roomId: code });
   }
 
