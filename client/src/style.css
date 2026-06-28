@@ -1116,6 +1116,10 @@ button:disabled {
   min-height: 40px;
 }
 
+.mobile-layout .top-actions:not(.lobby-actions) .mode-chip {
+  display: none;
+}
+
 .mobile-layout .top-actions.lobby-actions .mode-chip {
   display: none;
 }
@@ -1154,11 +1158,12 @@ button:disabled {
   left: auto;
   top: auto;
   width: 100%;
-  height: clamp(430px, 58svh, 620px);
-  min-height: 430px;
+  height: clamp(500px, 64svh, 700px);
+  min-height: 500px;
+  margin-top: 8px;
   background-image: url('/table.png');
-  background-size: contain;
-  background-position: center;
+  background-size: auto 100%;
+  background-position: center 56%;
 }
 
 .mobile-layout .turn-pill {
@@ -1242,21 +1247,21 @@ button:disabled {
   bottom: auto;
   width: 100%;
   height: auto;
-  min-height: 230px;
-  padding: 4px 6px 10px;
+  min-height: 252px;
+  padding: 8px 6px 12px;
   background: linear-gradient(180deg, rgba(3, 18, 11, 0), rgba(3, 18, 11, 0.72) 22%, #03120b 100%);
 }
 
 .mobile-layout .hand-fan {
-  min-height: 220px;
-  gap: 8px;
+  min-height: 244px;
+  gap: 10px;
   padding: 0 10px;
   transform: none;
 }
 
 .mobile-layout .playing-card {
-  width: clamp(58px, 14vw, 78px);
-  margin-left: clamp(-24px, -5vw, -16px);
+  width: clamp(66px, 16vw, 88px);
+  margin-left: clamp(-28px, -6vw, -18px);
   border-radius: 10px;
 }
 
@@ -1280,7 +1285,8 @@ button:disabled {
   right: auto;
   bottom: auto;
   width: 100%;
-  padding: 13px 14px;
+  padding: 14px 16px;
+  margin-top: 2px;
 }
 
 .mobile-layout .me-badge span {
@@ -1293,10 +1299,11 @@ button:disabled {
   right: auto;
   bottom: auto;
   width: 100%;
+  gap: 8px;
 }
 
 .mobile-layout .action-bar button {
-  min-height: 58px;
+  min-height: 62px;
   font-size: 20px;
 }
 
