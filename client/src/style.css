@@ -1190,10 +1190,13 @@ button:disabled {
 
 .mobile-layout .top-actions {
   width: 100%;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto auto;
+  justify-content: space-between;
 }
 
 .mobile-layout .side-room-info {
+  width: max-content;
+  min-width: 116px;
   min-height: 40px;
   padding: 6px 10px;
   border-radius: 12px;
@@ -1362,28 +1365,28 @@ button:disabled {
 }
 
 .mobile-layout .seat-info {
-  min-width: 104px;
-  max-width: 148px;
-  padding: 7px 9px;
+  min-width: 94px;
+  max-width: 132px;
+  padding: 6px 8px;
 }
 
 .mobile-layout .seat-info .avatar {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
 }
 
 .mobile-layout .seat-info b {
-  max-width: 88px;
-  font-size: 15px;
+  max-width: 80px;
+  font-size: 13px;
 }
 
 .mobile-layout .seat-info span,
 .mobile-layout .seat-info small {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .mobile-layout .opponents-1 .seat-0 {
-  top: -2%;
+  top: -5%;
 }
 
 .mobile-layout .opponents-2 .seat-0 {
@@ -1402,7 +1405,7 @@ button:disabled {
 }
 
 .mobile-layout .opponents-3 .seat-1 {
-  top: -2%;
+  top: -5%;
 }
 
 .mobile-layout .opponents-3 .seat-2 {
@@ -1412,7 +1415,7 @@ button:disabled {
 
 .mobile-layout .my-zone {
   position: relative;
-  order: 3;
+  order: 2;
   left: auto;
   bottom: auto;
   width: 100%;
@@ -1431,7 +1434,7 @@ button:disabled {
 
 .mobile-layout .playing-card {
   width: clamp(48px, 12vw, 64px);
-  margin-left: clamp(-22px, -5vw, -14px);
+  margin-left: clamp(-16px, -4vw, -8px);
   border-radius: 10px;
 }
 
@@ -1451,7 +1454,7 @@ button:disabled {
 
 .mobile-layout .me-badge {
   position: relative;
-  order: 2;
+  order: 3;
   right: auto;
   bottom: auto;
   width: 100%;
@@ -1461,7 +1464,7 @@ button:disabled {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 10px;
-  margin-top: -2px;
+  margin-top: 2px;
   border-radius: 12px;
 }
 
