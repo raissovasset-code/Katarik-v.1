@@ -431,7 +431,7 @@ function App() {
         {game.status === 'finished' && (
           <div className="result-card">
             <h2>Игра окончена</h2>
-            <p>Проиграл: {game.players.find(p => p.id === game.loserId)?.name || '—'}</p>
+            <p>{finishedGameText(game)}</p>
           </div>
         )}
       </section>
@@ -652,6 +652,17 @@ function rankFromValue(value) {
   };
 
   return ranks[value] || '';
+}
+
+function finishedGameText(game) {
+  const winnerName = game.players.find(player => player.id === game.roundWinnerId)?.name;
+  const loserName = game.players.find(player => player.id === game.loserId)?.name;
+
+  if (game.mode === 'pogoni') {
+    return `Победил: ${winnerName || '—'}`;
+  }
+
+  return `Проиграл: ${loserName || '—'}`;
 }
 
 function modeName(mode) {
