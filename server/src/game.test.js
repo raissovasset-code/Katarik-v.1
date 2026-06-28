@@ -205,6 +205,21 @@ test('pogon is counted only after a player captured the table', () => {
   assert.equal(game.roundWinnerId, 'A');
 });
 
+test('pogon with DVK advances only by matching normal cards', () => {
+  const game = makeGame('pogoni', ['A', 'B', 'C']);
+  player(game, 'A').hand = [makeCard('6S', '6'), makeCard('4S', '4'), makeCard('4H', '4', 'H'), makeDvk()];
+  player(game, 'B').hand = [makeCard('5S', '5')];
+  player(game, 'C').hand = [makeCard('7S', '7')];
+
+  playCards(game, 'A', ['6S']);
+  pass(game, 'B');
+  pass(game, 'C');
+  playCards(game, 'A', ['4S', '4H', 'DVK']);
+
+  assert.equal(player(game, 'A').pogonRank, '6');
+  assert.equal(game.status, 'round_finished');
+});
+
 test('free turn after the previous player exited does not count as pogon-ready', () => {
   const game = makeGame('pogoni', ['A', 'B', 'C']);
   player(game, 'A').hand = [makeCard('6S', '6')];

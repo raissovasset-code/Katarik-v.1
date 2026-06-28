@@ -472,15 +472,18 @@ function checkPogon(player, cards) {
   const current = player.pogonRank || '4';
 
   if (!cards.length) return { success: false };
-  if (cards.some(card => card.type === 'wild' || card.type === 'joker')) return { success: false };
-  if (!cards.every(card => card.rank === current)) return { success: false };
+  if (cards.some(card => card.type === 'joker')) return { success: false };
+
+  const countedCards = cards.filter(card => card.type !== 'wild');
+  if (!countedCards.length) return { success: false };
+  if (!countedCards.every(card => card.rank === current)) return { success: false };
 
   if (current === 'A') {
     return { success: true, finished: true, nextRank: 'A' };
   }
 
   const index = POGON_ORDER.indexOf(current);
-  const nextIndex = Math.min(index + cards.length, POGON_ORDER.length - 1);
+  const nextIndex = Math.min(index + countedCards.length, POGON_ORDER.length - 1);
 
   return {
     success: true,
