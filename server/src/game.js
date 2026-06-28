@@ -50,11 +50,26 @@ export function addPlayer(game, player) {
   if (!game.players.some(existing => existing.id === player.id)) {
     game.players.push({
       ...player,
+      name: uniquePlayerName(game.players, player.name),
       hand: [],
       active: true,
       pogonRank: '4',
     });
   }
+}
+
+export function uniquePlayerName(players, requestedName = 'Игрок') {
+  const baseName = String(requestedName || 'Игрок').trim() || 'Игрок';
+  const usedNames = new Set(players.map(player => player.name));
+
+  if (!usedNames.has(baseName)) return baseName;
+
+  for (let index = 2; index <= players.length + 2; index += 1) {
+    const candidate = `${baseName} ${index}`;
+    if (!usedNames.has(candidate)) return candidate;
+  }
+
+  return `${baseName} ${Date.now()}`;
 }
 
 export function startGame(game) {

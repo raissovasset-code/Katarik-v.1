@@ -51,6 +51,15 @@ test('startGame creates a playable room state', () => {
   assert.ok(player(game, 'B').hand.length > 0);
 });
 
+test('players with the same requested name receive unique display names', () => {
+  const game = createGame('ROOM', 'classic');
+  addPlayer(game, { id: 'A', name: 'Асет' });
+  addPlayer(game, { id: 'B', name: 'Асет' });
+  addPlayer(game, { id: 'C', name: 'Асет' });
+
+  assert.deepEqual(game.players.map(item => item.name), ['Асет', 'Асет 2', 'Асет 3']);
+});
+
 test('one card cannot be played twice in the same move', () => {
   const game = makeGame('classic', ['A', 'B']);
   player(game, 'A').hand = [makeCard('4S', '4')];
