@@ -532,16 +532,13 @@ function splitHandRows(cards = []) {
 }
 
 function splitTableRows(cards = []) {
-  if (cards.length <= 5) {
-    return [cards];
+  const rows = [];
+
+  for (let i = 0; i < cards.length; i += 5) {
+    rows.push(cards.slice(i, i + 5));
   }
 
-  const firstRowCount = Math.ceil(cards.length / 2);
-
-  return [
-    cards.slice(0, firstRowCount),
-    cards.slice(firstRowCount),
-  ];
+  return rows.length ? rows : [[]];
 }
 
 function Card({ card, selected, onClick, table, tableCompact, index = 0, total = 1 }) {

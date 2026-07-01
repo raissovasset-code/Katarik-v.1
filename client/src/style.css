@@ -1357,11 +1357,16 @@ button:disabled {
 }
 
 .mobile-layout .table-cards {
-  transform: translateY(18px);
+  transform: translateY(16px);
 }
 
 .mobile-layout .table-cards.multi-row {
-  transform: translateY(18px);
+  gap: 0;
+  transform: translateY(16px);
+}
+
+.mobile-layout .table-cards.multi-row .table-card-row + .table-card-row {
+  margin-top: -8px;
 }
 
 .mobile-layout .combo-pill {
@@ -1414,7 +1419,7 @@ button:disabled {
 }
 
 .mobile-layout .seat-3 {
-  top: 2%;
+  top: -7%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -1443,7 +1448,7 @@ button:disabled {
 }
 
 .mobile-layout .opponents-1 .seat-0 {
-  top: -5%;
+  top: -8%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -1467,7 +1472,7 @@ button:disabled {
 }
 
 .mobile-layout .opponents-3 .seat-1 {
-  top: -5%;
+  top: -8%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -1480,7 +1485,7 @@ button:disabled {
 
 .mobile-layout .my-zone {
   position: relative;
-  order: 2;
+  order: 3;
   left: auto;
   bottom: auto;
   width: 100%;
@@ -1508,13 +1513,13 @@ button:disabled {
 }
 
 .mobile-layout .playing-card.table-card {
-  width: clamp(52px, 12vw, 64px);
-  margin-left: -10px;
+  width: clamp(44px, 10.5vw, 56px);
+  margin-left: -8px;
 }
 
 .mobile-layout .playing-card.table-card.compact {
-  width: clamp(44px, 10vw, 54px);
-  margin-left: -8px;
+  width: clamp(38px, 9vw, 48px);
+  margin-left: -7px;
 }
 
 .mobile-layout .me-badge {
@@ -1569,8 +1574,19 @@ button:disabled {
 }
 
 .mobile-layout .toast.floating {
-  position: fixed;
-  top: 12px;
-  width: calc(100% - 24px);
-  max-width: 420px;
+  position: relative;
+  order: 2;
+  top: auto;
+  left: auto;
+  width: 100%;
+  max-width: none;
+  min-height: 28px;
+  margin: -2px 0 0;
+  padding: 7px 10px;
+  transform: none;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
 }
