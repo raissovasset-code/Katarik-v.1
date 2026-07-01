@@ -1419,7 +1419,7 @@ button:disabled {
 }
 
 .mobile-layout .seat-3 {
-  top: -7%;
+  top: -22%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -1448,7 +1448,7 @@ button:disabled {
 }
 
 .mobile-layout .opponents-1 .seat-0 {
-  top: -8%;
+  top: -22%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -1472,7 +1472,7 @@ button:disabled {
 }
 
 .mobile-layout .opponents-3 .seat-1 {
-  top: -8%;
+  top: -22%;
   left: 50%;
   transform: translateX(-50%);
 }
