@@ -1345,8 +1345,8 @@ button:disabled {
   min-height: 330px;
   margin-top: 2px;
   background-image: url('/table.png');
-  background-size: auto 106%;
-  background-position: center 56%;
+  background-size: auto 100%;
+  background-position: center;
 }
 
 .mobile-layout .turn-pill {
@@ -1419,7 +1419,7 @@ button:disabled {
 }
 
 .mobile-layout .seat-3 {
-  top: -22%;
+  top: -17%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -1448,7 +1448,7 @@ button:disabled {
 }
 
 .mobile-layout .opponents-1 .seat-0 {
-  top: -22%;
+  top: -17%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -1472,7 +1472,7 @@ button:disabled {
 }
 
 .mobile-layout .opponents-3 .seat-1 {
-  top: -22%;
+  top: -17%;
   left: 50%;
   transform: translateX(-50%);
 }
