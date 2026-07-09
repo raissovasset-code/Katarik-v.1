@@ -1,5 +1,7 @@
 node_modules/
 dist/
+client/dist/
+.codex-remote-attachments/
 .env
 .env.local
 npm-debug.log*

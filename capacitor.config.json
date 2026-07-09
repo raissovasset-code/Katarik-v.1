@@ -1,0 +1,8 @@
+{
+  "appId": "com.katarik.game",
+  "appName": "Katarik",
+  "webDir": "client/dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

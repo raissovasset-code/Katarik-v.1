@@ -5,7 +5,15 @@
   "type": "module",
   "scripts": {
     "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client",
+    "mobile:build": "node scripts/build-mobile.mjs",
+    "cap:sync": "npm run mobile:build && npx cap sync android",
+    "android:open": "npx cap open android",
     "start": "npm start --prefix server",
     "test": "npm test --prefix server"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1"
   }
 }
