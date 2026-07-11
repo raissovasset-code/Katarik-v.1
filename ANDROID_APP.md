@@ -42,6 +42,19 @@ The APK will be here:
 android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
+For phone testing, prefer the signed release APK:
+
+```powershell
+cd android
+.\gradlew.bat assembleRelease
+```
+
+The signed APK will be here:
+
+```text
+android\app\build\outputs\apk\release\app-release.apk
+```
+
 ## Required on this computer
 
 To create the APK locally, install:
