@@ -51,6 +51,27 @@ test('startGame creates a playable room state', () => {
   assert.ok(player(game, 'B').hand.length > 0);
 });
 
+test('deal extra cards rotates around the table each round', () => {
+  const game = createGame('ROOM', 'pogoni');
+  ['A', 'B', 'C', 'D'].forEach(id => addPlayer(game, { id, name: id }));
+
+  startGame(game);
+
+  assert.deepEqual(game.players.map(item => item.hand.length), [14, 14, 14, 13]);
+
+  game.status = 'round_finished';
+  game.roundWinnerId = 'A';
+  nextRound(game);
+
+  assert.deepEqual(game.players.map(item => item.hand.length), [13, 14, 14, 14]);
+
+  game.status = 'round_finished';
+  game.roundWinnerId = 'A';
+  nextRound(game);
+
+  assert.deepEqual(game.players.map(item => item.hand.length), [14, 13, 14, 14]);
+});
+
 test('players with the same requested name receive unique display names', () => {
   const game = createGame('ROOM', 'classic');
   addPlayer(game, { id: 'A', name: 'Асет' });

@@ -38,6 +38,7 @@ export function createGame(roomId, mode = 'classic') {
     passedPlayerIds: [],
     pogonReadyPlayerId: null,
     roundStarterId: null,
+    dealOffset: 0,
     places: [],
     loserId: null,
   };
@@ -272,8 +273,9 @@ function dealRound(game, players) {
   const deck = createDeck();
   const dealSlots = players.length === 2 ? 3 : players.length;
   const hands = Array.from({ length: dealSlots }, () => []);
+  const dealOffset = game.dealOffset % dealSlots;
 
-  deck.forEach((card, index) => hands[index % dealSlots].push(card));
+  deck.forEach((card, index) => hands[(dealOffset + index) % dealSlots].push(card));
 
   players.forEach((player, index) => {
     player.hand = sortHand(hands[index]);
@@ -281,6 +283,7 @@ function dealRound(game, players) {
   });
 
   game.burned = players.length === 2 ? hands[2] : [];
+  game.dealOffset = (dealOffset + 1) % dealSlots;
 }
 
 function startRound(game, starter) {
