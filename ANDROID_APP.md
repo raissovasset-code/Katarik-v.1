@@ -17,11 +17,15 @@ From the project root:
 
 ```powershell
 npm install
+npm run android:check
 npm run cap:sync
 npm run android:open
 ```
 
 `npm run android:open` opens the project in Android Studio.
+
+`npm run android:check` checks whether Java, Android tools, and the Android
+project are available on this computer.
 
 ## APK build
 
