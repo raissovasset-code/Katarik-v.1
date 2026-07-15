@@ -251,6 +251,9 @@ export function playCards(game, playerId, cardIds, declaredRanks = {}) {
   if (!canBeat(game.table?.combo || null, combo)) {
     throw new Error('Эта комбинация не бьет стол');
   }
+  if (leavesDVKWithoutNormalCard(player.hand, cardIds)) {
+    throw new Error('Нельзя оставлять ДВК без обычной карты');
+  }
 
   const canSetPogon = game.pogonReadyPlayerId === playerId;
 
@@ -505,6 +508,14 @@ function nextActivePlayerId(game, fromPlayerId) {
 
 function hasOnlyDVK(player) {
   return player.hand.length === 1 && player.hand[0]?.type === 'wild';
+}
+
+function leavesDVKWithoutNormalCard(hand, playedCardIds) {
+  const played = new Set(playedCardIds);
+  const remaining = hand.filter(card => !played.has(card.id));
+
+  return remaining.some(card => card.type === 'wild')
+    && remaining.every(card => card.type === 'wild' || card.type === 'joker');
 }
 
 function ensureTurn(game, playerId) {

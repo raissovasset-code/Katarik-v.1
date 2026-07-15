@@ -90,6 +90,46 @@ test('one card cannot be played twice in the same move', () => {
   assert.throws(() => playCards(game, 'A', ['4S', '4S']));
 });
 
+test('a move cannot leave DVK as the only card', () => {
+  const game = makeGame('classic', ['A', 'B']);
+  player(game, 'A').hand = [makeCard('4S', '4'), makeDvk()];
+
+  assert.throws(() => playCards(game, 'A', ['4S']), /ДВК/);
+  assert.deepEqual(player(game, 'A').hand.map(card => card.id), ['4S', 'DVK']);
+  assert.equal(game.table, null);
+  assert.equal(game.currentPlayerId, 'A');
+});
+
+test('a move cannot leave DVK with only jokers', () => {
+  const game = makeGame('classic', ['A', 'B']);
+  player(game, 'A').hand = [
+    makeCard('4S', '4'),
+    makeDvk(),
+    makeJoker('RED_JOKER', 'RED_JOKER'),
+    makeJoker('BLACK_JOKER', 'BLACK_JOKER'),
+  ];
+
+  assert.throws(() => playCards(game, 'A', ['4S']), /ДВК/);
+  assert.equal(player(game, 'A').hand.length, 4);
+  assert.equal(game.table, null);
+  assert.equal(game.currentPlayerId, 'A');
+});
+
+test('DVK may remain when the hand still has a normal card', () => {
+  const game = makeGame('classic', ['A', 'B']);
+  player(game, 'A').hand = [
+    makeCard('4S', '4'),
+    makeCard('5S', '5'),
+    makeDvk(),
+    makeJoker('RED_JOKER', 'RED_JOKER'),
+  ];
+
+  playCards(game, 'A', ['4S']);
+
+  assert.deepEqual(player(game, 'A').hand.map(card => card.id), ['5S', 'DVK', 'RED_JOKER']);
+  assert.equal(game.currentPlayerId, 'B');
+});
+
 test('detects base combinations', () => {
   assert.equal(detectBestCombination([makeCard('4S', '4')]).type, 'single');
 
