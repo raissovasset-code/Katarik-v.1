@@ -346,6 +346,49 @@ test('pogoni advances through every rank from 4 to A and finishes the match', ()
   });
 });
 
+test('the player who sets the final pogon is the match winner', () => {
+  const game = makeGame('pogoni', ['A', 'B', 'C']);
+  game.currentPlayerId = 'B';
+  game.pogonReadyPlayerId = 'B';
+  game.places = ['A'];
+  player(game, 'A').active = false;
+  player(game, 'A').hand = [];
+  player(game, 'B').pogonRank = 'A';
+  player(game, 'B').hand = [makeCard('AS', 'A')];
+  player(game, 'C').hand = [makeCard('3S', '3')];
+
+  playCards(game, 'B', ['AS']);
+
+  assert.equal(game.status, 'finished');
+  assert.equal(game.roundWinnerId, 'B');
+});
+
+for (const mode of ['classic', 'elimination']) {
+  test(`${mode} restart resets the game and gives the first turn to 4S`, () => {
+    const game = createGame('ROOM', mode);
+    ['A', 'B', 'C'].forEach(id => addPlayer(game, { id, name: id }));
+    game.status = 'finished';
+    game.eliminatedIds = ['B', 'C'];
+    game.roundWinnerId = 'A';
+    game.loserId = 'C';
+    game.players.forEach(item => {
+      item.active = item.id === 'A';
+      item.pogonRank = '9';
+    });
+
+    restartGame(game);
+
+    const fourSpadesOwner = game.players.find(item => item.hand.some(card => card.id === '4S'));
+    assert.deepEqual(game.eliminatedIds, []);
+    assert.ok(game.players.every(item => item.active));
+    assert.ok(game.players.every(item => item.pogonRank === '4'));
+    assert.equal(game.currentPlayerId, fourSpadesOwner.id);
+    assert.equal(game.roundStarterId, fourSpadesOwner.id);
+    assert.equal(game.status, 'playing');
+    assert.equal(game.loserId, null);
+  });
+}
+
 test('all other players passing gives the turn back to the table winner', () => {
   const game = makeGame('pogoni', ['A', 'B', 'C']);
   player(game, 'A').hand = [makeCard('6S', '6'), makeCard('4S', '4')];

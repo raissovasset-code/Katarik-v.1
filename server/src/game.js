@@ -140,9 +140,13 @@ export function restartGame(game) {
   removeLeavingPlayers(game);
   if (game.players.length < 2) throw new Error('Минимум 2 игрока');
 
+  game.eliminatedIds = [];
+  game.roundWinnerId = null;
+  game.players.forEach(player => {
+    player.pogonRank = '4';
+  });
   dealRound(game, game.players);
-  const starterId = game.places?.[0];
-  const starter = game.players.find(player => player.id === starterId) || game.players[0];
+  const starter = game.players.find(player => player.hand.some(card => card.id === '4S')) || game.players[0];
   startRound(game, starter);
 }
 
@@ -416,7 +420,9 @@ function finishPlayer(game, player, playedCards, canSetPogon) {
     if (pogonResult.success) {
       player.pogonRank = pogonResult.nextRank;
       game.status = pogonResult.finished ? 'finished' : 'round_finished';
-      game.roundWinnerId = game.places[0] || player.id;
+      game.roundWinnerId = pogonResult.finished
+        ? player.id
+        : game.places[0] || player.id;
       return true;
     }
 

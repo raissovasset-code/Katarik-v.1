@@ -472,7 +472,7 @@ function App() {
               Следующий кон
             </button>
           )}
-          {isHost && game.status === 'finished' && (
+          {isHost && game.status === 'finished' && game.mode !== 'pogoni' && (
             <button className="solid-button" disabled={!connected || remainingPlayerCount < 2} onClick={() => send('restartGame')}>
               Играть заново
             </button>
@@ -865,7 +865,7 @@ function finishedGameText(game) {
   const winnerName = game.players.find(player => player.id === game.roundWinnerId)?.name;
   const loserName = game.players.find(player => player.id === game.loserId)?.name;
 
-  if (game.mode === 'pogoni' || !loserName) {
+  if (game.mode !== 'classic' || !loserName) {
     return `Победил: ${winnerName || '—'}`;
   }
 
