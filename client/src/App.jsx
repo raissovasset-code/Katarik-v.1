@@ -467,12 +467,12 @@ function App() {
             Выйти
           </button>
           {isHost && game.status === 'round_finished' && (
-            <button className="solid-button" disabled={!connected} onClick={() => send('nextRound')}>
+            <button className="solid-button" disabled={!connected || game.players.length < 2} onClick={() => send('nextRound')}>
               Следующий кон
             </button>
           )}
           {isHost && game.status === 'finished' && (
-            <button className="solid-button" disabled={!connected} onClick={() => send('restartGame')}>
+            <button className="solid-button" disabled={!connected || game.players.length < 2} onClick={() => send('restartGame')}>
               Играть заново
             </button>
           )}

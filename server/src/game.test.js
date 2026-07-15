@@ -10,6 +10,7 @@ import {
   pass,
   playCards,
   removePlayer,
+  restartGame,
   startGame,
 } from './game.js';
 
@@ -340,6 +341,16 @@ test('the remaining player wins when the opponent leaves', () => {
   assert.equal(game.status, 'finished');
   assert.equal(game.roundWinnerId, 'A');
   assert.equal(game.currentPlayerId, null);
+});
+
+test('a finished game cannot deal the full deck to one remaining player', () => {
+  const game = makeGame('classic', ['A', 'B']);
+  removePlayer(game, 'B');
+  const handBeforeRestart = [...player(game, 'A').hand];
+
+  assert.throws(() => restartGame(game), /2/);
+  assert.equal(game.status, 'finished');
+  assert.deepEqual(player(game, 'A').hand, handBeforeRestart);
 });
 
 test('leaving after finishing does not erase another player turn', () => {

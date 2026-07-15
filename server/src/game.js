@@ -166,6 +166,7 @@ export function startGame(game) {
 
 export function restartGame(game) {
   if (!game) throw new Error('Комната не найдена');
+  if (game.players.length < 2) throw new Error('Минимум 2 игрока');
 
   dealRound(game, game.players);
   const starterId = game.places?.[0];
