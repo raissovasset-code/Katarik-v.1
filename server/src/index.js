@@ -13,6 +13,7 @@ import {
   restartGame,
   startGame,
 } from './game.js';
+import { claimExistingPlayerSession, createPlayerFromMessage } from './sessions.js';
 
 const PORT = Number(process.env.PORT || 3001);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -26,6 +27,10 @@ app.use(express.static(clientDistPath));
 const rooms = new Map();
 const sockets = new Map();
 const playerSockets = new Map();
+
+function playerSocketKey(roomId, playerId) {
+  return `${roomId}:${playerId}`;
+}
 
 app.get('/', (req, res) => {
   res.json({
@@ -63,7 +68,8 @@ function sendTo(ws, data) {
 }
 
 function bindPlayerSocket(ws, roomId, playerId) {
-  const oldWs = playerSockets.get(playerId);
+  const key = playerSocketKey(roomId, playerId);
+  const oldWs = playerSockets.get(key);
 
   if (oldWs && oldWs !== ws) {
     try {
@@ -74,7 +80,7 @@ function bindPlayerSocket(ws, roomId, playerId) {
     sockets.delete(oldWs);
   }
 
-  playerSockets.set(playerId, ws);
+  playerSockets.set(key, ws);
   sockets.set(ws, { roomId, playerId });
 }
 
@@ -110,8 +116,10 @@ function leaveRoom(ws) {
   const playerId = meta?.playerId;
   const game = roomId ? rooms.get(roomId) : null;
 
-  if (playerId && playerSockets.get(playerId) === ws) {
-    playerSockets.delete(playerId);
+  const socketKey = roomId && playerId ? playerSocketKey(roomId, playerId) : null;
+
+  if (socketKey && playerSockets.get(socketKey) === ws) {
+    playerSockets.delete(socketKey);
   }
 
   sockets.set(ws, {});
@@ -133,17 +141,10 @@ function leaveRoom(ws) {
   sendTo(ws, { type: 'leftRoom' });
 }
 
-function createPlayer(msg) {
-  return {
-    id: msg.playerId,
-    name: msg.name || 'Игрок',
-  };
-}
-
 function handleCreateRoom(ws, msg) {
   const code = roomCode();
   const game = createGame(code, msg.mode || 'classic');
-  const player = createPlayer(msg);
+  const player = createPlayerFromMessage(msg);
 
   rooms.set(code, game);
   addPlayer(game, player);
@@ -162,6 +163,7 @@ function handleJoinRoom(ws, msg) {
   const existingPlayer = game.players.find(player => player.id === msg.playerId);
 
   if (existingPlayer) {
+    claimExistingPlayerSession(existingPlayer, msg);
     bindPlayerSocket(ws, roomId, existingPlayer.id);
     broadcast(roomId);
     return;
@@ -171,7 +173,7 @@ function handleJoinRoom(ws, msg) {
     throw new Error('Игра уже началась');
   }
 
-  const player = createPlayer(msg);
+  const player = createPlayerFromMessage(msg);
   addPlayer(game, player);
   bindPlayerSocket(ws, roomId, player.id);
   broadcast(roomId);
@@ -202,6 +204,11 @@ wss.on('connection', ws => {
     try {
       const msg = JSON.parse(raw.toString());
       const meta = sockets.get(ws);
+
+      if (msg.type === 'ping') {
+        sendTo(ws, { type: 'pong', timestamp: Date.now() });
+        return;
+      }
 
       if (msg.type === 'createRoom') {
         handleCreateRoom(ws, msg);
@@ -250,9 +257,12 @@ wss.on('connection', ws => {
 
   ws.on('close', () => {
     const meta = sockets.get(ws);
+    const socketKey = meta?.roomId && meta?.playerId
+      ? playerSocketKey(meta.roomId, meta.playerId)
+      : null;
 
-    if (meta?.playerId && playerSockets.get(meta.playerId) === ws) {
-      playerSockets.delete(meta.playerId);
+    if (socketKey && playerSockets.get(socketKey) === ws) {
+      playerSockets.delete(socketKey);
     }
 
     sockets.delete(ws);

@@ -16,17 +16,29 @@ const DESKTOP_GAME_HEIGHT = 900;
 const MIN_DESKTOP_SCALE = 0.72;
 
 function createLocalUser() {
-  const savedId = sessionStorage.getItem('katarik_user_id');
+  const storage = isNativeApp() ? localStorage : sessionStorage;
+  const savedId = storage.getItem('katarik_user_id');
+  const savedToken = storage.getItem('katarik_session_token');
   const id = savedId || createId();
+  const sessionToken = savedToken || createId();
 
   if (!savedId) {
-    sessionStorage.setItem('katarik_user_id', id);
+    storage.setItem('katarik_user_id', id);
+  }
+
+  if (!savedToken) {
+    storage.setItem('katarik_session_token', sessionToken);
   }
 
   return {
     id,
+    sessionToken,
     name: localStorage.getItem('katarik_name') || 'Игрок',
   };
+}
+
+function isNativeApp() {
+  return Boolean(window.Capacitor?.isNativePlatform?.());
 }
 
 function createId() {
@@ -79,15 +91,21 @@ function App() {
   const [selected, setSelected] = useState([]);
   const [error, setError] = useState('');
   const [connected, setConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [inviteCopied, setInviteCopied] = useState(false);
   const [viewport, setViewport] = useState(() => ({
     width: window.innerWidth,
     height: window.innerHeight,
   }));
   const wsRef = useRef(null);
+  const nameRef = useRef(name);
+  const reconnectTimerRef = useRef(null);
+  const reconnectAttemptRef = useRef(0);
+  const lastMessageAtRef = useRef(Date.now());
 
   useEffect(() => {
     localStorage.setItem('katarik_name', name);
+    nameRef.current = name;
   }, [name]);
 
   useEffect(() => {
@@ -103,45 +121,180 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const socket = new WebSocket(WS_URL);
-    wsRef.current = socket;
+    let active = true;
 
-    socket.onopen = () => setConnected(true);
+    function identityPayload() {
+      return {
+        playerId: user.id,
+        sessionToken: user.sessionToken,
+        name: nameRef.current || user.name,
+      };
+    }
 
-    socket.onmessage = event => {
-      const msg = JSON.parse(event.data);
+    function clearConnectionError() {
+      setError(current => (
+        current.startsWith('Соединение потеряно') || current === 'Нет соединения с сервером.'
+          ? ''
+          : current
+      ));
+    }
 
-      if (msg.type === 'roomCreated') {
-        setJoinCode(msg.roomId);
-        localStorage.setItem('katarik_room', msg.roomId);
-        window.history.replaceState(null, '', roomPath(msg.roomId));
+    function scheduleReconnect() {
+      if (!active || reconnectTimerRef.current) return;
+
+      const attempt = reconnectAttemptRef.current;
+      const delay = Math.min(8000, 500 * (2 ** attempt));
+      reconnectAttemptRef.current += 1;
+      setConnectionStatus('reconnecting');
+
+      reconnectTimerRef.current = window.setTimeout(() => {
+        reconnectTimerRef.current = null;
+        connect();
+      }, delay);
+    }
+
+    function connect() {
+      if (!active) return;
+
+      const currentSocket = wsRef.current;
+      if (
+        currentSocket?.readyState === WebSocket.OPEN ||
+        currentSocket?.readyState === WebSocket.CONNECTING
+      ) {
+        return;
       }
 
-      if (msg.type === 'state') {
-        setGame(msg.game);
-        setSelected([]);
+      setConnectionStatus(reconnectAttemptRef.current ? 'reconnecting' : 'connecting');
+      const socket = new WebSocket(WS_URL);
+      let restoringRoom = false;
+      wsRef.current = socket;
+
+      socket.onopen = () => {
+        if (!active || wsRef.current !== socket) return;
+
+        setConnected(true);
+        setConnectionStatus('connected');
+        reconnectAttemptRef.current = 0;
+        lastMessageAtRef.current = Date.now();
+        clearConnectionError();
+
+        const savedRoomId = localStorage.getItem('katarik_room');
+        if (savedRoomId) {
+          restoringRoom = true;
+          socket.send(JSON.stringify({
+            type: 'joinRoom',
+            roomId: savedRoomId,
+            ...identityPayload(),
+          }));
+        }
+      };
+
+      socket.onmessage = event => {
+        if (!active || wsRef.current !== socket) return;
+        lastMessageAtRef.current = Date.now();
+
+        let msg;
+        try {
+          msg = JSON.parse(event.data);
+        } catch {
+          setError('Сервер прислал некорректный ответ.');
+          return;
+        }
+
+        if (msg.type === 'pong') return;
+
+        if (msg.type === 'roomCreated') {
+          restoringRoom = false;
+          setJoinCode(msg.roomId);
+          localStorage.setItem('katarik_room', msg.roomId);
+          window.history.replaceState(null, '', roomPath(msg.roomId));
+        }
+
+        if (msg.type === 'state') {
+          restoringRoom = false;
+          clearConnectionError();
+          setGame(msg.game);
+          setSelected([]);
+        }
+
+        if (msg.type === 'leftRoom') {
+          restoringRoom = false;
+          setGame(null);
+          setSelected([]);
+          setJoinCode('');
+          localStorage.removeItem('katarik_room');
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+
+        if (msg.type === 'error') {
+          if (
+            restoringRoom &&
+            ['Комната не найдена', 'Это место игрока принадлежит другому устройству'].includes(msg.message)
+          ) {
+            restoringRoom = false;
+            localStorage.removeItem('katarik_room');
+            setGame(null);
+          }
+
+          setError(msg.message);
+        }
+      };
+
+      socket.onerror = () => {
+        if (wsRef.current === socket) socket.close();
+      };
+
+      socket.onclose = () => {
+        if (!active || wsRef.current !== socket) return;
+
+        setConnected(false);
+        setConnectionStatus('reconnecting');
+        setError('Соединение потеряно. Переподключаемся…');
+        scheduleReconnect();
+      };
+    }
+
+    function checkConnection() {
+      const socket = wsRef.current;
+
+      if (socket?.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'ping' }));
+      } else {
+        connect();
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') checkConnection();
+    }
+
+    connect();
+
+    const heartbeatTimer = window.setInterval(() => {
+      const socket = wsRef.current;
+      if (socket?.readyState !== WebSocket.OPEN) return;
+
+      if (Date.now() - lastMessageAtRef.current > 30000) {
+        socket.close();
+        return;
       }
 
-      if (msg.type === 'leftRoom') {
-        setGame(null);
-        setSelected([]);
-        setJoinCode('');
-        localStorage.removeItem('katarik_room');
-        window.history.replaceState(null, '', window.location.pathname);
-      }
+      socket.send(JSON.stringify({ type: 'ping' }));
+    }, 10000);
 
-      if (msg.type === 'error') {
-        setError(msg.message);
-      }
+    window.addEventListener('online', checkConnection);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      active = false;
+      window.clearInterval(heartbeatTimer);
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+      window.removeEventListener('online', checkConnection);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      wsRef.current?.close();
     };
-
-    socket.onclose = () => {
-      setConnected(false);
-      setError('Соединение потеряно. Обнови страницу.');
-    };
-
-    return () => socket.close();
-  }, []);
+  }, [user]);
 
   function send(type, payload = {}) {
     setError('');
@@ -154,6 +307,7 @@ function App() {
     wsRef.current.send(JSON.stringify({
       type,
       playerId: user.id,
+      sessionToken: user.sessionToken,
       name: name || user.name,
       ...payload,
     }));
@@ -262,7 +416,11 @@ function App() {
             </div>
 
             <div className={connected ? 'connection online' : 'connection'}>
-              {connected ? 'Сервер подключен' : 'Подключение...'}
+              {connectionStatus === 'connected'
+                ? 'Сервер подключен'
+                : connectionStatus === 'reconnecting'
+                  ? 'Переподключение...'
+                  : 'Подключение...'}
             </div>
 
             {error && <div className="toast error">{error}</div>}
@@ -298,10 +456,14 @@ function App() {
             Выйти
           </button>
           {isHost && game.status === 'round_finished' && (
-            <button className="solid-button" onClick={() => send('nextRound')}>Следующий кон</button>
+            <button className="solid-button" disabled={!connected} onClick={() => send('nextRound')}>
+              Следующий кон
+            </button>
           )}
           {isHost && game.status === 'finished' && (
-            <button className="solid-button" onClick={() => send('restartGame')}>Играть заново</button>
+            <button className="solid-button" disabled={!connected} onClick={() => send('restartGame')}>
+              Играть заново
+            </button>
           )}
           {!isHost && ['lobby', 'round_finished', 'finished'].includes(game.status) && (
             <span className="host-wait">Ждем хозяина</span>
@@ -371,7 +533,7 @@ function App() {
               {isHost ? (
                 <button
                   className="solid-button"
-                  disabled={!canStartGame}
+                  disabled={!connected || !canStartGame}
                   onClick={() => send('startGame')}
                 >
                   Начать игру
@@ -461,10 +623,18 @@ function App() {
       </div>
 
         <div className="action-bar">
-          <button className="play-button" disabled={!isMyTurn || selected.length === 0} onClick={play}>
+          <button
+            className="play-button"
+            disabled={!connected || !isMyTurn || selected.length === 0}
+            onClick={play}
+          >
             Походить{selected.length ? ` (${selected.length})` : ''}
           </button>
-          <button className="pass-button" disabled={!isMyTurn || !game.table} onClick={() => send('pass')}>
+          <button
+            className="pass-button"
+            disabled={!connected || !isMyTurn || !game.table}
+            onClick={() => send('pass')}
+          >
             Пас
           </button>
         </div>
