@@ -9,6 +9,7 @@ import {
   nextRound,
   pass,
   playCards,
+  removePlayer,
   startGame,
 } from './game.js';
 
@@ -279,4 +280,78 @@ test('in pogoni, the first player who exited starts the next round', () => {
 
   assert.equal(game.status, 'playing');
   assert.equal(game.currentPlayerId, 'A');
+});
+
+test('removing a waiting player keeps the current turn unchanged', () => {
+  const game = makeGame('classic', ['A', 'B', 'C', 'D']);
+  game.currentPlayerId = 'A';
+
+  removePlayer(game, 'C');
+
+  assert.deepEqual(game.players.map(item => item.id), ['A', 'B', 'D']);
+  assert.equal(game.currentPlayerId, 'A');
+  assert.equal(game.status, 'playing');
+});
+
+test('removing the current player passes the turn clockwise', () => {
+  const game = makeGame('classic', ['A', 'B', 'C', 'D']);
+  game.currentPlayerId = 'B';
+
+  removePlayer(game, 'B');
+
+  assert.equal(game.currentPlayerId, 'C');
+  assert.equal(game.status, 'playing');
+});
+
+test('removing the table owner clears the trick without changing a valid current turn', () => {
+  const game = makeGame('classic', ['A', 'B', 'C']);
+  game.currentPlayerId = 'B';
+  game.lastPlayedPlayerId = 'A';
+  game.table = {
+    playerId: 'A',
+    cards: [makeCard('4S', '4')],
+    combo: { type: 'single', high: 1, length: 1 },
+  };
+  game.passedPlayerIds = ['C'];
+
+  removePlayer(game, 'A');
+
+  assert.equal(game.table, null);
+  assert.equal(game.lastPlayedPlayerId, null);
+  assert.deepEqual(game.passedPlayerIds, []);
+  assert.equal(game.currentPlayerId, 'B');
+});
+
+test('the next clockwise player becomes host after the host leaves', () => {
+  const game = makeGame('classic', ['A', 'B', 'C', 'D']);
+  game.hostPlayerId = 'C';
+
+  removePlayer(game, 'C');
+
+  assert.equal(game.hostPlayerId, 'D');
+});
+
+test('the remaining player wins when the opponent leaves', () => {
+  const game = makeGame('classic', ['A', 'B']);
+  game.currentPlayerId = 'B';
+
+  removePlayer(game, 'B');
+
+  assert.equal(game.status, 'finished');
+  assert.equal(game.roundWinnerId, 'A');
+  assert.equal(game.currentPlayerId, null);
+});
+
+test('leaving after finishing does not erase another player turn', () => {
+  const game = makeGame('pogoni', ['A', 'B', 'C']);
+  player(game, 'A').active = false;
+  game.places = ['A'];
+  game.roundWinnerId = 'A';
+  game.currentPlayerId = 'B';
+
+  removePlayer(game, 'A');
+
+  assert.equal(game.status, 'playing');
+  assert.equal(game.currentPlayerId, 'B');
+  assert.equal(game.roundWinnerId, null);
 });

@@ -10,6 +10,7 @@ import {
   pass,
   playCards,
   publicGameState,
+  removePlayer,
   restartGame,
   startGame,
 } from './game.js';
@@ -124,14 +125,10 @@ function leaveRoom(ws) {
 
   sockets.set(ws, {});
 
-  if (game?.status === 'lobby') {
-    game.players = game.players.filter(player => player.id !== playerId);
+  if (game && playerId) {
+    const result = removePlayer(game, playerId);
 
-    if (game.hostPlayerId === playerId) {
-      game.hostPlayerId = game.players[0]?.id || null;
-    }
-
-    if (game.players.length === 0) {
+    if (result.empty) {
       rooms.delete(roomId);
     } else {
       broadcast(roomId);

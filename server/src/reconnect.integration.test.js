@@ -7,15 +7,14 @@ import path from 'node:path';
 import WebSocket from 'ws';
 
 const TEST_PORT = 32123;
-const SERVER_URL = `ws://127.0.0.1:${TEST_PORT}`;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-function waitForServer(child) {
+function waitForServer(child, port) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error('Test server did not start')), 5000);
 
     child.stdout.on('data', chunk => {
-      if (!chunk.toString().includes(`:${TEST_PORT}`)) return;
+      if (!chunk.toString().includes(`:${port}`)) return;
       clearTimeout(timeout);
       resolve();
     });
@@ -27,9 +26,9 @@ function waitForServer(child) {
   });
 }
 
-function openSocket() {
+function openSocket(port = TEST_PORT) {
   return new Promise((resolve, reject) => {
-    const socket = new WebSocket(SERVER_URL);
+    const socket = new WebSocket(`ws://127.0.0.1:${port}`);
     socket.once('open', () => resolve(socket));
     socket.once('error', reject);
   });
@@ -66,7 +65,7 @@ test('a disconnected player reclaims the same room seat', async t => {
   });
 
   t.after(() => child.kill());
-  await waitForServer(child);
+  await waitForServer(child, TEST_PORT);
 
   const identity = {
     playerId: 'reconnect-player',
@@ -90,4 +89,66 @@ test('a disconnected player reclaims the same room seat', async t => {
   assert.equal(game.players.length, 1);
   assert.equal(game.players[0].id, identity.playerId);
   assert.equal(game.players[0].name, identity.name);
+});
+
+test('the room continues and host rights move clockwise when the host leaves', async t => {
+  const port = TEST_PORT + 1;
+  const child = spawn(process.execPath, ['index.js'], {
+    cwd: __dirname,
+    env: { ...process.env, PORT: String(port) },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  t.after(() => child.kill());
+  await waitForServer(child, port);
+
+  const identities = ['A', 'B', 'C'].map(id => ({
+    playerId: id,
+    sessionToken: `secret-${id}`,
+    name: id,
+  }));
+  const [hostSocket, secondSocket, thirdSocket] = await Promise.all([
+    openSocket(port),
+    openSocket(port),
+    openSocket(port),
+  ]);
+
+  t.after(() => {
+    hostSocket.close();
+    secondSocket.close();
+    thirdSocket.close();
+  });
+
+  const created = waitForMessage(hostSocket, 'roomCreated');
+  hostSocket.send(JSON.stringify({ type: 'createRoom', mode: 'classic', ...identities[0] }));
+  const { roomId } = await created;
+
+  const secondJoined = waitForMessage(secondSocket, 'state');
+  secondSocket.send(JSON.stringify({ type: 'joinRoom', roomId, ...identities[1] }));
+  await secondJoined;
+
+  const secondSeesThird = waitForMessage(secondSocket, 'state');
+  const thirdJoined = waitForMessage(thirdSocket, 'state');
+  thirdSocket.send(JSON.stringify({ type: 'joinRoom', roomId, ...identities[2] }));
+  await Promise.all([secondSeesThird, thirdJoined]);
+
+  const started = waitForMessage(secondSocket, 'state');
+  hostSocket.send(JSON.stringify({ type: 'startGame' }));
+  const beforeLeave = (await started).game;
+  assert.equal(beforeLeave.status, 'playing');
+  assert.equal(beforeLeave.players.length, 3);
+
+  const hostLeft = waitForMessage(hostSocket, 'leftRoom');
+  const continued = waitForMessage(secondSocket, 'state');
+  hostSocket.send(JSON.stringify({ type: 'leaveRoom' }));
+
+  await hostLeft;
+  const afterLeave = (await continued).game;
+  assert.equal(afterLeave.status, 'playing');
+  assert.deepEqual(afterLeave.players.map(player => player.id), ['B', 'C']);
+  assert.equal(afterLeave.hostPlayerId, 'B');
+  assert.equal(
+    afterLeave.currentPlayerId,
+    beforeLeave.currentPlayerId === 'A' ? 'B' : beforeLeave.currentPlayerId,
+  );
 });

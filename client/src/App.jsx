@@ -827,7 +827,7 @@ function finishedGameText(game) {
   const winnerName = game.players.find(player => player.id === game.roundWinnerId)?.name;
   const loserName = game.players.find(player => player.id === game.loserId)?.name;
 
-  if (game.mode === 'pogoni') {
+  if (game.mode === 'pogoni' || !loserName) {
     return `Победил: ${winnerName || '—'}`;
   }
 

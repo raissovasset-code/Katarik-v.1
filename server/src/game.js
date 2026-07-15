@@ -59,6 +59,89 @@ export function addPlayer(game, player) {
   }
 }
 
+export function removePlayer(game, playerId) {
+  const playerIndex = game.players.findIndex(player => player.id === playerId);
+  if (playerIndex === -1) return { removed: false, empty: game.players.length === 0 };
+
+  const wasCurrentPlayer = game.currentPlayerId === playerId;
+  const ownedTable = game.lastPlayedPlayerId === playerId || game.table?.playerId === playerId;
+
+  game.players.splice(playerIndex, 1);
+  game.eliminatedIds = game.eliminatedIds.filter(id => id !== playerId);
+  game.places = game.places.filter(id => id !== playerId);
+  game.passedPlayerIds = game.passedPlayerIds.filter(id => id !== playerId);
+
+  if (game.hostPlayerId === playerId) {
+    game.hostPlayerId = game.players.length
+      ? game.players[playerIndex % game.players.length].id
+      : null;
+  }
+
+  if (game.roundWinnerId === playerId) {
+    game.roundWinnerId = game.places[0] || null;
+  }
+  if (game.loserId === playerId) game.loserId = null;
+  if (game.roundStarterId === playerId) game.roundStarterId = null;
+  if (game.pogonReadyPlayerId === playerId) game.pogonReadyPlayerId = null;
+
+  if (ownedTable) {
+    game.table = null;
+    game.lastPlayedPlayerId = null;
+    game.passedPlayerIds = [];
+    game.pogonReadyPlayerId = null;
+  }
+
+  if (game.players.length === 0) {
+    game.currentPlayerId = null;
+    return { removed: true, empty: true };
+  }
+
+  if (game.status === 'lobby') {
+    return { removed: true, empty: false };
+  }
+
+  if (game.status !== 'playing') {
+    if (wasCurrentPlayer) {
+      game.currentPlayerId = activePlayerAtOrAfter(game, playerIndex)?.id || null;
+    }
+    return { removed: true, empty: false };
+  }
+
+  const active = activePlayers(game);
+
+  if (active.length === 0) {
+    game.currentPlayerId = null;
+    game.status = 'finished';
+    game.roundWinnerId = game.places[0] || game.players[0]?.id || null;
+    game.loserId = null;
+    return { removed: true, empty: false };
+  }
+
+  if (active.length === 1) {
+    const survivor = active[0];
+    game.currentPlayerId = null;
+
+    if (game.mode === 'classic' || game.players.length === 1) {
+      game.status = 'finished';
+      game.roundWinnerId = survivor.id;
+      game.loserId = null;
+    } else {
+      game.status = 'round_finished';
+      game.roundWinnerId = game.places[0] || survivor.id;
+      game.loserId = survivor.id;
+    }
+
+    return { removed: true, empty: false };
+  }
+
+  const currentStillActive = active.some(player => player.id === game.currentPlayerId);
+  if (wasCurrentPlayer || !currentStillActive) {
+    game.currentPlayerId = activePlayerAtOrAfter(game, playerIndex)?.id || null;
+  }
+
+  return { removed: true, empty: false };
+}
+
 export function uniquePlayerName(players, requestedName = 'Игрок') {
   const baseName = String(requestedName || 'Игрок').trim() || 'Игрок';
   const usedNames = new Set(players.map(player => player.name));
@@ -397,6 +480,15 @@ function finishRoundIfOnePlayerLeft(game) {
 
 function activePlayers(game) {
   return game.players.filter(player => player.active);
+}
+
+function activePlayerAtOrAfter(game, startIndex) {
+  for (let step = 0; step < game.players.length; step += 1) {
+    const player = game.players[(startIndex + step) % game.players.length];
+    if (player.active) return player;
+  }
+
+  return null;
 }
 
 function nextActivePlayerId(game, fromPlayerId) {
