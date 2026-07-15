@@ -127,8 +127,15 @@ export function uniquePlayerName(players, requestedName = 'Игрок') {
   return `${baseName} ${Date.now()}`;
 }
 
+function ensureMinimumPlayers(game) {
+  const minimumPlayers = game.mode === 'elimination' ? 3 : 2;
+  if (game.players.length < minimumPlayers) {
+    throw new Error(`Минимум ${minimumPlayers} игрока`);
+  }
+}
+
 export function startGame(game) {
-  if (game.players.length < 2) throw new Error('Минимум 2 игрока');
+  ensureMinimumPlayers(game);
 
   dealRound(game, game.players);
   const starter = game.players.find(player => player.hand.some(card => card.id === '4S')) || game.players[0];
@@ -138,7 +145,7 @@ export function startGame(game) {
 export function restartGame(game) {
   if (!game) throw new Error('Комната не найдена');
   removeLeavingPlayers(game);
-  if (game.players.length < 2) throw new Error('Минимум 2 игрока');
+  ensureMinimumPlayers(game);
 
   game.eliminatedIds = [];
   game.roundWinnerId = null;

@@ -370,7 +370,9 @@ function App() {
   const isHost = game?.hostPlayerId === user.id;
   const currentPlayer = game?.players?.find(p => p.id === game.currentPlayerId);
   const clockwiseOpponents = game ? getClockwiseOpponents(game.players, user.id) : [];
-  const canStartGame = isHost && game?.players?.length >= 2;
+  const minimumPlayers = game?.mode === 'elimination' ? 3 : 2;
+  const missingPlayers = Math.max(0, minimumPlayers - (game?.players?.length || 0));
+  const canStartGame = isHost && missingPlayers === 0;
   const remainingPlayerCount = game?.players?.filter(player => !player.leaving).length || 0;
   const isMobileLayout = initialLayout === 'mobile';
   const gameScale = Math.max(
@@ -473,7 +475,7 @@ function App() {
             </button>
           )}
           {isHost && game.status === 'finished' && game.mode !== 'pogoni' && (
-            <button className="solid-button" disabled={!connected || remainingPlayerCount < 2} onClick={() => send('restartGame')}>
+            <button className="solid-button" disabled={!connected || remainingPlayerCount < minimumPlayers} onClick={() => send('restartGame')}>
               Играть заново
             </button>
           )}
@@ -556,7 +558,9 @@ function App() {
             </div>
 
             {isHost && !canStartGame && (
-              <div className="waiting-note">Нужен еще один игрок</div>
+              <div className="waiting-note">
+                {missingPlayers === 1 ? 'Нужен еще один игрок' : `Нужно еще ${missingPlayers} игрока`}
+              </div>
             )}
           </div>
         </section>

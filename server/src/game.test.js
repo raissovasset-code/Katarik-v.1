@@ -89,6 +89,26 @@ test('startGame creates a playable room state', () => {
   assert.ok(player(game, 'B').hand.length > 0);
 });
 
+test('elimination requires at least three players to start', () => {
+  const game = createGame('ROOM', 'elimination');
+  addPlayer(game, { id: 'A', name: 'A' });
+  addPlayer(game, { id: 'B', name: 'B' });
+
+  assert.throws(() => startGame(game), /3/);
+
+  addPlayer(game, { id: 'C', name: 'C' });
+  assert.doesNotThrow(() => startGame(game));
+  assert.equal(game.status, 'playing');
+});
+
+test('elimination restart requires at least three remaining players', () => {
+  const game = makeGame('elimination', ['A', 'B']);
+  game.status = 'finished';
+
+  assert.throws(() => restartGame(game), /3/);
+  assert.equal(game.status, 'finished');
+});
+
 test('deal extra cards rotates around the table each round', () => {
   const game = createGame('ROOM', 'pogoni');
   ['A', 'B', 'C', 'D'].forEach(id => addPlayer(game, { id, name: id }));
