@@ -369,6 +369,7 @@ function App() {
   const isMyTurn = game?.currentPlayerId === user.id;
   const isHost = game?.hostPlayerId === user.id;
   const currentPlayer = game?.players?.find(p => p.id === game.currentPlayerId);
+  const lastPlayedPlayer = game?.players?.find(p => p.id === game.table?.playerId);
   const clockwiseOpponents = game ? getClockwiseOpponents(game.players, user.id) : [];
   const minimumPlayers = game?.mode === 'elimination' ? 3 : 2;
   const missingPlayers = Math.max(0, minimumPlayers - (game?.players?.length || 0));
@@ -579,7 +580,13 @@ function App() {
         </div>
 
         <div className={isMyTurn ? 'turn-pill your-turn' : 'turn-pill'}>
-          Ходит: <b>{currentPlayer?.name || '—'}</b>
+          {lastPlayedPlayer ? (
+            <>
+              Ходил: <b>{lastPlayedPlayer.name}</b>. Ходит: <b>{currentPlayer?.name || '—'}</b>
+            </>
+          ) : (
+            <>Ходит: <b>{currentPlayer?.name || '—'}</b></>
+          )}
         </div>
 
         <div className={`table-cards ${game.table?.cards?.length > 5 ? 'multi-row' : ''}`}>
