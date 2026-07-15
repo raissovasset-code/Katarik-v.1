@@ -110,11 +110,19 @@ function App() {
   const reconnectTimerRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
   const lastMessageAtRef = useRef(Date.now());
+  const isActiveGame = Boolean(game && game.status !== 'lobby');
 
   useEffect(() => {
     localStorage.setItem('katarik_name', name);
     nameRef.current = name;
   }, [name]);
+
+  useEffect(() => {
+    if (!isActiveGame || !error || isConnectionMessage(error)) return undefined;
+
+    const timer = window.setTimeout(() => setError(''), 1800);
+    return () => window.clearTimeout(timer);
+  }, [error, isActiveGame]);
 
   useEffect(() => {
     function updateViewport() {
@@ -629,6 +637,12 @@ function App() {
             <p>{finishedGameText(game)}</p>
           </div>
         )}
+
+        {error && !isConnectionMessage(error) && (
+          <div className="toast error table-error" role="status">
+            {error}
+          </div>
+        )}
       </section>
       <section className="my-zone">
         <div className="hand-fan">
@@ -678,7 +692,7 @@ function App() {
         </>
       )}
 
-      {error && !(game.status !== 'lobby' && isConnectionMessage(error)) && (
+      {error && game.status === 'lobby' && (
         <div className={`toast error floating ${game.status === 'finished' ? 'finished-toast' : ''}`}>
           {error}
         </div>
