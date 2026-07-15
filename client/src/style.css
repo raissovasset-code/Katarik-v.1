@@ -1160,6 +1160,10 @@ button:disabled {
   color: #8ff1b8;
 }
 
+.hint.connection-warning {
+  color: #ffd0d0;
+}
+
 .result-card {
   position: absolute;
   left: 50%;

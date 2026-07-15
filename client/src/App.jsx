@@ -80,6 +80,13 @@ function roomPath(roomId) {
   return `${window.location.pathname}?${params.toString()}`;
 }
 
+function isConnectionMessage(message) {
+  return Boolean(message) && (
+    message.startsWith('Соединение потеряно') ||
+    message === 'Нет соединения с сервером.'
+  );
+}
+
 function App() {
   const user = useMemo(createLocalUser, []);
   const initialRoom = useMemo(getRoomFromUrl, []);
@@ -133,11 +140,7 @@ function App() {
     }
 
     function clearConnectionError() {
-      setError(current => (
-        current.startsWith('Соединение потеряно') || current === 'Нет соединения с сервером.'
-          ? ''
-          : current
-      ));
+      setError(current => (isConnectionMessage(current) ? '' : current));
     }
 
     function scheduleReconnect() {
@@ -375,6 +378,13 @@ function App() {
   const missingPlayers = Math.max(0, minimumPlayers - (game?.players?.length || 0));
   const canStartGame = isHost && missingPlayers === 0;
   const remainingPlayerCount = game?.players?.filter(player => !player.leaving).length || 0;
+  const connectionHint = !connected
+    ? (isConnectionMessage(error)
+        ? error
+        : connectionStatus === 'reconnecting'
+          ? 'Соединение потеряно. Переподключаемся…'
+          : 'Подключение к серверу…')
+    : '';
   const isMobileLayout = initialLayout === 'mobile';
   const gameScale = Math.max(
     MIN_DESKTOP_SCALE,
@@ -662,13 +672,13 @@ function App() {
           </button>
         </div>
 
-        <div className={isMyTurn ? 'hint your-turn' : 'hint'}>
-          {isMyTurn ? 'Ваш ход' : 'Ждем ход другого игрока'}
+        <div className={`hint ${connectionHint ? 'connection-warning' : isMyTurn ? 'your-turn' : ''}`}>
+          {connectionHint || (isMyTurn ? 'Ваш ход' : 'Ждем ход другого игрока')}
         </div>
         </>
       )}
 
-      {error && (
+      {error && !(game.status !== 'lobby' && isConnectionMessage(error)) && (
         <div className={`toast error floating ${game.status === 'finished' ? 'finished-toast' : ''}`}>
           {error}
         </div>
