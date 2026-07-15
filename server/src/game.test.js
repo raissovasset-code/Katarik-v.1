@@ -39,6 +39,42 @@ function player(game, playerId) {
   return game.players.find(item => item.id === playerId);
 }
 
+const PLAYER_COUNTS = [2, 3, 4, 5];
+const TEST_RANKS = ['4', '5', '6', '7', '8'];
+
+function playerIds(count) {
+  return Array.from({ length: count }, (_, index) => String.fromCharCode(65 + index));
+}
+
+function prepareSingleCardRound(game, activeIds) {
+  game.status = 'playing';
+  game.currentPlayerId = activeIds[0];
+  game.roundStarterId = activeIds[0];
+  game.lastPlayedPlayerId = null;
+  game.table = null;
+  game.passedPlayerIds = [];
+  game.pogonReadyPlayerId = null;
+  game.places = [];
+  game.loserId = null;
+
+  game.players.forEach(item => {
+    const activeIndex = activeIds.indexOf(item.id);
+    item.active = activeIndex !== -1;
+    item.hand = activeIndex === -1
+      ? []
+      : [makeCard(`${TEST_RANKS[activeIndex]}${item.id}`, TEST_RANKS[activeIndex])];
+  });
+}
+
+function playSingleCardRound(game, activeIds) {
+  prepareSingleCardRound(game, activeIds);
+
+  activeIds.slice(0, -1).forEach((id, index) => {
+    assert.equal(game.currentPlayerId, id);
+    playCards(game, id, [`${TEST_RANKS[index]}${id}`]);
+  });
+}
+
 test('startGame creates a playable room state', () => {
   const game = createGame('ROOM', 'pogoni');
   addPlayer(game, { id: 'A', name: 'Aset' });
@@ -236,6 +272,78 @@ test('turn moves clockwise after a valid move', () => {
   playCards(game, 'A', ['4S']);
 
   assert.equal(game.currentPlayerId, 'B');
+});
+
+for (const count of PLAYER_COUNTS) {
+  test(`classic completes a full clockwise ${count}-player match`, () => {
+    const ids = playerIds(count);
+    const game = makeGame('classic', ids);
+
+    playSingleCardRound(game, ids);
+
+    assert.equal(game.status, 'finished');
+    assert.deepEqual(game.places, ids.slice(0, -1));
+    assert.equal(game.loserId, ids.at(-1));
+  });
+
+  test(`pogoni completes a full clockwise ${count}-player round`, () => {
+    const ids = playerIds(count);
+    const game = makeGame('pogoni', ids);
+
+    playSingleCardRound(game, ids);
+
+    assert.equal(game.status, 'round_finished');
+    assert.deepEqual(game.places, ids.slice(0, -1));
+    assert.equal(game.roundWinnerId, ids[0]);
+    assert.equal(game.loserId, ids.at(-1));
+  });
+}
+
+for (const count of PLAYER_COUNTS) {
+  test(`elimination reaches one winner from ${count} players`, () => {
+    const ids = playerIds(count);
+    const game = makeGame('elimination', ids);
+
+    while (game.status !== 'finished') {
+      const activeIds = ids.filter(id => !game.eliminatedIds.includes(id));
+      playSingleCardRound(game, activeIds);
+
+      if (game.status === 'round_finished') nextRound(game);
+    }
+
+    assert.equal(game.roundWinnerId, ids[0]);
+    assert.deepEqual(game.eliminatedIds, [...ids].reverse().slice(0, -1));
+  });
+}
+
+test('pogoni advances through every rank from 4 to A and finishes the match', () => {
+  const game = makeGame('pogoni', ['A', 'B', 'C']);
+  const pogonRanks = ['4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+  pogonRanks.forEach((rank, index) => {
+    game.status = 'playing';
+    game.currentPlayerId = 'A';
+    game.table = null;
+    game.lastPlayedPlayerId = null;
+    game.passedPlayerIds = [];
+    game.pogonReadyPlayerId = 'A';
+    game.places = [];
+    game.players.forEach(item => {
+      item.active = true;
+      item.hand = item.id === 'A'
+        ? [makeCard(`${rank}S`, rank)]
+        : [makeCard(`3${item.id}`, '3')];
+    });
+
+    playCards(game, 'A', [`${rank}S`]);
+
+    const expectedRank = pogonRanks[Math.min(index + 1, pogonRanks.length - 1)];
+    assert.equal(player(game, 'A').pogonRank, expectedRank);
+    assert.equal(game.roundWinnerId, 'A');
+    assert.equal(game.status, rank === 'A' ? 'finished' : 'round_finished');
+
+    if (rank !== 'A') nextRound(game);
+  });
 });
 
 test('all other players passing gives the turn back to the table winner', () => {
