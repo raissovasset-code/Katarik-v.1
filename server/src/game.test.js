@@ -89,6 +89,24 @@ test('startGame creates a playable room state', () => {
   assert.ok(player(game, 'B').hand.length > 0);
 });
 
+test('two-player rounds always deal 18 cards each and burn 19 cards', () => {
+  const game = createGame('ROOM', 'pogoni');
+  addPlayer(game, { id: 'A', name: 'A' });
+  addPlayer(game, { id: 'B', name: 'B' });
+
+  startGame(game);
+
+  assert.deepEqual(game.players.map(item => item.hand.length), [18, 18]);
+  assert.equal(game.burned.length, 19);
+
+  game.status = 'round_finished';
+  game.roundWinnerId = 'A';
+  nextRound(game);
+
+  assert.deepEqual(game.players.map(item => item.hand.length), [18, 18]);
+  assert.equal(game.burned.length, 19);
+});
+
 test('elimination requires at least three players to start', () => {
   const game = createGame('ROOM', 'elimination');
   addPlayer(game, { id: 'A', name: 'A' });

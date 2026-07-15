@@ -1,6 +1,7 @@
 const SUITS = ['S', 'H', 'D', 'C'];
 const RANKS = ['4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2', '3'];
 const POGON_ORDER = ['4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+const TWO_PLAYER_HAND_SIZE = 18;
 
 const RANK_VALUE = Object.fromEntries(RANKS.map((rank, index) => [rank, index + 1]));
 RANK_VALUE.BLACK_JOKER = 14;
@@ -347,11 +348,16 @@ function shuffle(cards) {
 
 function dealRound(game, players) {
   const deck = createDeck();
-  const dealSlots = players.length === 2 ? 3 : players.length;
+  const isTwoPlayerRound = players.length === 2;
+  const burnedCount = isTwoPlayerRound
+    ? deck.length - players.length * TWO_PLAYER_HAND_SIZE
+    : 0;
+  const cardsToDeal = deck.slice(burnedCount);
+  const dealSlots = players.length;
   const hands = Array.from({ length: dealSlots }, () => []);
   const dealOffset = game.dealOffset % dealSlots;
 
-  deck.forEach((card, index) => hands[(dealOffset + index) % dealSlots].push(card));
+  cardsToDeal.forEach((card, index) => hands[(dealOffset + index) % dealSlots].push(card));
 
   players.forEach((player, index) => {
     player.hand = sortHand(hands[index]);
@@ -359,7 +365,7 @@ function dealRound(game, players) {
     player.leaving = false;
   });
 
-  game.burned = players.length === 2 ? hands[2] : [];
+  game.burned = isTwoPlayerRound ? deck.slice(0, burnedCount) : [];
   game.dealOffset = (dealOffset + 1) % dealSlots;
 }
 
