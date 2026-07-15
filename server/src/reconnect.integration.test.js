@@ -91,7 +91,7 @@ test('a disconnected player reclaims the same room seat', async t => {
   assert.equal(game.players[0].name, identity.name);
 });
 
-test('the room continues and host rights move clockwise when the host leaves', async t => {
+test('a pogoni room keeps a leaving host gray and moves host rights clockwise', async t => {
   const port = TEST_PORT + 1;
   const child = spawn(process.execPath, ['index.js'], {
     cwd: __dirname,
@@ -120,7 +120,7 @@ test('the room continues and host rights move clockwise when the host leaves', a
   });
 
   const created = waitForMessage(hostSocket, 'roomCreated');
-  hostSocket.send(JSON.stringify({ type: 'createRoom', mode: 'classic', ...identities[0] }));
+  hostSocket.send(JSON.stringify({ type: 'createRoom', mode: 'pogoni', ...identities[0] }));
   const { roomId } = await created;
 
   const secondJoined = waitForMessage(secondSocket, 'state');
@@ -145,10 +145,14 @@ test('the room continues and host rights move clockwise when the host leaves', a
   await hostLeft;
   const afterLeave = (await continued).game;
   assert.equal(afterLeave.status, 'playing');
-  assert.deepEqual(afterLeave.players.map(player => player.id), ['B', 'C']);
+  assert.deepEqual(afterLeave.players.map(player => player.id), ['A', 'B', 'C']);
+  assert.equal(afterLeave.players.find(player => player.id === 'A').leaving, true);
   assert.equal(afterLeave.hostPlayerId, 'B');
-  assert.equal(
-    afterLeave.currentPlayerId,
-    beforeLeave.currentPlayerId === 'A' ? 'B' : beforeLeave.currentPlayerId,
-  );
+  assert.notEqual(afterLeave.currentPlayerId, 'A');
+
+  const rejectedSocket = await openSocket(port);
+  t.after(() => rejectedSocket.close());
+  const rejected = waitForMessage(rejectedSocket, 'error');
+  rejectedSocket.send(JSON.stringify({ type: 'joinRoom', roomId, ...identities[0] }));
+  assert.match((await rejected).message, /покинули/);
 });

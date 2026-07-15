@@ -160,6 +160,9 @@ function handleJoinRoom(ws, msg) {
   const existingPlayer = game.players.find(player => player.id === msg.playerId);
 
   if (existingPlayer) {
+    if (existingPlayer.leaving) {
+      throw new Error('Вы уже покинули эту игру');
+    }
     claimExistingPlayerSession(existingPlayer, msg);
     bindPlayerSocket(ws, roomId, existingPlayer.id);
     broadcast(roomId);

@@ -6,6 +6,8 @@ const RANK_VALUE = Object.fromEntries(RANKS.map((rank, index) => [rank, index + 
 RANK_VALUE.BLACK_JOKER = 14;
 RANK_VALUE.RED_JOKER = 15;
 
+const resolvingLeavingTurns = new WeakSet();
+
 export function createDeck() {
   const deck = [];
 
@@ -54,6 +56,7 @@ export function addPlayer(game, player) {
       name: uniquePlayerName(game.players, player.name),
       hand: [],
       active: true,
+      leaving: false,
       pogonRank: '4',
     });
   }
@@ -63,83 +66,51 @@ export function removePlayer(game, playerId) {
   const playerIndex = game.players.findIndex(player => player.id === playerId);
   if (playerIndex === -1) return { removed: false, empty: game.players.length === 0 };
 
-  const wasCurrentPlayer = game.currentPlayerId === playerId;
-  const ownedTable = game.lastPlayedPlayerId === playerId || game.table?.playerId === playerId;
-
-  game.players.splice(playerIndex, 1);
-  game.eliminatedIds = game.eliminatedIds.filter(id => id !== playerId);
-  game.places = game.places.filter(id => id !== playerId);
-  game.passedPlayerIds = game.passedPlayerIds.filter(id => id !== playerId);
-
-  if (game.hostPlayerId === playerId) {
-    game.hostPlayerId = game.players.length
-      ? game.players[playerIndex % game.players.length].id
-      : null;
-  }
-
-  if (game.roundWinnerId === playerId) {
-    game.roundWinnerId = game.places[0] || null;
-  }
-  if (game.loserId === playerId) game.loserId = null;
-  if (game.roundStarterId === playerId) game.roundStarterId = null;
-  if (game.pogonReadyPlayerId === playerId) game.pogonReadyPlayerId = null;
-
-  if (ownedTable) {
-    game.table = null;
-    game.lastPlayedPlayerId = null;
-    game.passedPlayerIds = [];
-    game.pogonReadyPlayerId = null;
-  }
-
-  if (game.players.length === 0) {
-    game.currentPlayerId = null;
-    return { removed: true, empty: true };
-  }
-
-  if (game.status === 'lobby') {
-    return { removed: true, empty: false };
-  }
-
   if (game.status !== 'playing') {
-    if (wasCurrentPlayer) {
-      game.currentPlayerId = activePlayerAtOrAfter(game, playerIndex)?.id || null;
-    }
-    return { removed: true, empty: false };
+    return removePlayerImmediately(game, playerId);
+  }
+
+  const player = game.players[playerIndex];
+  markPlayerLeaving(game, player, playerIndex);
+
+  if (!player.active) {
+    return { removed: true, empty: false, deferred: true };
+  }
+
+  if (game.mode === 'classic') {
+    player.active = false;
+    game.status = 'finished';
+    game.currentPlayerId = null;
+    game.loserId = player.id;
+    game.roundWinnerId = activePlayers(game).length === 1 ? activePlayers(game)[0].id : null;
+    return { removed: true, empty: false, deferred: true };
+  }
+
+  if (game.mode === 'elimination') {
+    player.active = false;
+    if (!game.eliminatedIds.includes(player.id)) game.eliminatedIds.push(player.id);
+
+    const survivors = game.players.filter(item => !game.eliminatedIds.includes(item.id));
+    game.currentPlayerId = null;
+    game.loserId = player.id;
+    game.roundWinnerId = survivors[0]?.id || null;
+    game.status = survivors.length <= 1 ? 'finished' : 'round_finished';
+    return { removed: true, empty: false, deferred: true };
   }
 
   const active = activePlayers(game);
-
-  if (active.length === 0) {
-    game.currentPlayerId = null;
+  if (active.length <= 2) {
+    player.active = false;
+    const survivor = active.find(item => item.id !== player.id) || null;
     game.status = 'finished';
-    game.roundWinnerId = game.places[0] || game.players[0]?.id || null;
-    game.loserId = null;
-    return { removed: true, empty: false };
-  }
-
-  if (active.length === 1) {
-    const survivor = active[0];
     game.currentPlayerId = null;
-
-    if (game.mode === 'classic' || game.players.length === 1) {
-      game.status = 'finished';
-      game.roundWinnerId = survivor.id;
-      game.loserId = null;
-    } else {
-      game.status = 'round_finished';
-      game.roundWinnerId = game.places[0] || survivor.id;
-      game.loserId = survivor.id;
-    }
-
-    return { removed: true, empty: false };
+    game.loserId = player.id;
+    game.roundWinnerId = survivor?.id || null;
+    return { removed: true, empty: false, deferred: true };
   }
 
-  const currentStillActive = active.some(player => player.id === game.currentPlayerId);
-  if (wasCurrentPlayer || !currentStillActive) {
-    game.currentPlayerId = activePlayerAtOrAfter(game, playerIndex)?.id || null;
-  }
-
-  return { removed: true, empty: false };
+  resolveLeavingTurns(game);
+  return { removed: true, empty: false, deferred: true };
 }
 
 export function uniquePlayerName(players, requestedName = 'Игрок') {
@@ -166,6 +137,7 @@ export function startGame(game) {
 
 export function restartGame(game) {
   if (!game) throw new Error('Комната не найдена');
+  removeLeavingPlayers(game);
   if (game.players.length < 2) throw new Error('Минимум 2 игрока');
 
   dealRound(game, game.players);
@@ -179,6 +151,8 @@ export function nextRound(game) {
   if (!['elimination', 'pogoni'].includes(game.mode)) {
     throw new Error('Следующий кон доступен только для режимов На вылет и Погоны');
   }
+
+  removeLeavingPlayers(game);
 
   const playersInRound =
     game.mode === 'elimination'
@@ -227,6 +201,8 @@ export function pass(game, playerId) {
   } else {
     game.currentPlayerId = nextActivePlayerId(game, playerId);
   }
+
+  resolveLeavingTurns(game);
 }
 
 export function playCards(game, playerId, cardIds, declaredRanks = {}) {
@@ -251,11 +227,11 @@ export function playCards(game, playerId, cardIds, declaredRanks = {}) {
   if (!canBeat(game.table?.combo || null, combo)) {
     throw new Error('Эта комбинация не бьет стол');
   }
-  if (leavesDVKWithoutNormalCard(player.hand, cardIds)) {
+  if (!player.leaving && leavesDVKWithoutNormalCard(player.hand, cardIds)) {
     throw new Error('Нельзя оставлять ДВК без обычной карты');
   }
 
-  const canSetPogon = game.pogonReadyPlayerId === playerId;
+  const canSetPogon = game.pogonReadyPlayerId === playerId && !player.leaving;
 
   player.hand = player.hand.filter(card => !cardIds.includes(card.id));
   game.table = { playerId, cards, combo };
@@ -271,6 +247,7 @@ export function playCards(game, playerId, cardIds, declaredRanks = {}) {
   if (finishRoundIfOnePlayerLeft(game)) return;
 
   game.currentPlayerId = nextActivePlayerId(game, playerId);
+  resolveLeavingTurns(game);
 }
 
 export function detectBestCombination(cards, declaredRanks = {}) {
@@ -338,6 +315,7 @@ export function publicGameState(game, viewerId) {
       id: player.id,
       name: player.name,
       active: player.active,
+      leaving: Boolean(player.leaving),
       handCount: player.hand.length,
       pogonRank: player.pogonRank,
     })),
@@ -367,6 +345,7 @@ function dealRound(game, players) {
   players.forEach((player, index) => {
     player.hand = sortHand(hands[index]);
     player.active = true;
+    player.leaving = false;
   });
 
   game.burned = players.length === 2 ? hands[2] : [];
@@ -484,6 +463,125 @@ function finishRoundIfOnePlayerLeft(game) {
 
 function activePlayers(game) {
   return game.players.filter(player => player.active);
+}
+
+function markPlayerLeaving(game, player, playerIndex) {
+  player.leaving = true;
+  game.passedPlayerIds = game.passedPlayerIds.filter(id => id !== player.id);
+
+  if (game.hostPlayerId === player.id) {
+    game.hostPlayerId = nextPlayerMatching(
+      game,
+      playerIndex,
+      candidate => candidate.id !== player.id && !candidate.leaving,
+    )?.id || null;
+  }
+}
+
+function removePlayerImmediately(game, playerId) {
+  const playerIndex = game.players.findIndex(player => player.id === playerId);
+  if (playerIndex === -1) return { removed: false, empty: game.players.length === 0 };
+
+  const wasCurrentPlayer = game.currentPlayerId === playerId;
+  const ownedTable = game.lastPlayedPlayerId === playerId || game.table?.playerId === playerId;
+
+  game.players.splice(playerIndex, 1);
+  game.eliminatedIds = game.eliminatedIds.filter(id => id !== playerId);
+  game.places = game.places.filter(id => id !== playerId);
+  game.passedPlayerIds = game.passedPlayerIds.filter(id => id !== playerId);
+
+  if (game.hostPlayerId === playerId) {
+    game.hostPlayerId = game.players.length
+      ? game.players[playerIndex % game.players.length].id
+      : null;
+  }
+
+  if (game.roundWinnerId === playerId) game.roundWinnerId = game.places[0] || null;
+  if (game.loserId === playerId) game.loserId = null;
+  if (game.roundStarterId === playerId) game.roundStarterId = null;
+  if (game.pogonReadyPlayerId === playerId) game.pogonReadyPlayerId = null;
+
+  if (ownedTable) {
+    game.table = null;
+    game.lastPlayedPlayerId = null;
+    game.passedPlayerIds = [];
+    game.pogonReadyPlayerId = null;
+  }
+
+  if (game.players.length === 0) {
+    game.currentPlayerId = null;
+    return { removed: true, empty: true };
+  }
+
+  if (wasCurrentPlayer) {
+    game.currentPlayerId = activePlayerAtOrAfter(game, playerIndex)?.id || null;
+  }
+
+  return { removed: true, empty: false };
+}
+
+function removeLeavingPlayers(game) {
+  const leavingIds = game.players.filter(player => player.leaving).map(player => player.id);
+  leavingIds.forEach(playerId => removePlayerImmediately(game, playerId));
+}
+
+function nextPlayerMatching(game, fromIndex, predicate) {
+  for (let step = 1; step <= game.players.length; step += 1) {
+    const candidate = game.players[(fromIndex + step) % game.players.length];
+    if (predicate(candidate)) return candidate;
+  }
+
+  return null;
+}
+
+function resolveLeavingTurns(game) {
+  if (game.mode !== 'pogoni' || game.status !== 'playing' || resolvingLeavingTurns.has(game)) return;
+
+  resolvingLeavingTurns.add(game);
+
+  try {
+    let safety = game.players.length * 3 + 3;
+
+    while (game.status === 'playing' && safety > 0) {
+      safety -= 1;
+      const player = game.players.find(item => item.id === game.currentPlayerId);
+      if (!player?.leaving || !player.active) break;
+
+      if (game.table) {
+        pass(game, player.id);
+        continue;
+      }
+
+      const forced = forcedLeavingPlay(player);
+      if (!forced) {
+        player.active = false;
+        if (finishRoundIfOnePlayerLeft(game)) break;
+        game.currentPlayerId = nextActivePlayerId(game, player.id);
+        continue;
+      }
+
+      playCards(game, player.id, forced.cardIds, forced.declaredRanks);
+    }
+  } finally {
+    resolvingLeavingTurns.delete(game);
+  }
+}
+
+function forcedLeavingPlay(player) {
+  const sorted = sortHand(player.hand);
+  const dvk = sorted.find(card => card.type === 'wild');
+  const normal = sorted.find(card => card.type === 'normal');
+
+  if (dvk && normal) {
+    return {
+      cardIds: [normal.id, dvk.id],
+      declaredRanks: { DVK: normal.rank },
+    };
+  }
+
+  const card = sorted.find(item => item.type !== 'wild');
+  if (card) return { cardIds: [card.id], declaredRanks: {} };
+  return null;
 }
 
 function activePlayerAtOrAfter(game, startIndex) {

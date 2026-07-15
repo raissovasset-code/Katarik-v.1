@@ -371,6 +371,7 @@ function App() {
   const currentPlayer = game?.players?.find(p => p.id === game.currentPlayerId);
   const clockwiseOpponents = game ? getClockwiseOpponents(game.players, user.id) : [];
   const canStartGame = isHost && game?.players?.length >= 2;
+  const remainingPlayerCount = game?.players?.filter(player => !player.leaving).length || 0;
   const isMobileLayout = initialLayout === 'mobile';
   const gameScale = Math.max(
     MIN_DESKTOP_SCALE,
@@ -467,12 +468,12 @@ function App() {
             Выйти
           </button>
           {isHost && game.status === 'round_finished' && (
-            <button className="solid-button" disabled={!connected || game.players.length < 2} onClick={() => send('nextRound')}>
+            <button className="solid-button" disabled={!connected || remainingPlayerCount < 2} onClick={() => send('nextRound')}>
               Следующий кон
             </button>
           )}
           {isHost && game.status === 'finished' && (
-            <button className="solid-button" disabled={!connected || game.players.length < 2} onClick={() => send('restartGame')}>
+            <button className="solid-button" disabled={!connected || remainingPlayerCount < 2} onClick={() => send('restartGame')}>
               Играть заново
             </button>
           )}
@@ -695,16 +696,17 @@ function App() {
 function PlayerBadge({ player, game, position }) {
   const isTurn = player.id === game.currentPlayerId;
   const eliminated = game.eliminatedIds?.includes(player.id);
+  const leaving = player.leaving;
   const count = player.handCount ?? 0;
 
   return (
-    <div className={`seat seat-${position} ${isTurn ? 'turn' : ''} ${eliminated ? 'eliminated' : ''}`}>
+    <div className={`seat seat-${position} ${isTurn ? 'turn' : ''} ${eliminated ? 'eliminated' : ''} ${leaving ? 'leaving' : ''}`}>
       <div className="seat-info">
         <div className="avatar">{player.name?.[0] || '?'}</div>
 
         <div>
           <b>{player.name}</b>
-          <span>{eliminated ? 'вылетел' : `${count} карт`}</span>
+          <span>{leaving ? 'вышел' : eliminated ? 'вылетел' : `${count} карт`}</span>
           {game.mode === 'pogoni' && <small>Погон: {player.pogonRank}</small>}
         </div>
       </div>

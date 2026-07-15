@@ -870,6 +870,17 @@ button:disabled {
   opacity: 0.45;
 }
 
+.seat.leaving .seat-info {
+  filter: grayscale(1);
+  opacity: 0.58;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.26);
+}
+
+.seat.leaving .avatar {
+  background: #5d6862;
+}
+
 .seat-0 {
   top: 68%;
   left: 9%;
