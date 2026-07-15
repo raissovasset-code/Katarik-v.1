@@ -316,6 +316,58 @@ button:disabled {
   pointer-events: none;
 }
 
+.leave-confirm-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 8, 5, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.leave-confirm-dialog {
+  width: min(420px, 100%);
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: #10261b;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+}
+
+.leave-confirm-dialog h2 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.leave-confirm-dialog p {
+  margin: 12px 0 22px;
+  color: #bdc9c2;
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.leave-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.leave-confirm-actions button {
+  min-height: 50px;
+}
+
+.leave-confirm-button {
+  border: 1px solid rgba(255, 117, 117, 0.45);
+  background: #7d2828;
+  color: #fff0f0;
+}
+
+.leave-confirm-button:hover {
+  background: #963232;
+}
+
 .topbar {
   position: absolute;
   top: 0;
@@ -1589,4 +1641,21 @@ button:disabled {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
+}
+
+.mobile-layout .leave-confirm-backdrop {
+  position: fixed;
+  padding: 16px;
+}
+
+.mobile-layout .leave-confirm-dialog {
+  padding: 20px;
+}
+
+.mobile-layout .leave-confirm-dialog h2 {
+  font-size: 23px;
+}
+
+.mobile-layout .leave-confirm-dialog p {
+  font-size: 16px;
 }

@@ -93,6 +93,7 @@ function App() {
   const [connected, setConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [viewport, setViewport] = useState(() => ({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -351,6 +352,16 @@ function App() {
   }
 
   function leaveRoom() {
+    if (game?.status === 'playing' || game?.status === 'round_finished') {
+      setLeaveConfirmOpen(true);
+      return;
+    }
+
+    confirmLeaveRoom();
+  }
+
+  function confirmLeaveRoom() {
+    setLeaveConfirmOpen(false);
     send('leaveRoom');
   }
 
@@ -648,6 +659,31 @@ function App() {
       {error && (
         <div className={`toast error floating ${game.status === 'finished' ? 'finished-toast' : ''}`}>
           {error}
+        </div>
+      )}
+
+      {leaveConfirmOpen && (
+        <div className="leave-confirm-backdrop" role="presentation" onClick={() => setLeaveConfirmOpen(false)}>
+          <section
+            className="leave-confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="leave-confirm-title"
+            onClick={event => event.stopPropagation()}
+          >
+            <h2 id="leave-confirm-title">Выйти из игры?</h2>
+            <p>
+              Вы покинете активную игру и больше не сможете вернуться в эту комнату.
+            </p>
+            <div className="leave-confirm-actions">
+              <button type="button" className="ghost-button" onClick={() => setLeaveConfirmOpen(false)}>
+                Остаться
+              </button>
+              <button type="button" className="leave-confirm-button" onClick={confirmLeaveRoom}>
+                Выйти из игры
+              </button>
+            </div>
+          </section>
         </div>
       )}
     </main>
