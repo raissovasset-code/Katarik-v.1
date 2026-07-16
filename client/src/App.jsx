@@ -632,7 +632,7 @@ function App() {
         </section>
       ) : (
         <>
-      <section className="table-shell">
+      <section className={`table-shell opponent-layout-${clockwiseOpponents.length}`}>
         <div className={`opponents opponents-${clockwiseOpponents.length}`}>
           {clockwiseOpponents.map((p, index) => (
             <PlayerBadge

@@ -1055,25 +1055,31 @@ button:disabled {
   transform: translateX(35%);
 }
 
-/* Ten opponents: keep the local player's side clear. */
+/* Ten opponents: reserve symmetric gutters and keep the local player's side clear. */
+.desktop-layout .table-shell.opponent-layout-10 {
+  background-size: 82% auto;
+}
+
 .desktop-layout .opponents-10 .seat-0,
 .desktop-layout .opponents-10 .seat-1,
 .desktop-layout .opponents-10 .seat-2 {
-  left: 10px;
   right: auto;
   transform: none;
 }
 
 .desktop-layout .opponents-10 .seat-0 {
   top: 24%;
+  left: 42px;
 }
 
 .desktop-layout .opponents-10 .seat-1 {
   top: 47%;
+  left: 6px;
 }
 
 .desktop-layout .opponents-10 .seat-2 {
   top: 70%;
+  left: 42px;
 }
 
 .desktop-layout .opponents-10 .seat-3,
@@ -1086,39 +1092,41 @@ button:disabled {
 }
 
 .desktop-layout .opponents-10 .seat-3 {
-  left: 22%;
+  left: 27%;
 }
 
 .desktop-layout .opponents-10 .seat-4 {
-  left: 40%;
+  left: 42.3%;
 }
 
 .desktop-layout .opponents-10 .seat-5 {
-  left: 60%;
+  left: 57.7%;
 }
 
 .desktop-layout .opponents-10 .seat-6 {
-  left: 78%;
+  left: 73%;
 }
 
 .desktop-layout .opponents-10 .seat-7,
 .desktop-layout .opponents-10 .seat-8,
 .desktop-layout .opponents-10 .seat-9 {
   left: auto;
-  right: -108px;
   transform: none;
 }
 
 .desktop-layout .opponents-10 .seat-7 {
   top: 24%;
+  right: 42px;
 }
 
 .desktop-layout .opponents-10 .seat-8 {
   top: 47%;
+  right: 6px;
 }
 
 .desktop-layout .opponents-10 .seat-9 {
   top: 70%;
+  right: 42px;
 }
 
 .my-zone {
