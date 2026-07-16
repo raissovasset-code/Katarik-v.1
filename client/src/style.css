@@ -1059,6 +1059,65 @@ button:disabled {
   transform: translateX(35%);
 }
 
+.desktop-layout .opponents-8 .seat-0,
+.desktop-layout .opponents-8 .seat-1,
+.desktop-layout .opponents-8 .seat-2 {
+  right: auto;
+  transform: none;
+}
+
+.desktop-layout .opponents-8 .seat-0 {
+  top: 24%;
+  left: 42px;
+}
+
+.desktop-layout .opponents-8 .seat-1 {
+  top: 47%;
+  left: 6px;
+}
+
+.desktop-layout .opponents-8 .seat-2 {
+  top: 70%;
+  left: 42px;
+}
+
+.desktop-layout .opponents-8 .seat-3,
+.desktop-layout .opponents-8 .seat-4 {
+  top: -12px;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.desktop-layout .opponents-8 .seat-3 {
+  left: 42.3%;
+}
+
+.desktop-layout .opponents-8 .seat-4 {
+  left: 57.7%;
+}
+
+.desktop-layout .opponents-8 .seat-5,
+.desktop-layout .opponents-8 .seat-6,
+.desktop-layout .opponents-8 .seat-7 {
+  left: auto;
+  transform: none;
+}
+
+.desktop-layout .opponents-8 .seat-5 {
+  top: 24%;
+  right: 42px;
+}
+
+.desktop-layout .opponents-8 .seat-6 {
+  top: 47%;
+  right: 6px;
+}
+
+.desktop-layout .opponents-8 .seat-7 {
+  top: 70%;
+  right: 42px;
+}
+
 .desktop-layout .opponents-9 .seat-0,
 .desktop-layout .opponents-9 .seat-1,
 .desktop-layout .opponents-9 .seat-2 {
