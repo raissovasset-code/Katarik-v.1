@@ -1224,7 +1224,7 @@ button:disabled {
     0 18px 34px rgba(0, 0, 0, 0.48),
     0 0 18px rgba(239, 98, 98, 0.2);
   backdrop-filter: blur(10px);
-  animation: table-error-life 2s ease forwards;
+  animation: table-error-life 3s ease forwards;
 }
 
 @keyframes table-error-life {

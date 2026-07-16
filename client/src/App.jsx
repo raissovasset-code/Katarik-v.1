@@ -14,6 +14,15 @@ const WS_URL = import.meta.env.VITE_WS_URL || defaultWsUrl();
 const DESKTOP_GAME_WIDTH = 1600;
 const DESKTOP_GAME_HEIGHT = 900;
 const MIN_DESKTOP_SCALE = 0.72;
+const MAX_DISPLAY_NAME_LENGTH = 8;
+
+function displayName(value, fallback = '—') {
+  const symbols = Array.from(String(value || fallback));
+
+  return symbols.length > MAX_DISPLAY_NAME_LENGTH
+    ? `${symbols.slice(0, MAX_DISPLAY_NAME_LENGTH).join('')}…`
+    : symbols.join('');
+}
 
 function createLocalUser() {
   const storage = isNativeApp() ? localStorage : sessionStorage;
@@ -120,7 +129,7 @@ function App() {
   useEffect(() => {
     if (!isActiveGame || !error || isConnectionMessage(error)) return undefined;
 
-    const timer = window.setTimeout(() => setError(''), 2000);
+    const timer = window.setTimeout(() => setError(''), 3000);
     return () => window.clearTimeout(timer);
   }, [error, isActiveGame]);
 
@@ -519,7 +528,7 @@ function App() {
               >
                 <div className="avatar">{player.name?.[0] || '?'}</div>
                 <div>
-                  <b>{player.name}</b>
+                  <b>{displayName(player.name)}</b>
                   <span>{player.id === game.hostPlayerId ? 'Хозяин комнаты' : 'Игрок'}</span>
                 </div>
                 {player.id === user.id && <em>Вы</em>}
@@ -551,7 +560,7 @@ function App() {
                 >
                   <div className="avatar">{player.name?.[0] || '?'}</div>
                   <div>
-                    <b>{player.name}</b>
+                    <b>{displayName(player.name)}</b>
                     <span>{player.id === game.hostPlayerId ? 'Хозяин комнаты' : 'Игрок'}</span>
                   </div>
                   {player.id === user.id && <em>Вы</em>}
@@ -600,10 +609,10 @@ function App() {
         <div className={isMyTurn ? 'turn-pill your-turn' : 'turn-pill'}>
           {lastPlayedPlayer ? (
             <>
-              Ходил: <b>{lastPlayedPlayer.name}</b>. Ходит: <b>{currentPlayer?.name || '—'}</b>
+              Ходил: <b>{displayName(lastPlayedPlayer.name)}</b>. Ходит: <b>{displayName(currentPlayer?.name)}</b>
             </>
           ) : (
-            <>Ходит: <b>{currentPlayer?.name || '—'}</b></>
+            <>Ходит: <b>{displayName(currentPlayer?.name)}</b></>
           )}
         </div>
 
@@ -664,7 +673,7 @@ function App() {
       </section>
 
       <div className="me-badge">
-        <span>{me?.name || name}</span>
+        <span>{displayName(me?.name || name)}</span>
         <small>Количество карт: {me?.handCount ?? 0} карт</small>
         {game.mode === 'pogoni' && <small>Погон: {me?.pogonRank}</small>}
       </div>
@@ -740,7 +749,7 @@ function PlayerBadge({ player, game, position }) {
         <div className="avatar">{player.name?.[0] || '?'}</div>
 
         <div>
-          <b>{player.name}</b>
+          <b>{displayName(player.name)}</b>
           <span>{leaving ? 'вышел' : eliminated ? 'вылетел' : `${count} карт`}</span>
           {game.mode === 'pogoni' && <small>Погон: {player.pogonRank}</small>}
         </div>
@@ -901,10 +910,10 @@ function finishedGameText(game) {
   const loserName = game.players.find(player => player.id === game.loserId)?.name;
 
   if (game.mode !== 'classic' || !loserName) {
-    return `Победил: ${winnerName || '—'}`;
+    return `Победил: ${displayName(winnerName)}`;
   }
 
-  return `Проиграл: ${loserName || '—'}`;
+  return `Проиграл: ${displayName(loserName)}`;
 }
 
 function modeName(mode) {
