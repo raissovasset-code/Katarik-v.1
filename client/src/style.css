@@ -1212,10 +1212,10 @@ button:disabled {
   max-width: min(460px, 76%);
   padding: 16px 22px;
   border: 2px solid rgba(255, 112, 112, 0.92);
-  background: rgba(48, 8, 10, 0.94);
+  background: rgba(116, 52, 46, 0.9);
   color: #fff2f2;
   font-size: 20px;
-  font-weight: 900;
+  font-weight: 500;
   line-height: 1.2;
   transform: translate(-50%, -50%);
   text-align: center;
@@ -1224,7 +1224,7 @@ button:disabled {
     0 18px 34px rgba(0, 0, 0, 0.48),
     0 0 18px rgba(239, 98, 98, 0.2);
   backdrop-filter: blur(10px);
-  animation: table-error-life 1.8s ease forwards;
+  animation: table-error-life 2s ease forwards;
 }
 
 @keyframes table-error-life {

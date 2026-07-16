@@ -120,7 +120,7 @@ function App() {
   useEffect(() => {
     if (!isActiveGame || !error || isConnectionMessage(error)) return undefined;
 
-    const timer = window.setTimeout(() => setError(''), 1800);
+    const timer = window.setTimeout(() => setError(''), 2000);
     return () => window.clearTimeout(timer);
   }, [error, isActiveGame]);
 
