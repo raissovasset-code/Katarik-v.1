@@ -186,6 +186,42 @@ function handleHostAction(ws, meta, action) {
   broadcast(meta.roomId);
 }
 
+function handleKickPlayer(ws, meta, msg) {
+  const game = requireRoom(meta);
+  requireHost(game, meta.playerId);
+
+  if (game.status !== 'lobby') {
+    throw new Error('Удалять игроков можно только до начала игры');
+  }
+
+  const targetPlayerId = String(msg.targetPlayerId || '');
+  if (!targetPlayerId || !game.players.some(player => player.id === targetPlayerId)) {
+    throw new Error('Игрок не найден');
+  }
+  if (targetPlayerId === meta.playerId) {
+    throw new Error('Хозяин комнаты не может удалить себя');
+  }
+
+  const targetKey = playerSocketKey(meta.roomId, targetPlayerId);
+  const targetSocket = playerSockets.get(targetKey);
+  const result = removePlayer(game, targetPlayerId);
+
+  if (!result.removed) {
+    throw new Error('Игрок не найден');
+  }
+
+  if (targetSocket) {
+    playerSockets.delete(targetKey);
+    sockets.set(targetSocket, {});
+    sendTo(targetSocket, {
+      type: 'kicked',
+      message: 'Хозяин комнаты удалил вас из комнаты.',
+    });
+  }
+
+  broadcast(meta.roomId);
+}
+
 function handlePlayerAction(ws, meta, action) {
   const game = requireRoom(meta);
 
@@ -222,6 +258,11 @@ wss.on('connection', ws => {
 
       if (msg.type === 'leaveRoom') {
         leaveRoom(ws);
+        return;
+      }
+
+      if (msg.type === 'kickPlayer') {
+        handleKickPlayer(ws, meta, msg);
         return;
       }
 

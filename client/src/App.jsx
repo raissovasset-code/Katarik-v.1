@@ -110,6 +110,7 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [inviteCopied, setInviteCopied] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const [kickTarget, setKickTarget] = useState(null);
   const [viewport, setViewport] = useState(() => ({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -245,6 +246,17 @@ function App() {
           setJoinCode('');
           localStorage.removeItem('katarik_room');
           window.history.replaceState(null, '', window.location.pathname);
+        }
+
+        if (msg.type === 'kicked') {
+          restoringRoom = false;
+          setGame(null);
+          setSelected([]);
+          setJoinCode('');
+          setKickTarget(null);
+          localStorage.removeItem('katarik_room');
+          window.history.replaceState(null, '', window.location.pathname);
+          setError(msg.message || 'Хозяин комнаты удалил вас из комнаты.');
         }
 
         if (msg.type === 'error') {
@@ -383,6 +395,12 @@ function App() {
   function confirmLeaveRoom() {
     setLeaveConfirmOpen(false);
     send('leaveRoom');
+  }
+
+  function confirmKickPlayer() {
+    if (!kickTarget) return;
+    send('kickPlayer', { targetPlayerId: kickTarget.id });
+    setKickTarget(null);
   }
 
   const me = game?.players?.find(p => p.id === user.id);
@@ -531,7 +549,17 @@ function App() {
                   <b>{displayName(player.name)}</b>
                   <span>{player.id === game.hostPlayerId ? 'Хозяин комнаты' : 'Игрок'}</span>
                 </div>
-                {player.id === user.id && <em>Вы</em>}
+                {isHost && player.id !== user.id ? (
+                  <button
+                    type="button"
+                    className="kick-player-button"
+                    aria-label={`Удалить игрока ${player.name}`}
+                    title="Удалить игрока"
+                    onClick={() => setKickTarget({ id: player.id, name: player.name })}
+                  >
+                    &times;
+                  </button>
+                ) : player.id === user.id ? <em>Вы</em> : null}
               </div>
             ))}
           </div>
@@ -563,7 +591,17 @@ function App() {
                     <b>{displayName(player.name)}</b>
                     <span>{player.id === game.hostPlayerId ? 'Хозяин комнаты' : 'Игрок'}</span>
                   </div>
-                  {player.id === user.id && <em>Вы</em>}
+                  {isHost && player.id !== user.id ? (
+                    <button
+                      type="button"
+                      className="kick-player-button"
+                      aria-label={`Удалить игрока ${player.name}`}
+                      title="Удалить игрока"
+                      onClick={() => setKickTarget({ id: player.id, name: player.name })}
+                    >
+                      &times;
+                    </button>
+                  ) : player.id === user.id ? <em>Вы</em> : null}
                 </div>
               ))}
             </div>
@@ -726,6 +764,29 @@ function App() {
               </button>
               <button type="button" className="leave-confirm-button" onClick={confirmLeaveRoom}>
                 Выйти из игры
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {kickTarget && (
+        <div className="leave-confirm-backdrop" role="presentation" onClick={() => setKickTarget(null)}>
+          <section
+            className="leave-confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="kick-confirm-title"
+            onClick={event => event.stopPropagation()}
+          >
+            <h2 id="kick-confirm-title">Удалить игрока?</h2>
+            <p>Игрок «{kickTarget.name}» будет удалён из комнаты.</p>
+            <div className="leave-confirm-actions">
+              <button type="button" className="ghost-button" onClick={() => setKickTarget(null)}>
+                Отмена
+              </button>
+              <button type="button" className="leave-confirm-button" onClick={confirmKickPlayer}>
+                Удалить
               </button>
             </div>
           </section>

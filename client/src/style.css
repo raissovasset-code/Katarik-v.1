@@ -656,6 +656,14 @@ button:disabled {
   font-size: 10px;
 }
 
+.desktop-layout .waiting-sidebar.compact .kick-player-button {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  font-size: 17px;
+}
+
 .waiting-player {
   min-height: 66px;
   display: grid;
@@ -706,6 +714,33 @@ button:disabled {
   font-size: 12px;
   font-style: normal;
   font-weight: 900;
+}
+
+.kick-player-button {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 112, 112, 0.42);
+  border-radius: 50%;
+  background: rgba(116, 31, 31, 0.32);
+  color: #ffd1d1;
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.kick-player-button:hover,
+.kick-player-button:focus-visible {
+  border-color: rgba(255, 112, 112, 0.9);
+  background: rgba(151, 39, 39, 0.58);
+  color: #fff;
+  outline: none;
 }
 
 .waiting-actions {
@@ -1491,6 +1526,13 @@ button:disabled {
 
 .mobile-layout .waiting-player span {
   font-size: 13px;
+}
+
+.mobile-layout .kick-player-button {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
 }
 
 .mobile-layout .table-shell {

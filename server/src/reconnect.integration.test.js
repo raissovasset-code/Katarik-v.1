@@ -91,6 +91,55 @@ test('a disconnected player reclaims the same room seat', async t => {
   assert.equal(game.players[0].name, identity.name);
 });
 
+test('only the lobby host can remove another player', async t => {
+  const port = TEST_PORT + 2;
+  const child = spawn(process.execPath, ['index.js'], {
+    cwd: __dirname,
+    env: { ...process.env, PORT: String(port) },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  t.after(() => child.kill());
+  await waitForServer(child, port);
+
+  const hostIdentity = {
+    playerId: 'kick-host',
+    sessionToken: 'kick-host-secret',
+    name: 'Host',
+  };
+  const guestIdentity = {
+    playerId: 'kick-guest',
+    sessionToken: 'kick-guest-secret',
+    name: 'Guest',
+  };
+  const [hostSocket, guestSocket] = await Promise.all([openSocket(port), openSocket(port)]);
+
+  t.after(() => {
+    hostSocket.close();
+    guestSocket.close();
+  });
+
+  const created = waitForMessage(hostSocket, 'roomCreated');
+  hostSocket.send(JSON.stringify({ type: 'createRoom', mode: 'classic', ...hostIdentity }));
+  const { roomId } = await created;
+
+  const guestJoined = waitForMessage(guestSocket, 'state');
+  guestSocket.send(JSON.stringify({ type: 'joinRoom', roomId, ...guestIdentity }));
+  await guestJoined;
+
+  const rejected = waitForMessage(guestSocket, 'error');
+  guestSocket.send(JSON.stringify({ type: 'kickPlayer', targetPlayerId: hostIdentity.playerId }));
+  assert.match((await rejected).message, /Хозяин|хозяин/);
+
+  const kicked = waitForMessage(guestSocket, 'kicked');
+  const hostState = waitForMessage(hostSocket, 'state');
+  hostSocket.send(JSON.stringify({ type: 'kickPlayer', targetPlayerId: guestIdentity.playerId }));
+
+  assert.match((await kicked).message, /удалил/);
+  const { game } = await hostState;
+  assert.deepEqual(game.players.map(player => player.id), [hostIdentity.playerId]);
+});
+
 test('a pogoni room keeps a leaving host gray and moves host rights clockwise', async t => {
   const port = TEST_PORT + 1;
   const child = spawn(process.execPath, ['index.js'], {
