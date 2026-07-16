@@ -487,10 +487,10 @@ function App() {
 
         <div className={`top-actions ${game.status === 'lobby' ? 'lobby-actions' : ''}`}>
           <div className="side-room-info">
-            <span>Комната</span>
-            <b>{game.roomId}</b>
+            <span>{game.status === 'lobby' ? 'Комната' : 'Режим'}</span>
+            <b>{game.status === 'lobby' ? game.roomId : modeName(game.mode)}</b>
           </div>
-          <span className="mode-chip">{modeName(game.mode)}</span>
+          {game.status === 'lobby' && <span className="mode-chip">{modeName(game.mode)}</span>}
           <button className="ghost-button" onClick={copyInvite}>
             {inviteCopied ? 'Скопировано' : 'Пригласить'}
           </button>
