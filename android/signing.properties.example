@@ -1,0 +1,5 @@
+# Copy this file to signing.properties and keep the real file private.
+storeFile=../katarik-release-key.jks
+storePassword=CHANGE_ME
+keyAlias=katarik
+keyPassword=CHANGE_ME

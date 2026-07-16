@@ -8,6 +8,7 @@ This project is ready to be opened as an Android app through Capacitor.
 - Android project is created in `android/`.
 - The app id is `com.katarik.game`.
 - The app name is `Katarik`.
+- The Android release version is `1.0.0` (`versionCode 1`).
 - The mobile build connects to the online server:
   `wss://katarik-5g25.onrender.com`.
 
@@ -42,7 +43,23 @@ The APK will be here:
 android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
-For phone testing, prefer the signed release APK:
+## Signed release
+
+The release key and its passwords must remain only on the developer's
+computer. They must never be committed to GitHub.
+
+The local files are:
+
+```text
+android\katarik-release-key.jks
+android\signing.properties
+```
+
+If the settings file needs to be restored, copy
+`android\signing.properties.example` to `android\signing.properties` and fill
+in the real passwords.
+
+Build the signed APK:
 
 ```powershell
 cd android
@@ -55,6 +72,19 @@ The signed APK will be here:
 android\app\build\outputs\apk\release\app-release.apk
 ```
 
+Build the Android App Bundle for Google Play:
+
+```powershell
+cd android
+.\gradlew.bat bundleRelease
+```
+
+The bundle will be here:
+
+```text
+android\app\build\outputs\bundle\release\app-release.aab
+```
+
 ## Required on this computer
 
 To create the APK locally, install:
@@ -63,5 +93,5 @@ To create the APK locally, install:
 - JDK 17 or newer
 - Android SDK through Android Studio
 
-Right now the project cannot build an APK on this computer because Java is not
-installed or `JAVA_HOME` is not configured.
+Java, Android Studio and the Android SDK are installed on the current
+development computer.
