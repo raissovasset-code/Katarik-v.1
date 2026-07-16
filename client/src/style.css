@@ -1055,6 +1055,72 @@ button:disabled {
   transform: translateX(35%);
 }
 
+/* Ten opponents: keep the local player's side clear. */
+.desktop-layout .opponents-10 .seat-0,
+.desktop-layout .opponents-10 .seat-1,
+.desktop-layout .opponents-10 .seat-2 {
+  left: 10px;
+  right: auto;
+  transform: none;
+}
+
+.desktop-layout .opponents-10 .seat-0 {
+  top: 24%;
+}
+
+.desktop-layout .opponents-10 .seat-1 {
+  top: 47%;
+}
+
+.desktop-layout .opponents-10 .seat-2 {
+  top: 70%;
+}
+
+.desktop-layout .opponents-10 .seat-3,
+.desktop-layout .opponents-10 .seat-4,
+.desktop-layout .opponents-10 .seat-5,
+.desktop-layout .opponents-10 .seat-6 {
+  top: -44px;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.desktop-layout .opponents-10 .seat-3 {
+  left: 22%;
+}
+
+.desktop-layout .opponents-10 .seat-4 {
+  left: 40%;
+}
+
+.desktop-layout .opponents-10 .seat-5 {
+  left: 60%;
+}
+
+.desktop-layout .opponents-10 .seat-6 {
+  left: 78%;
+}
+
+.desktop-layout .opponents-10 .seat-7,
+.desktop-layout .opponents-10 .seat-8,
+.desktop-layout .opponents-10 .seat-9 {
+  left: auto;
+  right: -108px;
+  transform: none;
+}
+
+.desktop-layout .opponents-10 .seat-7 {
+  top: 24%;
+}
+
+.desktop-layout .opponents-10 .seat-8 {
+  top: 47%;
+}
+
+.desktop-layout .opponents-10 .seat-9 {
+  top: 70%;
+}
+
 .my-zone {
   position: absolute;
   left: var(--game-left);
