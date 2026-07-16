@@ -779,6 +779,10 @@ button:disabled {
   justify-content: center;
 }
 
+.desktop-layout .table-shell {
+  background-size: 82% auto;
+}
+
 .table-shell::after {
   display: none;
 }
@@ -1055,11 +1059,6 @@ button:disabled {
   transform: translateX(35%);
 }
 
-/* Ten opponents: reserve symmetric gutters and keep the local player's side clear. */
-.desktop-layout .table-shell.opponent-layout-10 {
-  background-size: 82% auto;
-}
-
 .desktop-layout .opponents-10 .seat-0,
 .desktop-layout .opponents-10 .seat-1,
 .desktop-layout .opponents-10 .seat-2 {
@@ -1086,7 +1085,7 @@ button:disabled {
 .desktop-layout .opponents-10 .seat-4,
 .desktop-layout .opponents-10 .seat-5,
 .desktop-layout .opponents-10 .seat-6 {
-  top: -44px;
+  top: -12px;
   right: auto;
   transform: translateX(-50%);
 }
