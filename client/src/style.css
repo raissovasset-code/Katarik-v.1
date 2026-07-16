@@ -933,28 +933,47 @@ button:disabled {
   transform: translateX(-50%);
 }
 
+.desktop-layout .seat-0,
+.desktop-layout .seat-2 {
+  transform: translateX(-25%);
+}
+
+.desktop-layout .seat-1 {
+  transform: translateX(-35%);
+}
+
+.desktop-layout .seat-6,
+.desktop-layout .seat-8 {
+  transform: translateX(25%);
+}
+
+.desktop-layout .seat-7 {
+  transform: translateX(35%);
+}
+
 .opponents-1 .seat-0 {
   top: -7%;
   left: 50%;
   transform: translateX(-50%);
 }
 
-.opponents-2 .seat-0 {
+.desktop-layout .opponents-2 .seat-0 {
   top: 42%;
   left: 0;
-  transform: none;
+  transform: translateX(-35%);
 }
 
-.opponents-2 .seat-1 {
+.desktop-layout .opponents-2 .seat-1 {
   top: 42%;
   left: auto;
   right: 0;
+  transform: translateX(35%);
 }
 
-.opponents-3 .seat-0 {
+.desktop-layout .opponents-3 .seat-0 {
   top: 46%;
-  left: 4%;
-  transform: none;
+  left: 0;
+  transform: translateX(-35%);
 }
 
 .opponents-3 .seat-1 {
@@ -963,10 +982,11 @@ button:disabled {
   transform: translateX(-50%);
 }
 
-.opponents-3 .seat-2 {
+.desktop-layout .opponents-3 .seat-2 {
   top: 46%;
-  right: 4%;
+  right: 0;
   left: auto;
+  transform: translateX(35%);
 }
 
 .my-zone {
