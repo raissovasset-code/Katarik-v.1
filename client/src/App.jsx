@@ -514,7 +514,7 @@ function App() {
       </header>
 
       {game.status === 'lobby' && (
-        <aside className="waiting-sidebar">
+        <aside className={`waiting-sidebar ${game.players.length >= 10 ? 'compact' : ''}`}>
           <div className="waiting-sidebar-title">
             <span>Игроки</span>
             <b>{game.players.length}/11</b>

@@ -625,6 +625,37 @@ button:disabled {
   margin-top: 0;
 }
 
+.desktop-layout .waiting-sidebar.compact .waiting-list {
+  gap: 6px;
+}
+
+.desktop-layout .waiting-sidebar.compact .waiting-player {
+  min-height: 50px;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 10px;
+}
+
+.desktop-layout .waiting-sidebar.compact .waiting-player .avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 14px;
+}
+
+.desktop-layout .waiting-sidebar.compact .waiting-player b {
+  font-size: 15px;
+}
+
+.desktop-layout .waiting-sidebar.compact .waiting-player span {
+  margin-top: 1px;
+  font-size: 11px;
+}
+
+.desktop-layout .waiting-sidebar.compact .waiting-player em {
+  padding: 4px 7px;
+  font-size: 10px;
+}
+
 .waiting-player {
   min-height: 66px;
   display: grid;
