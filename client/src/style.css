@@ -1991,7 +1991,7 @@ button:disabled {
 
 /* One opponent: top. */
 .mobile-layout .opponents-1 .seat-0 {
-  top: -17%;
+  top: -13%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -2011,7 +2011,7 @@ button:disabled {
 
 /* Three opponents: sides plus top. */
 .mobile-layout .opponents-3 .seat-1 {
-  top: -17%;
+  top: -13%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -2019,31 +2019,31 @@ button:disabled {
 /* Four opponents: two on each side. */
 .mobile-layout .opponents-4 .seat-0,
 .mobile-layout .opponents-5 .seat-0 {
-  top: 25%;
+  top: 31%;
   left: -8px;
 }
 
 .mobile-layout .opponents-4 .seat-1,
 .mobile-layout .opponents-5 .seat-1 {
-  top: 64%;
+  top: 59%;
   left: -8px;
 }
 
 .mobile-layout .opponents-4 .seat-2,
 .mobile-layout .opponents-5 .seat-3 {
-  top: 25%;
+  top: 31%;
   right: -8px;
 }
 
 .mobile-layout .opponents-4 .seat-3,
 .mobile-layout .opponents-5 .seat-4 {
-  top: 64%;
+  top: 59%;
   right: -8px;
 }
 
 /* Five opponents: two per side plus top. */
 .mobile-layout .opponents-5 .seat-2 {
-  top: -17%;
+  top: -13%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -2051,7 +2051,7 @@ button:disabled {
 /* Six opponents: three on each side. */
 .mobile-layout .opponents-6 .seat-0,
 .mobile-layout .opponents-7 .seat-0 {
-  top: 12%;
+  top: 18%;
   left: -8px;
 }
 
@@ -2063,13 +2063,13 @@ button:disabled {
 
 .mobile-layout .opponents-6 .seat-2,
 .mobile-layout .opponents-7 .seat-2 {
-  top: 74%;
+  top: 68%;
   left: -8px;
 }
 
 .mobile-layout .opponents-6 .seat-3,
 .mobile-layout .opponents-7 .seat-4 {
-  top: 12%;
+  top: 18%;
   right: -8px;
 }
 
@@ -2081,13 +2081,13 @@ button:disabled {
 
 .mobile-layout .opponents-6 .seat-5,
 .mobile-layout .opponents-7 .seat-6 {
-  top: 74%;
+  top: 68%;
   right: -8px;
 }
 
 /* Seven opponents: three per side plus top. */
 .mobile-layout .opponents-7 .seat-3 {
-  top: -17%;
+  top: -13%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -2096,76 +2096,76 @@ button:disabled {
 .mobile-layout .opponents-8 .seat-0,
 .mobile-layout .opponents-9 .seat-0,
 .mobile-layout .opponents-10 .seat-0 {
-  top: 5%;
+  top: 10%;
   left: -8px;
 }
 
 .mobile-layout .opponents-8 .seat-1,
 .mobile-layout .opponents-9 .seat-1,
 .mobile-layout .opponents-10 .seat-1 {
-  top: 31%;
+  top: 33%;
   left: -8px;
 }
 
 .mobile-layout .opponents-8 .seat-2,
 .mobile-layout .opponents-9 .seat-2,
 .mobile-layout .opponents-10 .seat-2 {
-  top: 57%;
+  top: 56%;
   left: -8px;
 }
 
 .mobile-layout .opponents-8 .seat-3,
 .mobile-layout .opponents-9 .seat-3,
 .mobile-layout .opponents-10 .seat-3 {
-  top: 83%;
+  top: 79%;
   left: -8px;
 }
 
 .mobile-layout .opponents-8 .seat-4,
 .mobile-layout .opponents-9 .seat-5,
 .mobile-layout .opponents-10 .seat-6 {
-  top: 5%;
+  top: 10%;
   right: -8px;
 }
 
 .mobile-layout .opponents-8 .seat-5,
 .mobile-layout .opponents-9 .seat-6,
 .mobile-layout .opponents-10 .seat-7 {
-  top: 31%;
+  top: 33%;
   right: -8px;
 }
 
 .mobile-layout .opponents-8 .seat-6,
 .mobile-layout .opponents-9 .seat-7,
 .mobile-layout .opponents-10 .seat-8 {
-  top: 57%;
+  top: 56%;
   right: -8px;
 }
 
 .mobile-layout .opponents-8 .seat-7,
 .mobile-layout .opponents-9 .seat-8,
 .mobile-layout .opponents-10 .seat-9 {
-  top: 83%;
+  top: 79%;
   right: -8px;
 }
 
 /* Nine opponents: four per side plus top. */
 .mobile-layout .opponents-9 .seat-4 {
-  top: -17%;
+  top: -13%;
   left: 50%;
   transform: translateX(-50%);
 }
 
 /* Ten opponents: four per side plus two on top. */
 .mobile-layout .opponents-10 .seat-4 {
-  top: -17%;
-  left: 38%;
+  top: -13%;
+  left: 35%;
   transform: translateX(-50%);
 }
 
 .mobile-layout .opponents-10 .seat-5 {
-  top: -17%;
-  left: 62%;
+  top: -13%;
+  left: 65%;
   transform: translateX(-50%);
 }
 
