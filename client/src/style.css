@@ -1042,21 +1042,23 @@ button:disabled {
 
 .desktop-layout .opponents-3 .seat-0 {
   top: 46%;
-  left: 0;
-  transform: translateX(-35%);
+  left: 24px;
+  right: auto;
+  transform: none;
 }
 
-.opponents-3 .seat-1 {
-  top: 9%;
+.desktop-layout .opponents-3 .seat-1 {
+  top: -12px;
   left: 50%;
+  right: auto;
   transform: translateX(-50%);
 }
 
 .desktop-layout .opponents-3 .seat-2 {
   top: 46%;
-  right: 0;
+  right: 24px;
   left: auto;
-  transform: translateX(35%);
+  transform: none;
 }
 
 .desktop-layout .opponents-4 .seat-0 {
