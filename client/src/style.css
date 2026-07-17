@@ -1059,6 +1059,45 @@ button:disabled {
   transform: translateX(35%);
 }
 
+.desktop-layout .opponents-5 .seat-0,
+.desktop-layout .opponents-5 .seat-1 {
+  right: auto;
+  transform: none;
+}
+
+.desktop-layout .opponents-5 .seat-0 {
+  top: 32%;
+  left: 24px;
+}
+
+.desktop-layout .opponents-5 .seat-1 {
+  top: 64%;
+  left: 24px;
+}
+
+.desktop-layout .opponents-5 .seat-2 {
+  top: -12px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.desktop-layout .opponents-5 .seat-3,
+.desktop-layout .opponents-5 .seat-4 {
+  left: auto;
+  transform: none;
+}
+
+.desktop-layout .opponents-5 .seat-3 {
+  top: 32%;
+  right: 24px;
+}
+
+.desktop-layout .opponents-5 .seat-4 {
+  top: 64%;
+  right: 24px;
+}
+
 .desktop-layout .opponents-6 .seat-0,
 .desktop-layout .opponents-6 .seat-1 {
   right: auto;
