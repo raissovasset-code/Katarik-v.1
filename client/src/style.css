@@ -1796,6 +1796,18 @@ button:disabled {
   display: none;
 }
 
+.mobile-layout .top-actions:not(.lobby-actions) {
+  grid-template-columns: 1fr auto;
+}
+
+.mobile-layout .top-actions:not(.lobby-actions) .side-room-info {
+  display: none;
+}
+
+.mobile-layout .top-actions:not(.lobby-actions) .leave-button {
+  grid-column: 2;
+}
+
 .mobile-layout .top-actions.lobby-actions .mode-chip {
   display: none;
 }
@@ -1970,84 +1982,191 @@ button:disabled {
   font-size: 11px;
 }
 
-.mobile-layout .seat-0 {
-  top: 67%;
-  left: -1%;
-}
-
-.mobile-layout .seat-1 {
-  top: 49%;
-  left: -2%;
-}
-
-.mobile-layout .seat-2 {
-  top: 31%;
-  left: -1%;
-}
-
-.mobile-layout .seat-3 {
-  top: -17%;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.mobile-layout .seat-4 {
-  top: 31%;
-  right: -1%;
+.mobile-layout .seat {
+  display: block;
   left: auto;
+  right: auto;
   transform: none;
 }
 
-.mobile-layout .seat-5 {
-  top: 49%;
-  right: -2%;
-}
-
-.mobile-layout .seat-6 {
-  top: 67%;
-  right: -1%;
-}
-
-.mobile-layout .seat-7,
-.mobile-layout .seat-8,
-.mobile-layout .seat-9 {
-  display: none;
-}
-
+/* One opponent: top. */
 .mobile-layout .opponents-1 .seat-0 {
   top: -17%;
   left: 50%;
   transform: translateX(-50%);
 }
 
-.mobile-layout .opponents-2 .seat-0 {
-  top: 42%;
-  left: -1%;
-  transform: none;
-}
-
-.mobile-layout .opponents-2 .seat-1 {
-  top: 42%;
-  right: -1%;
-  left: auto;
-}
-
+/* Two opponents: one on each side. */
+.mobile-layout .opponents-2 .seat-0,
 .mobile-layout .opponents-3 .seat-0 {
-  top: 42%;
-  left: -1%;
-  transform: none;
+  top: 43%;
+  left: -8px;
 }
 
+.mobile-layout .opponents-2 .seat-1,
+.mobile-layout .opponents-3 .seat-2 {
+  top: 43%;
+  right: -8px;
+}
+
+/* Three opponents: sides plus top. */
 .mobile-layout .opponents-3 .seat-1 {
   top: -17%;
   left: 50%;
   transform: translateX(-50%);
 }
 
-.mobile-layout .opponents-3 .seat-2 {
-  top: 42%;
-  right: -1%;
-  left: auto;
+/* Four opponents: two on each side. */
+.mobile-layout .opponents-4 .seat-0,
+.mobile-layout .opponents-5 .seat-0 {
+  top: 25%;
+  left: -8px;
+}
+
+.mobile-layout .opponents-4 .seat-1,
+.mobile-layout .opponents-5 .seat-1 {
+  top: 64%;
+  left: -8px;
+}
+
+.mobile-layout .opponents-4 .seat-2,
+.mobile-layout .opponents-5 .seat-3 {
+  top: 25%;
+  right: -8px;
+}
+
+.mobile-layout .opponents-4 .seat-3,
+.mobile-layout .opponents-5 .seat-4 {
+  top: 64%;
+  right: -8px;
+}
+
+/* Five opponents: two per side plus top. */
+.mobile-layout .opponents-5 .seat-2 {
+  top: -17%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Six opponents: three on each side. */
+.mobile-layout .opponents-6 .seat-0,
+.mobile-layout .opponents-7 .seat-0 {
+  top: 12%;
+  left: -8px;
+}
+
+.mobile-layout .opponents-6 .seat-1,
+.mobile-layout .opponents-7 .seat-1 {
+  top: 43%;
+  left: -8px;
+}
+
+.mobile-layout .opponents-6 .seat-2,
+.mobile-layout .opponents-7 .seat-2 {
+  top: 74%;
+  left: -8px;
+}
+
+.mobile-layout .opponents-6 .seat-3,
+.mobile-layout .opponents-7 .seat-4 {
+  top: 12%;
+  right: -8px;
+}
+
+.mobile-layout .opponents-6 .seat-4,
+.mobile-layout .opponents-7 .seat-5 {
+  top: 43%;
+  right: -8px;
+}
+
+.mobile-layout .opponents-6 .seat-5,
+.mobile-layout .opponents-7 .seat-6 {
+  top: 74%;
+  right: -8px;
+}
+
+/* Seven opponents: three per side plus top. */
+.mobile-layout .opponents-7 .seat-3 {
+  top: -17%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Eight opponents: four on each side. */
+.mobile-layout .opponents-8 .seat-0,
+.mobile-layout .opponents-9 .seat-0,
+.mobile-layout .opponents-10 .seat-0 {
+  top: 5%;
+  left: -8px;
+}
+
+.mobile-layout .opponents-8 .seat-1,
+.mobile-layout .opponents-9 .seat-1,
+.mobile-layout .opponents-10 .seat-1 {
+  top: 31%;
+  left: -8px;
+}
+
+.mobile-layout .opponents-8 .seat-2,
+.mobile-layout .opponents-9 .seat-2,
+.mobile-layout .opponents-10 .seat-2 {
+  top: 57%;
+  left: -8px;
+}
+
+.mobile-layout .opponents-8 .seat-3,
+.mobile-layout .opponents-9 .seat-3,
+.mobile-layout .opponents-10 .seat-3 {
+  top: 83%;
+  left: -8px;
+}
+
+.mobile-layout .opponents-8 .seat-4,
+.mobile-layout .opponents-9 .seat-5,
+.mobile-layout .opponents-10 .seat-6 {
+  top: 5%;
+  right: -8px;
+}
+
+.mobile-layout .opponents-8 .seat-5,
+.mobile-layout .opponents-9 .seat-6,
+.mobile-layout .opponents-10 .seat-7 {
+  top: 31%;
+  right: -8px;
+}
+
+.mobile-layout .opponents-8 .seat-6,
+.mobile-layout .opponents-9 .seat-7,
+.mobile-layout .opponents-10 .seat-8 {
+  top: 57%;
+  right: -8px;
+}
+
+.mobile-layout .opponents-8 .seat-7,
+.mobile-layout .opponents-9 .seat-8,
+.mobile-layout .opponents-10 .seat-9 {
+  top: 83%;
+  right: -8px;
+}
+
+/* Nine opponents: four per side plus top. */
+.mobile-layout .opponents-9 .seat-4 {
+  top: -17%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Ten opponents: four per side plus two on top. */
+.mobile-layout .opponents-10 .seat-4 {
+  top: -17%;
+  left: 38%;
+  transform: translateX(-50%);
+}
+
+.mobile-layout .opponents-10 .seat-5 {
+  top: -17%;
+  left: 62%;
+  transform: translateX(-50%);
 }
 
 .mobile-layout .my-zone {
