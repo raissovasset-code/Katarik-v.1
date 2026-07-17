@@ -1059,6 +1059,35 @@ button:disabled {
   transform: translateX(35%);
 }
 
+.desktop-layout .opponents-4 .seat-0 {
+  top: 46%;
+  left: 24px;
+  right: auto;
+  transform: none;
+}
+
+.desktop-layout .opponents-4 .seat-1,
+.desktop-layout .opponents-4 .seat-2 {
+  top: -12px;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.desktop-layout .opponents-4 .seat-1 {
+  left: 39%;
+}
+
+.desktop-layout .opponents-4 .seat-2 {
+  left: 61%;
+}
+
+.desktop-layout .opponents-4 .seat-3 {
+  top: 46%;
+  right: 24px;
+  left: auto;
+  transform: none;
+}
+
 .desktop-layout .opponents-5 .seat-0,
 .desktop-layout .opponents-5 .seat-1 {
   right: auto;
