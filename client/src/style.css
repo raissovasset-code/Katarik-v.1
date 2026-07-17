@@ -1059,6 +1059,58 @@ button:disabled {
   transform: translateX(35%);
 }
 
+.desktop-layout .opponents-7 .seat-0,
+.desktop-layout .opponents-7 .seat-1 {
+  right: auto;
+  transform: none;
+}
+
+.desktop-layout .opponents-7 .seat-0 {
+  top: 32%;
+  left: 24px;
+}
+
+.desktop-layout .opponents-7 .seat-1 {
+  top: 64%;
+  left: 24px;
+}
+
+.desktop-layout .opponents-7 .seat-2,
+.desktop-layout .opponents-7 .seat-3,
+.desktop-layout .opponents-7 .seat-4 {
+  top: -12px;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.desktop-layout .opponents-7 .seat-2 {
+  left: 28%;
+}
+
+.desktop-layout .opponents-7 .seat-3 {
+  left: 50%;
+}
+
+.desktop-layout .opponents-7 .seat-4 {
+  left: 72%;
+}
+
+.desktop-layout .opponents-7 .seat-5,
+.desktop-layout .opponents-7 .seat-6 {
+  left: auto;
+  transform: none;
+}
+
+.desktop-layout .opponents-7 .seat-5 {
+  top: 32%;
+  right: 24px;
+}
+
+.desktop-layout .opponents-7 .seat-6 {
+  top: 64%;
+  right: 24px;
+}
+
 .desktop-layout .opponents-8 .seat-0,
 .desktop-layout .opponents-8 .seat-1,
 .desktop-layout .opponents-8 .seat-2 {
@@ -1089,11 +1141,11 @@ button:disabled {
 }
 
 .desktop-layout .opponents-8 .seat-3 {
-  left: 40.5%;
+  left: 39%;
 }
 
 .desktop-layout .opponents-8 .seat-4 {
-  left: 59.5%;
+  left: 61%;
 }
 
 .desktop-layout .opponents-8 .seat-5,
