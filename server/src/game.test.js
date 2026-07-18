@@ -267,6 +267,24 @@ test('DVK can complete regular groups and katarik', () => {
   assert.equal(straight.length, 5);
 });
 
+test('DVK extends an ambiguous katarik upward', () => {
+  const withDvk = detectBestCombination([
+    makeCard('8S', '8'),
+    makeCard('9H', '9'),
+    makeCard('10D', '10'),
+    makeDvk(),
+  ]);
+  const throughJack = detectBestCombination([
+    makeCard('8S', '8'),
+    makeCard('9H', '9'),
+    makeCard('10D', '10'),
+    makeCard('JC', 'J'),
+  ]);
+
+  assert.equal(withDvk.type, 'straight');
+  assert.equal(withDvk.high, throughJack.high);
+});
+
 test('jokers are only single cards and cannot join groups', () => {
   const redJoker = makeJoker('RED_JOKER', 'RED_JOKER');
 

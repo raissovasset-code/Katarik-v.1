@@ -650,7 +650,11 @@ function detectStraight(cards) {
   if (new Set(values).size !== values.length) return null;
   if (Math.max(...values) > RANK_VALUE.A) return null;
 
-  for (let start = 1; start <= RANK_VALUE.A - cards.length + 1; start++) {
+  for (
+    let start = RANK_VALUE.A - cards.length + 1;
+    start >= 1;
+    start -= 1
+  ) {
     const needed = Array.from({ length: cards.length }, (_, index) => start + index);
     const missing = needed.filter(value => !values.includes(value)).length;
 
