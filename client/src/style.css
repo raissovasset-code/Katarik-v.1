@@ -1440,6 +1440,11 @@ button:disabled {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.my-zone.finished {
+  align-items: center;
+  justify-content: center;
+}
+
 .me-badge {
   position: absolute;
   right: calc(var(--game-left) + 18px);
@@ -1618,10 +1623,7 @@ button:disabled {
 }
 
 .result-card {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
   width: min(430px, 86%);
   padding: 28px;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -2179,6 +2181,24 @@ button:disabled {
   min-height: 150px;
   padding: 0 6px 4px;
   background: linear-gradient(180deg, rgba(3, 18, 11, 0), rgba(3, 18, 11, 0.72) 22%, #03120b 100%);
+}
+
+.mobile-layout .my-zone.finished {
+  min-height: 150px;
+  padding: 10px 12px;
+}
+
+.mobile-layout .result-card {
+  width: min(100%, 360px);
+  padding: 16px;
+}
+
+.mobile-layout .result-card h2 {
+  font-size: 22px;
+}
+
+.mobile-layout .result-card p {
+  font-size: 24px;
 }
 
 .mobile-layout .hand-fan {

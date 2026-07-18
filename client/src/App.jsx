@@ -413,6 +413,7 @@ function App() {
   const missingPlayers = Math.max(0, minimumPlayers - (game?.players?.length || 0));
   const canStartGame = isHost && missingPlayers === 0;
   const remainingPlayerCount = game?.players?.filter(player => !player.leaving).length || 0;
+  const waitingForHost = !isHost && ['round_finished', 'finished'].includes(game?.status);
   const connectionHint = !connected
     ? (isConnectionMessage(error)
         ? error
@@ -524,9 +525,6 @@ function App() {
             <button className="solid-button" disabled={!connected || remainingPlayerCount < minimumPlayers} onClick={() => send('restartGame')}>
               Играть заново
             </button>
-          )}
-          {!isHost && ['lobby', 'round_finished', 'finished'].includes(game.status) && (
-            <span className="host-wait">Ждем хозяина</span>
           )}
         </div>
       </header>
@@ -678,36 +676,36 @@ function App() {
           <div className="combo-pill">{comboText(game.table.combo, game.table.cards)}</div>
         )}
 
-        {game.status === 'finished' && (
-          <div className="result-card">
-            <h2>Игра окончена</h2>
-            <p>{finishedGameText(game)}</p>
-          </div>
-        )}
-
         {error && !isConnectionMessage(error) && (
           <div className="toast error table-error" role="status">
             {error}
           </div>
         )}
       </section>
-      <section className="my-zone">
-        <div className="hand-fan">
-          {splitHandRows(game.hand).map((row, rowIndex) => (
-            <div className="hand-row" key={rowIndex}>
-              {row.map((card, index) => (
-                <Card
-                  key={card.id}
-                  card={card}
-                  selected={selected.includes(card.id)}
-                  onClick={() => toggle(card.id)}
-                  index={index}
-                  total={row.length}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
+      <section className={`my-zone ${game.status === 'finished' ? 'finished' : ''}`}>
+        {game.status === 'finished' ? (
+          <div className="result-card">
+            <h2>Игра окончена</h2>
+            <p>{finishedGameText(game)}</p>
+          </div>
+        ) : (
+          <div className="hand-fan">
+            {splitHandRows(game.hand).map((row, rowIndex) => (
+              <div className="hand-row" key={rowIndex}>
+                {row.map((card, index) => (
+                  <Card
+                    key={card.id}
+                    card={card}
+                    selected={selected.includes(card.id)}
+                    onClick={() => toggle(card.id)}
+                    index={index}
+                    total={row.length}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <div className="me-badge">
@@ -733,8 +731,8 @@ function App() {
           </button>
         </div>
 
-        <div className={`hint ${connectionHint ? 'connection-warning' : isMyTurn ? 'your-turn' : ''}`}>
-          {connectionHint || (isMyTurn ? 'Ваш ход' : 'Ждем ход другого игрока')}
+        <div className={`hint ${connectionHint ? 'connection-warning' : isMyTurn && !waitingForHost ? 'your-turn' : ''}`}>
+          {connectionHint || (waitingForHost ? 'Ждем хозяина' : isMyTurn ? 'Ваш ход' : 'Ждем ход другого игрока')}
         </div>
         </>
       )}
