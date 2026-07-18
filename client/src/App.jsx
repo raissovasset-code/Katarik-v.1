@@ -16,12 +16,16 @@ const DESKTOP_GAME_HEIGHT = 900;
 const MIN_DESKTOP_SCALE = 0.72;
 const MAX_DISPLAY_NAME_LENGTH = 8;
 
-function displayName(value, fallback = '—') {
+function displayNameWithLimit(value, maxLength, fallback = '—') {
   const symbols = Array.from(String(value || fallback));
 
-  return symbols.length > MAX_DISPLAY_NAME_LENGTH
-    ? `${symbols.slice(0, MAX_DISPLAY_NAME_LENGTH).join('')}…`
+  return symbols.length > maxLength
+    ? `${symbols.slice(0, maxLength).join('')}…`
     : symbols.join('');
+}
+
+function displayName(value, fallback = '—') {
+  return displayNameWithLimit(value, MAX_DISPLAY_NAME_LENGTH, fallback);
 }
 
 function createLocalUser() {
@@ -645,16 +649,16 @@ function App() {
         <div className={isMyTurn ? 'turn-pill your-turn' : 'turn-pill'}>
           {lastPlayedPlayer ? (
             <>
-              Ходил: <b>{displayName(lastPlayedPlayer.name)}</b>. Ходит: <b>{displayName(currentPlayer?.name)}</b>
+              Ходил: <b>{displayNameWithLimit(lastPlayedPlayer.name, isMobileLayout ? 5 : MAX_DISPLAY_NAME_LENGTH)}</b>. Ходит: <b>{displayNameWithLimit(currentPlayer?.name, isMobileLayout ? 5 : MAX_DISPLAY_NAME_LENGTH)}</b>
             </>
           ) : (
-            <>Ходит: <b>{displayName(currentPlayer?.name)}</b></>
+            <>Ходит: <b>{displayNameWithLimit(currentPlayer?.name, isMobileLayout ? 5 : MAX_DISPLAY_NAME_LENGTH)}</b></>
           )}
         </div>
 
         <div className={`table-cards ${game.table?.cards?.length > 5 ? 'multi-row' : ''}`}>
           {game.table?.cards?.length ? (
-            splitTableRows(game.table.cards).map((row, rowIndex) => (
+            splitTableRows(game.table.cards, !isMobileLayout).map((row, rowIndex) => (
               <div className="table-card-row" key={rowIndex}>
                 {row.map((card, i) => (
                   <Card
@@ -842,11 +846,14 @@ function splitHandRows(cards = []) {
   ];
 }
 
-function splitTableRows(cards = []) {
+function splitTableRows(cards = [], forceTwoRows = false) {
+  const cardsPerRow = forceTwoRows && cards.length > 10
+    ? Math.ceil(cards.length / 2)
+    : 5;
   const rows = [];
 
-  for (let i = 0; i < cards.length; i += 5) {
-    rows.push(cards.slice(i, i + 5));
+  for (let i = 0; i < cards.length; i += cardsPerRow) {
+    rows.push(cards.slice(i, i + cardsPerRow));
   }
 
   return rows.length ? rows : [[]];
