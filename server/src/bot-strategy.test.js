@@ -203,3 +203,51 @@ test('opens a pogoni round with a lower pair instead of a higher single or tripl
 
   assert.deepEqual(new Set(chooseBotAction(game, 'bot').cardIds), new Set(['6S', '6H']));
 });
+
+test('leads with the longest narrow straight before singles, pairs and capture groups', () => {
+  const hand = [
+    card('5S', '5'), card('6S', '6'), card('7S', '7'), card('8S', '8'), card('9S', '9'),
+    card('JS', 'J'), card('JH', 'J', 'normal', 'H'), card('JD', 'J', 'normal', 'D'),
+    card('QS', 'Q'), card('QH', 'Q', 'normal', 'H'),
+    card('4S', '4'),
+  ];
+  const game = gameWith(hand);
+  game.mode = 'pogoni';
+
+  assert.deepEqual(
+    new Set(chooseBotAction(game, 'bot').cardIds),
+    new Set(['5S', '6S', '7S', '8S', '9S']),
+  );
+});
+
+test('leads with a bomb because it sheds many cards and only another bomb can beat it', () => {
+  const hand = [
+    card('5S', '5'), card('5H', '5', 'normal', 'H'),
+    card('6S', '6'), card('6H', '6', 'normal', 'H'),
+    card('7S', '7'), card('7H', '7', 'normal', 'H'),
+    card('9S', '9'), card('9H', '9', 'normal', 'H'), card('9D', '9', 'normal', 'D'),
+    card('4S', '4'),
+  ];
+  const game = gameWith(hand);
+  game.mode = 'pogoni';
+
+  assert.deepEqual(
+    new Set(chooseBotAction(game, 'bot').cardIds),
+    new Set(['5S', '5H', '6S', '6H', '7S', '7H']),
+  );
+});
+
+test('keeps the red joker and pogon after leading the final capture triple', () => {
+  const hand = [
+    card('9S', '9'), card('9H', '9', 'normal', 'H'), card('9D', '9', 'normal', 'D'),
+    card('RED_JOKER', 'RED_JOKER', 'joker'),
+    card('4S', '4'),
+  ];
+  const game = gameWith(hand);
+  game.mode = 'pogoni';
+
+  assert.deepEqual(
+    new Set(chooseBotAction(game, 'bot').cardIds),
+    new Set(['9S', '9H', '9D']),
+  );
+});
