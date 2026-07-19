@@ -6,3 +6,15 @@ services:
     buildCommand: npm run build
     startCommand: npm start
     autoDeploy: true
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: katarik-rooms
+          property: connectionString
+
+  - type: keyvalue
+    name: katarik-rooms
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
