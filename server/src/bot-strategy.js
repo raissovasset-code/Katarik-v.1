@@ -281,10 +281,21 @@ function preferredTableResponse(game, player, moves) {
     || left.cardIds.length - right.cardIds.length
   ));
   const sameType = moves.filter(move => move.combo.type === game.table.combo.type);
-  if (sameType.length) return sortWeakestFirst(sameType);
+  const rankCounts = cardsByRank(player.hand);
+  const sameTypeWithoutBrokenGroups = sameType.filter(move => !move.cards.some(card => {
+    if (card.type !== 'normal') return false;
+    const cardsOfRankInMove = move.cards.filter(
+      selected => selected.type === 'normal' && selected.rank === card.rank,
+    ).length;
+    return (rankCounts.get(card.rank)?.length || 0) >= 3
+      && cardsOfRankInMove < (rankCounts.get(card.rank)?.length || 0);
+  }));
+  if (sameTypeWithoutBrokenGroups.length) return sortWeakestFirst(sameTypeWithoutBrokenGroups);
 
   const triples = moves.filter(move => move.combo.type === 'triple');
   if (triples.length) return sortWeakestFirst(triples);
+
+  if (sameType.length) return sortWeakestFirst(sameType);
 
   const quads = moves.filter(move => move.combo.type === 'quad');
   if (quads.length) return sortWeakestFirst(quads);
