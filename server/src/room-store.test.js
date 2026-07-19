@@ -13,7 +13,7 @@ class FakeRedisClient {
   }
 
   async *scanIterator() {
-    yield* this.values.keys();
+    yield [...this.values.keys()];
   }
 
   async get(key) {
