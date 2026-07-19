@@ -9,6 +9,7 @@ import {
   chooseNeuralAction,
   createNeuralModel,
   sampleNeuralAction,
+  shouldReplaceNeuralCheckpoint,
   trainNeuralChoice,
 } from '../src/neural-bot.js';
 
@@ -51,9 +52,18 @@ const random = createSeededRandom(seed);
 const starting = loadStartingModel(random);
 let model = structuredClone(starting.model);
 let bestModel = structuredClone(model);
-let bestWinRate = 0;
 const history = [];
 const heuristicPolicy = (game, playerId) => chooseBotAction(game, playerId);
+const validationSeed = seed + 7_000_000;
+const validationGames = Math.min(400, tournamentGames);
+const startingValidation = evaluatePolicies({
+  candidate: (game, playerId) => chooseNeuralAction(game, playerId, starting.model),
+  baseline: heuristicPolicy,
+  games: validationGames,
+  seed: validationSeed,
+});
+let bestValidation = startingValidation;
+console.log(JSON.stringify({ checkpoint: 'starting', validation: startingValidation }));
 
 for (let generation = 1; generation <= generations; generation += 1) {
   const temperature = Math.max(0.4, 1.2 - (generation - 1) * 0.1);
@@ -89,11 +99,11 @@ for (let generation = 1; generation <= generations; generation += 1) {
   const validation = evaluatePolicies({
     candidate: (game, playerId) => chooseNeuralAction(game, playerId, model),
     baseline: heuristicPolicy,
-    games: Math.min(400, tournamentGames),
-    seed: seed + 7_000_000 + generation * 10_000,
+    games: validationGames,
+    seed: validationSeed,
   });
-  if (validation.winRate > bestWinRate && validation.incomplete === 0) {
-    bestWinRate = validation.winRate;
+  if (shouldReplaceNeuralCheckpoint(bestValidation, validation)) {
+    bestValidation = validation;
     bestModel = structuredClone(model);
   }
   const metrics = { generation, temperature, decisions, rewardTotal, validation };
@@ -101,21 +111,40 @@ for (let generation = 1; generation <= generations; generation += 1) {
   console.log(JSON.stringify(metrics));
 }
 
-const tournament = evaluatePolicies({
+const tournamentSeed = seed + 9_000_000;
+const startingTournament = evaluatePolicies({
+  candidate: (game, playerId) => chooseNeuralAction(game, playerId, starting.model),
+  baseline: heuristicPolicy,
+  games: tournamentGames,
+  seed: tournamentSeed,
+});
+const candidateTournament = evaluatePolicies({
   candidate: (game, playerId) => chooseNeuralAction(game, playerId, bestModel),
   baseline: heuristicPolicy,
   games: tournamentGames,
-  seed: seed + 9_000_000,
+  seed: tournamentSeed,
 });
+const improved = shouldReplaceNeuralCheckpoint(startingTournament, candidateTournament);
+const selectedModel = improved ? bestModel : starting.model;
+const tournament = improved ? candidateTournament : startingTournament;
 const accepted = tournament.incomplete === 0 && tournament.winRate >= 0.55;
 const artifact = {
-  ...bestModel,
+  ...selectedModel,
   metadata: {
     trainedAt: new Date().toISOString(), method: 'self-play-policy-gradient',
     startingModel: starting.source, seed, gamesPerGeneration: games, generations,
-    learningRate, tournament, accepted, history,
+    learningRate, startingValidation, bestValidation, startingTournament,
+    candidateTournament, improved, tournament, accepted, history,
   },
 };
-fs.writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`, 'utf8');
-if (accepted) fs.writeFileSync(publishedOutput, `${JSON.stringify(artifact, null, 2)}\n`, 'utf8');
-console.log(JSON.stringify({ output, publishedOutput: accepted ? publishedOutput : null, accepted, tournament }));
+function writeJsonAtomically(target, value) {
+  const temporary = `${target}.tmp`;
+  fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  fs.renameSync(temporary, target);
+}
+writeJsonAtomically(output, artifact);
+if (accepted) writeJsonAtomically(publishedOutput, artifact);
+console.log(JSON.stringify({
+  output, publishedOutput: accepted ? publishedOutput : null,
+  improved, accepted, startingTournament, candidateTournament, tournament,
+}));

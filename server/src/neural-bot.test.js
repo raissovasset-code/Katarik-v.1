@@ -10,6 +10,7 @@ import {
   legalNeuralActions,
   neuralScore,
   sampleNeuralAction,
+  shouldReplaceNeuralCheckpoint,
   trainNeuralChoice,
 } from './neural-bot.js';
 
@@ -79,4 +80,11 @@ test('sampled neural action is reproducible with seeded exploration', () => {
   const second = sampleNeuralAction(game, playerId, model, { random: createSeededRandom(10) });
   assert.equal(first.chosenIndex, second.chosenIndex);
   assert.deepEqual(first.action.cardIds, second.action.cardIds);
+});
+
+test('checkpoint replacement requires a completed and measurable improvement', () => {
+  const current = { winRate: 0.52, incomplete: 0 };
+  assert.equal(shouldReplaceNeuralCheckpoint(current, { winRate: 0.53, incomplete: 0 }), true);
+  assert.equal(shouldReplaceNeuralCheckpoint(current, { winRate: 0.522, incomplete: 0 }), false);
+  assert.equal(shouldReplaceNeuralCheckpoint(current, { winRate: 0.60, incomplete: 1 }), false);
 });

@@ -206,3 +206,9 @@ export function chooseNeuralAction(game, playerId, model) {
     .map(action => ({ action, score: neuralScore(model, encodeStateAction(game, playerId, action)) }))
     .sort((left, right) => right.score - left.score)[0].action;
 }
+
+export function shouldReplaceNeuralCheckpoint(current, candidate, minimumGain = 0.005) {
+  if (!candidate || candidate.incomplete > 0) return false;
+  if (!current || current.incomplete > 0) return true;
+  return candidate.winRate >= current.winRate + minimumGain;
+}
