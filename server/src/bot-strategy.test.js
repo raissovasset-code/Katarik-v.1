@@ -102,3 +102,27 @@ test('does not empty its hand with the current pogon rank before a captured-tabl
 
   assert.deepEqual(chooseBotAction(game, 'bot'), { type: 'pass' });
 });
+
+test('uses a strong combination to capture the table and leave a finishing pogon tail', () => {
+  const hand = [
+    card('9S', '9'), card('9H', '9', 'normal', 'H'),
+    card('9D', '9', 'normal', 'D'), card('9C', '9', 'normal', 'C'),
+    card('4S', '4'), card('4H', '4', 'normal', 'H'),
+  ];
+  const table = {
+    cards: [card('KS', 'K'), card('KH', 'K', 'normal', 'H'), card('KD', 'K', 'normal', 'D')],
+    combo: { type: 'triple', high: 10, length: 3 },
+  };
+  const game = gameWith(hand, table);
+  game.mode = 'pogoni';
+
+  const capture = chooseBotAction(game, 'bot');
+  assert.equal(capture.type, 'play');
+  assert.deepEqual(new Set(capture.cardIds), new Set(['9S', '9H', '9D', '9C']));
+
+  game.players[0].hand = [card('4S', '4'), card('4H', '4', 'normal', 'H')];
+  game.table = null;
+  game.pogonReadyPlayerId = 'bot';
+  const pogon = chooseBotAction(game, 'bot');
+  assert.deepEqual(new Set(pogon.cardIds), new Set(['4S', '4H']));
+});
