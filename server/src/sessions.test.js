@@ -41,6 +41,19 @@ test('rejects reconnect from another device', () => {
   );
 });
 
+test('rejects claiming a legacy seat that has no reconnect token', () => {
+  const player = { id: 'player-a' };
+
+  assert.throws(
+    () => claimExistingPlayerSession(player, {
+      playerId: 'player-a',
+      sessionToken: 'new-secret',
+    }),
+    /другому устройству/
+  );
+  assert.equal(player.reconnectToken, undefined);
+});
+
 test('requires identity and reconnect token for new players', () => {
   assert.throws(
     () => createPlayerFromMessage({ playerId: 'player-a', name: 'Асет' }),
