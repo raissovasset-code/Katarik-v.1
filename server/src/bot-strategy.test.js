@@ -103,6 +103,36 @@ test('does not empty its hand with the current pogon rank before a captured-tabl
   assert.deepEqual(chooseBotAction(game, 'bot'), { type: 'pass' });
 });
 
+test('passes instead of playing the protected pogon rank before capturing the table', () => {
+  const hand = [card('7D', '7', 'normal', 'D'), card('4S', '4')];
+  const table = {
+    cards: [card('6S', '6')],
+    combo: { type: 'single', high: 3, length: 1 },
+  };
+  const game = gameWith(hand, table);
+  game.mode = 'pogoni';
+  game.players[0].pogonRank = '7';
+
+  assert.deepEqual(chooseBotAction(game, 'bot'), { type: 'pass' });
+});
+
+test('never spends the protected pogon rank when another legal move exists', () => {
+  const hand = [
+    card('7S', '7'), card('7H', '7', 'normal', 'H'),
+    card('7D', '7', 'normal', 'D'), card('7C', '7', 'normal', 'C'),
+    card('8S', '8'),
+  ];
+  const table = {
+    cards: [card('6S', '6')],
+    combo: { type: 'single', high: 3, length: 1 },
+  };
+  const game = gameWith(hand, table);
+  game.mode = 'pogoni';
+  game.players[0].pogonRank = '7';
+
+  assert.deepEqual(chooseBotAction(game, 'bot').cardIds, ['8S']);
+});
+
 test('uses a strong combination to capture the table and leave a finishing pogon tail', () => {
   const hand = [
     card('9S', '9'), card('9H', '9', 'normal', 'H'),
