@@ -77,6 +77,27 @@ test('prioritizes a finishing pogon move', () => {
   assert.deepEqual(new Set(action.cardIds), new Set(['4S', '4H']));
 });
 
+test('after capturing the table, protects the pogon rank until it can finish the hand', () => {
+  const hand = [card('4S', '4'), card('7H', '7', 'normal', 'H')];
+  const game = gameWith(hand);
+  game.mode = 'pogoni';
+  game.pogonReadyPlayerId = 'bot';
+
+  const action = chooseBotAction(game, 'bot');
+  assert.deepEqual(action.cardIds, ['7H']);
+});
+
+test('after capturing the table, a real finishing pogon takes priority over every other move', () => {
+  const hand = [card('7S', '7'), card('7H', '7', 'normal', 'H')];
+  const game = gameWith(hand);
+  game.mode = 'pogoni';
+  game.pogonReadyPlayerId = 'bot';
+  game.players[0].pogonRank = '7';
+
+  const action = chooseBotAction(game, 'bot');
+  assert.deepEqual(new Set(action.cardIds), new Set(['7S', '7H']));
+});
+
 test('preserves the current pogon rank until the bot can actually set a pogon', () => {
   const hand = [card('4D', '4', 'normal', 'D'), card('7H', '7', 'normal', 'H')];
   const game = gameWith(hand);
