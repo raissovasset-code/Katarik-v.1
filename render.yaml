@@ -11,7 +11,9 @@ services:
         fromService:
           type: keyvalue
           name: katarik-rooms
-          property: connectionString
+            property: connectionString
+      - key: ALLOWED_ORIGINS
+        value: https://katarik-5g25.onrender.com,https://localhost,capacitor://localhost
 
   - type: keyvalue
     name: katarik-rooms
