@@ -182,7 +182,6 @@ function pogonCaptureBonus(move) {
 
 function setsUpPogon(game, player, move) {
   if (game.mode !== 'pogoni' || !game.table || game.pogonReadyPlayerId === player.id) return false;
-  if (move.cards.some(card => card.type === 'normal' && card.rank === player.pogonRank)) return false;
   const selected = new Set(move.cardIds);
   const remaining = player.hand.filter(card => !selected.has(card.id));
   return isPogonTail(remaining, player.pogonRank);
@@ -216,12 +215,12 @@ function endgameCaptureGroup(game, player, moves) {
   )) || null;
 }
 
-function directPogonCaptureLead(game, player, moves) {
+// Two-move endgame planner: try every legal lead and keep the line where the
+// next free turn can finish with a real pogon. A lead may spend surplus cards
+// of the pogon rank, but the planned tail must still contain a valid pogon.
+function plannedPogonFinishLead(game, player, moves) {
   if (game.mode !== 'pogoni') return null;
   const candidates = moves.filter(move => {
-    if (move.cards.some(card => card.type === 'normal' && card.rank === player.pogonRank)) {
-      return false;
-    }
     const selected = new Set(move.cardIds);
     const remaining = player.hand.filter(card => !selected.has(card.id));
     return isPogonTail(remaining, player.pogonRank);
@@ -233,7 +232,7 @@ function directPogonCaptureLead(game, player, moves) {
 }
 
 function preferredFreeLead(game, player, moves) {
-  const directCapture = directPogonCaptureLead(game, player, moves);
+  const directCapture = plannedPogonFinishLead(game, player, moves);
   if (directCapture) return [directCapture];
 
   const endgameGroup = endgameCaptureGroup(game, player, moves);
@@ -366,11 +365,18 @@ export function chooseBotAction(game, playerId, weights = TRAINED_BOT_WEIGHTS) {
     .sort((a, b) => b.score - a.score || a.combo.high - b.combo.high);
 
   if (game.mode === 'pogoni' && game.pogonReadyPlayerId !== player.id) {
-    const movesWithoutPogon = moves.filter(move => !move.cards.some(
-      card => card.type === 'normal' && card.rank === player.pogonRank,
-    ));
-    if (movesWithoutPogon.length) {
-      moves = movesWithoutPogon;
+    const movesPreservingPogon = moves.filter(move => {
+      const selected = new Set(move.cardIds);
+      const remaining = player.hand.filter(card => !selected.has(card.id));
+      const usesCurrentPogon = move.cards.some(
+        card => card.type === 'normal' && card.rank === player.pogonRank,
+      );
+      return !usesCurrentPogon || remaining.some(
+        card => card.type === 'normal' && card.rank === player.pogonRank,
+      );
+    });
+    if (movesPreservingPogon.length) {
+      moves = movesPreservingPogon;
     } else if (game.table) {
       return { type: 'pass' };
     } else {
