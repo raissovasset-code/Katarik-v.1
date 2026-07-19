@@ -108,6 +108,7 @@ Render использует файл `render.yaml`:
 - ветка развертывания: `main`;
 - автоматическое обновление после отправки изменений в GitHub;
 - отдельное Key Value хранилище `katarik-rooms`, доступное серверу через `REDIS_URL`.
+- разрешенные HTTP/WebSocket origins задаются через `ALLOWED_ORIGINS`; production разрешает только опубликованный сайт и локальный origin Android Capacitor.
 
 Состояние подключения хранилища можно проверить по адресу [`/api/health`](https://katarik-5g25.onrender.com/api/health): в production поле `roomStorage` должно иметь значение `redis`.
 
