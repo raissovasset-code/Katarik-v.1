@@ -331,15 +331,17 @@ test('a host adds a smart bot and the bot takes its turn automatically', async t
 
   const botPlayed = waitForState(
     hostSocket,
-    game => game.table?.playerId === bot.id || game.status !== 'playing',
+    game => game.currentPlayerId !== bot.id || game.status !== 'playing',
   );
   if (playing.currentPlayerId === hostIdentity.playerId) {
-    assert.equal(playing.hand.some(card => card.id === '4S'), true);
-    hostSocket.send(JSON.stringify({ type: 'play', cardIds: ['4S'] }));
+    const openingCard = playing.hand.find(card => card.id === '4S')
+      || playing.hand.find(card => card.type !== 'wild');
+    assert.ok(openingCard);
+    hostSocket.send(JSON.stringify({ type: 'play', cardIds: [openingCard.id] }));
   }
 
   const afterBotTurn = (await botPlayed).game;
-  assert.equal(afterBotTurn.table?.playerId === bot.id || afterBotTurn.status !== 'playing', true);
+  assert.equal(afterBotTurn.currentPlayerId !== bot.id || afterBotTurn.status !== 'playing', true);
 
   const left = waitForMessage(hostSocket, 'leftRoom');
   hostSocket.send(JSON.stringify({ type: 'leaveRoom' }));

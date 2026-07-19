@@ -40,7 +40,7 @@ const ROOM_CLEANUP_INTERVAL_MS = parsePositiveDuration(
   process.env.ROOM_CLEANUP_INTERVAL_MS,
   DEFAULT_ROOM_CLEANUP_INTERVAL_MS,
 );
-const BOT_TURN_DELAY_MS = parsePositiveDuration(process.env.BOT_TURN_DELAY_MS, 850);
+const BOT_TURN_DELAY_MS = parsePositiveDuration(process.env.BOT_TURN_DELAY_MS, 2500);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDistPath = path.resolve(__dirname, '../../client/dist');
 const allowedOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);

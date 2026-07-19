@@ -134,6 +134,14 @@ function moveScore(game, player, move) {
   const usesDvk = move.cards.some(card => card.type === 'wild');
   const usesJoker = move.cards.some(card => card.type === 'joker');
   const winsNow = remaining.length === 0;
+  const isPogoni = game.mode === 'pogoni';
+  const canSetPogon = game.pogonReadyPlayerId === player.id;
+  const usesCurrentPogon = move.cards.some(
+    card => card.type === 'normal' && card.rank === player.pogonRank,
+  );
+  const keepsCurrentPogon = remaining.some(
+    card => card.type === 'normal' && card.rank === player.pogonRank,
+  );
 
   let score = move.cardIds.length * (urgent ? 115 : 75);
   score += remainingHandScore(remaining);
@@ -147,7 +155,14 @@ function moveScore(game, player, move) {
   if (urgent) score += move.combo.high * 3 + move.cardIds.length * 35;
   if (winsNow) score += 20_000;
 
-  if (game.mode === 'pogoni' && game.pogonReadyPlayerId === player.id && winsNow) {
+  if (isPogoni && !canSetPogon) {
+    // A player who empties their hand without a captured-table turn does not win
+    // Pogoni. Preserve the rank needed for the next real pogon opportunity.
+    if (winsNow) score -= 50_000;
+    if (usesCurrentPogon && !keepsCurrentPogon) score -= 12_000;
+  }
+
+  if (isPogoni && canSetPogon && winsNow) {
     const counted = move.cards.filter(card => card.type === 'normal');
     if (counted.length && counted.every(card => card.rank === player.pogonRank)) score += 30_000;
   }
@@ -175,6 +190,16 @@ export function chooseBotAction(game, playerId) {
   );
   const urgent = lowestOpponentHand <= 2;
   const usesDvk = best.cards.some(card => card.type === 'wild');
+  const emptiesHand = best.cardIds.length === player.hand.length;
+
+  if (
+    game.mode === 'pogoni'
+    && game.pogonReadyPlayerId !== player.id
+    && game.table
+    && emptiesHand
+  ) {
+    return { type: 'pass' };
+  }
 
   if (game.table && !urgent && player.hand.length > 4) {
     if (best.combo.type === 'quad' && game.table.combo.type !== 'quad') return { type: 'pass' };
