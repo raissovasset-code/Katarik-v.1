@@ -177,3 +177,29 @@ test('uses a strong combination to capture the table and leave a finishing pogon
   const pogon = chooseBotAction(game, 'bot');
   assert.deepEqual(new Set(pogon.cardIds), new Set(['4S', '4H']));
 });
+
+test('opens a pogoni round with a lower single instead of a higher pair or triple', () => {
+  const hand = [
+    card('6S', '6'),
+    card('7S', '7'), card('7H', '7', 'normal', 'H'),
+    card('9S', '9'), card('9H', '9', 'normal', 'H'), card('9D', '9', 'normal', 'D'),
+    card('4S', '4'),
+  ];
+  const game = gameWith(hand);
+  game.mode = 'pogoni';
+
+  assert.deepEqual(chooseBotAction(game, 'bot').cardIds, ['6S']);
+});
+
+test('opens a pogoni round with a lower pair instead of a higher single or triple', () => {
+  const hand = [
+    card('6S', '6'), card('6H', '6', 'normal', 'H'),
+    card('8S', '8'),
+    card('9S', '9'), card('9H', '9', 'normal', 'H'), card('9D', '9', 'normal', 'D'),
+    card('4S', '4'),
+  ];
+  const game = gameWith(hand);
+  game.mode = 'pogoni';
+
+  assert.deepEqual(new Set(chooseBotAction(game, 'bot').cardIds), new Set(['6S', '6H']));
+});
