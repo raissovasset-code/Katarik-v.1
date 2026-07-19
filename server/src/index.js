@@ -15,8 +15,20 @@ import {
   startGame,
 } from './game.js';
 import { claimExistingPlayerSession, createPlayerFromMessage } from './sessions.js';
+import {
+  cleanupRooms,
+  DEFAULT_ROOM_CLEANUP_INTERVAL_MS,
+  DEFAULT_ROOM_TTL_MS,
+  parsePositiveDuration,
+  touchRoom,
+} from './room-cleanup.js';
 
 const PORT = Number(process.env.PORT || 3001);
+const ROOM_TTL_MS = parsePositiveDuration(process.env.ROOM_TTL_MS, DEFAULT_ROOM_TTL_MS);
+const ROOM_CLEANUP_INTERVAL_MS = parsePositiveDuration(
+  process.env.ROOM_CLEANUP_INTERVAL_MS,
+  DEFAULT_ROOM_CLEANUP_INTERVAL_MS,
+);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDistPath = path.resolve(__dirname, '../../client/dist');
 
@@ -31,6 +43,13 @@ const playerSockets = new Map();
 
 function playerSocketKey(roomId, playerId) {
   return `${roomId}:${playerId}`;
+}
+
+function hasConnectedPlayers(roomId) {
+  for (const meta of sockets.values()) {
+    if (meta.roomId === roomId) return true;
+  }
+  return false;
 }
 
 app.get('/', (req, res) => {
@@ -57,6 +76,19 @@ const server = app.listen(PORT, () => {
 });
 
 const wss = new WebSocketServer({ server });
+
+const roomCleanupTimer = setInterval(() => {
+  const removedRoomIds = cleanupRooms({
+    rooms,
+    hasConnectedPlayers,
+    ttlMs: ROOM_TTL_MS,
+  });
+
+  if (removedRoomIds.length > 0) {
+    console.log(`Removed ${removedRoomIds.length} expired rooms`);
+  }
+}, ROOM_CLEANUP_INTERVAL_MS);
+roomCleanupTimer.unref?.();
 
 function roomCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -145,6 +177,7 @@ function handleCreateRoom(ws, msg) {
 
   rooms.set(code, game);
   addPlayer(game, player);
+  touchRoom(game);
   game.hostPlayerId = player.id;
   bindPlayerSocket(ws, code, player.id);
 
@@ -156,6 +189,7 @@ function handleJoinRoom(ws, msg) {
   const roomId = String(msg.roomId || '').trim().toUpperCase();
   const game = rooms.get(roomId);
   if (!game) throw new Error('Комната не найдена');
+  touchRoom(game);
 
   const existingPlayer = game.players.find(player => player.id === msg.playerId);
 
@@ -240,6 +274,8 @@ wss.on('connection', ws => {
     try {
       const msg = JSON.parse(raw.toString());
       const meta = sockets.get(ws);
+      const game = meta?.roomId ? rooms.get(meta.roomId) : null;
+      if (game) touchRoom(game);
 
       if (msg.type === 'ping') {
         sendTo(ws, { type: 'pong', timestamp: Date.now() });
@@ -305,6 +341,9 @@ wss.on('connection', ws => {
     if (socketKey && playerSockets.get(socketKey) === ws) {
       playerSockets.delete(socketKey);
     }
+
+    const game = meta?.roomId ? rooms.get(meta.roomId) : null;
+    if (game) touchRoom(game);
 
     sockets.delete(ws);
   });
