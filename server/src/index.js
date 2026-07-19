@@ -23,6 +23,7 @@ import {
   touchRoom,
 } from './room-cleanup.js';
 import { createRedisRoomStore } from './room-store.js';
+import { parseClientMessage } from './message-validation.js';
 
 const PORT = Number(process.env.PORT || 3001);
 const ROOM_TTL_MS = parsePositiveDuration(process.env.ROOM_TTL_MS, DEFAULT_ROOM_TTL_MS);
@@ -302,7 +303,7 @@ wss.on('connection', ws => {
 
   ws.on('message', async raw => {
     try {
-      const msg = JSON.parse(raw.toString());
+      const msg = parseClientMessage(raw);
       const meta = sockets.get(ws);
       const game = meta?.roomId ? rooms.get(meta.roomId) : null;
 
@@ -356,6 +357,7 @@ wss.on('connection', ws => {
 
       if (msg.type === 'pass') {
         await handlePlayerAction(ws, meta, game => pass(game, meta.playerId));
+        return;
       }
     } catch (error) {
       sendTo(ws, { type: 'error', message: error.message });
