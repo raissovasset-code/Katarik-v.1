@@ -182,6 +182,7 @@ function pogonCaptureBonus(move) {
 
 function setsUpPogon(game, player, move) {
   if (game.mode !== 'pogoni' || !game.table || game.pogonReadyPlayerId === player.id) return false;
+  if (move.cards.some(card => card.type === 'normal' && card.rank === player.pogonRank)) return false;
   const selected = new Set(move.cardIds);
   const remaining = player.hand.filter(card => !selected.has(card.id));
   return isPogonTail(remaining, player.pogonRank);
@@ -245,9 +246,23 @@ export function chooseBotAction(game, playerId, weights = TRAINED_BOT_WEIGHTS) {
     return { type: 'play', cardIds: [], declaredRanks: {} };
   }
 
-  const moves = generateBotMoves(game, player)
+  let moves = generateBotMoves(game, player)
     .map(move => ({ ...move, score: moveScore(game, player, move, weights) }))
     .sort((a, b) => b.score - a.score || a.combo.high - b.combo.high);
+
+  if (game.mode === 'pogoni' && game.pogonReadyPlayerId !== player.id) {
+    const movesWithoutPogon = moves.filter(move => !move.cards.some(
+      card => card.type === 'normal' && card.rank === player.pogonRank,
+    ));
+    if (movesWithoutPogon.length) {
+      moves = movesWithoutPogon;
+    } else if (game.table) {
+      return { type: 'pass' };
+    } else {
+      const nonFinishingMoves = moves.filter(move => move.cardIds.length < player.hand.length);
+      if (nonFinishingMoves.length) moves = nonFinishingMoves;
+    }
+  }
 
   const best = moves[0];
   if (!best) return game.table ? { type: 'pass' } : null;
