@@ -328,6 +328,7 @@ export function publicGameState(game, viewerId) {
       name: player.name,
       active: player.active,
       leaving: Boolean(player.leaving),
+      isBot: Boolean(player.isBot),
       handCount: player.hand.length,
       pogonRank: player.pogonRank,
     })),
@@ -492,6 +493,10 @@ function markPlayerLeaving(game, player, playerIndex) {
     game.hostPlayerId = nextPlayerMatching(
       game,
       playerIndex,
+      candidate => candidate.id !== player.id && !candidate.leaving && !candidate.isBot,
+    )?.id || nextPlayerMatching(
+      game,
+      playerIndex,
       candidate => candidate.id !== player.id && !candidate.leaving,
     )?.id || null;
   }
@@ -510,9 +515,14 @@ function removePlayerImmediately(game, playerId) {
   game.passedPlayerIds = game.passedPlayerIds.filter(id => id !== playerId);
 
   if (game.hostPlayerId === playerId) {
-    game.hostPlayerId = game.players.length
-      ? game.players[playerIndex % game.players.length].id
-      : null;
+    const clockwisePlayers = game.players.length
+      ? [...game.players.slice(playerIndex), ...game.players.slice(0, playerIndex)]
+      : [];
+    game.hostPlayerId = (
+      clockwisePlayers.find(player => !player.isBot && !player.leaving)
+      || clockwisePlayers.find(player => !player.leaving)
+      || null
+    )?.id || null;
   }
 
   if (game.roundWinnerId === playerId) game.roundWinnerId = game.places[0] || null;

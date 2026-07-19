@@ -756,6 +756,14 @@ button:disabled {
   justify-content: center;
 }
 
+.waiting-actions.host-actions {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.waiting-actions.host-actions .start-game-button {
+  grid-column: 1 / -1;
+}
+
 .waiting-note {
   margin-top: 12px;
   color: var(--muted);

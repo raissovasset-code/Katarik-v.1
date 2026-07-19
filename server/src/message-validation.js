@@ -2,6 +2,7 @@ const MESSAGE_TYPES = new Set([
   'ping',
   'createRoom',
   'joinRoom',
+  'addBot',
   'leaveRoom',
   'kickPlayer',
   'startGame',

@@ -57,6 +57,29 @@ function waitForMessage(socket, type) {
   });
 }
 
+function waitForState(socket, predicate) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('Timed out waiting for matching state'));
+    }, 3000);
+
+    function onMessage(raw) {
+      const message = JSON.parse(raw.toString());
+      if (message.type !== 'state' || !predicate(message.game)) return;
+      cleanup();
+      resolve(message);
+    }
+
+    function cleanup() {
+      clearTimeout(timeout);
+      socket.off('message', onMessage);
+    }
+
+    socket.on('message', onMessage);
+  });
+}
+
 test('a disconnected player reclaims the same room seat', async t => {
   const child = spawn(process.execPath, ['index.js'], {
     cwd: __dirname,
@@ -271,4 +294,54 @@ test('a pogoni room keeps a leaving host gray and moves host rights clockwise', 
   const rejected = waitForMessage(rejectedSocket, 'error');
   rejectedSocket.send(JSON.stringify({ type: 'joinRoom', roomId, ...identities[0] }));
   assert.match((await rejected).message, /покинули/);
+});
+
+test('a host adds a smart bot and the bot takes its turn automatically', async t => {
+  const port = TEST_PORT + 4;
+  const child = spawn(process.execPath, ['index.js'], {
+    cwd: __dirname,
+    env: { ...process.env, PORT: String(port), BOT_TURN_DELAY_MS: '80' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  t.after(() => child.kill());
+  await waitForServer(child, port);
+
+  const hostIdentity = {
+    playerId: 'bot-test-host',
+    sessionToken: 'bot-test-token',
+    name: 'Host',
+  };
+  const hostSocket = await openSocket(port);
+  t.after(() => hostSocket.close());
+
+  const created = waitForMessage(hostSocket, 'roomCreated');
+  hostSocket.send(JSON.stringify({ type: 'createRoom', mode: 'classic', ...hostIdentity }));
+  await created;
+
+  const botAdded = waitForState(hostSocket, game => game.players.some(player => player.isBot));
+  hostSocket.send(JSON.stringify({ type: 'addBot' }));
+  const lobby = (await botAdded).game;
+  const bot = lobby.players.find(player => player.isBot);
+  assert.match(bot.name, /Бот/);
+
+  const started = waitForState(hostSocket, game => game.status === 'playing');
+  hostSocket.send(JSON.stringify({ type: 'startGame' }));
+  const playing = (await started).game;
+
+  const botPlayed = waitForState(
+    hostSocket,
+    game => game.table?.playerId === bot.id || game.status !== 'playing',
+  );
+  if (playing.currentPlayerId === hostIdentity.playerId) {
+    assert.equal(playing.hand.some(card => card.id === '4S'), true);
+    hostSocket.send(JSON.stringify({ type: 'play', cardIds: ['4S'] }));
+  }
+
+  const afterBotTurn = (await botPlayed).game;
+  assert.equal(afterBotTurn.table?.playerId === bot.id || afterBotTurn.status !== 'playing', true);
+
+  const left = waitForMessage(hostSocket, 'leftRoom');
+  hostSocket.send(JSON.stringify({ type: 'leaveRoom' }));
+  await left;
 });

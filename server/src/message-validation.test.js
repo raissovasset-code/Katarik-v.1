@@ -13,6 +13,7 @@ test('accepts every supported command with valid fields', () => {
     { type: 'ping' },
     { type: 'createRoom', mode: 'classic', ...identity },
     { type: 'joinRoom', roomId: 'ABC123', ...identity },
+    { type: 'addBot' },
     { type: 'leaveRoom' },
     { type: 'kickPlayer', targetPlayerId: 'player-2' },
     { type: 'startGame' },

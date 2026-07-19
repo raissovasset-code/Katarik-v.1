@@ -549,7 +549,7 @@ function App() {
                 <div className="avatar">{player.name?.[0] || '?'}</div>
                 <div>
                   <b>{displayName(player.name)}</b>
-                  <span>{player.id === game.hostPlayerId ? 'Хозяин комнаты' : 'Игрок'}</span>
+                  <span>{player.id === game.hostPlayerId ? 'Хозяин комнаты' : player.isBot ? 'Сложный бот' : 'Игрок'}</span>
                 </div>
                 {isHost && player.id !== user.id ? (
                   <button
@@ -591,7 +591,7 @@ function App() {
                   <div className="avatar">{player.name?.[0] || '?'}</div>
                   <div>
                     <b>{displayName(player.name)}</b>
-                    <span>{player.id === game.hostPlayerId ? 'Хозяин комнаты' : 'Игрок'}</span>
+                    <span>{player.id === game.hostPlayerId ? 'Хозяин комнаты' : player.isBot ? 'Сложный бот' : 'Игрок'}</span>
                   </div>
                   {isHost && player.id !== user.id ? (
                     <button
@@ -608,13 +608,22 @@ function App() {
               ))}
             </div>
 
-            <div className="waiting-actions">
+            <div className={`waiting-actions ${isHost ? 'host-actions' : ''}`}>
               <button className="ghost-button" onClick={copyInvite}>
                 {inviteCopied ? 'Ссылка скопирована' : 'Пригласить'}
               </button>
+              {isHost && (
+                <button
+                  className="ghost-button"
+                  disabled={!connected || game.players.length >= 11}
+                  onClick={() => send('addBot')}
+                >
+                  Добавить бота
+                </button>
+              )}
               {isHost ? (
                 <button
-                  className="solid-button"
+                  className="solid-button start-game-button"
                   disabled={!connected || !canStartGame}
                   onClick={() => send('startGame')}
                 >

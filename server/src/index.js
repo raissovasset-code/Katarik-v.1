@@ -31,6 +31,8 @@ import {
   SlidingWindowRateLimiter,
 } from './rate-limit.js';
 import { createOriginPolicy, parseAllowedOrigins } from './origin-policy.js';
+import { chooseBotAction } from './bot-strategy.js';
+import { randomUUID } from 'node:crypto';
 
 const PORT = Number(process.env.PORT || 3001);
 const ROOM_TTL_MS = parsePositiveDuration(process.env.ROOM_TTL_MS, DEFAULT_ROOM_TTL_MS);
@@ -38,6 +40,7 @@ const ROOM_CLEANUP_INTERVAL_MS = parsePositiveDuration(
   process.env.ROOM_CLEANUP_INTERVAL_MS,
   DEFAULT_ROOM_CLEANUP_INTERVAL_MS,
 );
+const BOT_TURN_DELAY_MS = parsePositiveDuration(process.env.BOT_TURN_DELAY_MS, 850);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDistPath = path.resolve(__dirname, '../../client/dist');
 const allowedOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
@@ -61,6 +64,7 @@ const sockets = new Map();
 const playerSockets = new Map();
 const messageRateLimiter = new SlidingWindowRateLimiter();
 let nextConnectionId = 1;
+const botTurnTimers = new Map();
 
 if (roomStore.persistent) {
   console.log(`Restored ${rooms.size} rooms from Redis`);
@@ -175,6 +179,48 @@ function broadcast(roomId) {
       });
     }
   }
+
+  scheduleBotTurn(roomId);
+}
+
+function clearBotTurn(roomId) {
+  const timer = botTurnTimers.get(roomId);
+  if (timer) clearTimeout(timer);
+  botTurnTimers.delete(roomId);
+}
+
+function scheduleBotTurn(roomId) {
+  clearBotTurn(roomId);
+  const game = rooms.get(roomId);
+  const bot = game?.players.find(player => player.id === game.currentPlayerId && player.isBot);
+  if (!bot || game.status !== 'playing') return;
+
+  const timer = setTimeout(async () => {
+    botTurnTimers.delete(roomId);
+    const currentGame = rooms.get(roomId);
+    const currentBot = currentGame?.players.find(
+      player => player.id === currentGame.currentPlayerId && player.isBot,
+    );
+    if (!currentGame || !currentBot || currentGame.status !== 'playing') return;
+
+    try {
+      const action = chooseBotAction(currentGame, currentBot.id);
+      if (action?.type === 'play') {
+        playCards(currentGame, currentBot.id, action.cardIds, action.declaredRanks || {});
+      } else if (action?.type === 'pass') {
+        pass(currentGame, currentBot.id);
+      } else {
+        throw new Error('Бот не нашёл допустимый ход');
+      }
+      await persistRoom(currentGame);
+      broadcast(roomId);
+    } catch (error) {
+      console.error(`Bot turn failed in room ${roomId}: ${error.message}`);
+    }
+  }, BOT_TURN_DELAY_MS);
+
+  timer.unref?.();
+  botTurnTimers.set(roomId, timer);
 }
 
 function requireRoom(meta) {
@@ -212,8 +258,10 @@ async function leaveRoom(ws) {
   if (game && playerId) {
     const result = removePlayer(game, playerId);
 
-    if (result.empty) {
+    const hasHumanPlayer = game.players.some(player => !player.isBot && !player.leaving);
+    if (result.empty || !hasHumanPlayer) {
       rooms.delete(roomId);
+      clearBotTurn(roomId);
       await roomStore.deleteRoom(roomId);
     } else {
       await persistRoom(game);
@@ -268,6 +316,23 @@ async function handleJoinRoom(ws, msg) {
   bindPlayerSocket(ws, roomId, player.id);
   await persistRoom(game);
   broadcast(roomId);
+}
+
+async function handleAddBot(meta) {
+  const game = requireRoom(meta);
+  requireHost(game, meta.playerId);
+  if (game.status !== 'lobby') throw new Error('Добавлять бота можно только до начала игры');
+  if (game.players.length >= 11) throw new Error('Максимум 11 игроков');
+
+  const number = game.players.filter(player => player.isBot).length + 1;
+  addPlayer(game, {
+    id: `bot-${randomUUID()}`,
+    name: `Бот ${number}`,
+    reconnectToken: `bot-${randomUUID()}`,
+    isBot: true,
+  });
+  await persistRoom(game);
+  broadcast(meta.roomId);
 }
 
 async function handleHostAction(ws, meta, action) {
@@ -360,6 +425,11 @@ wss.on('connection', (ws, request) => {
         return;
       }
 
+      if (msg.type === 'addBot') {
+        await handleAddBot(meta);
+        return;
+      }
+
       if (msg.type === 'leaveRoom') {
         await leaveRoom(ws);
         return;
@@ -422,3 +492,5 @@ wss.on('connection', (ws, request) => {
     sockets.delete(ws);
   });
 });
+
+for (const roomId of rooms.keys()) scheduleBotTurn(roomId);
