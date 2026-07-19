@@ -67,6 +67,7 @@ app.get('/', (req, res) => {
   res.json({
     name: 'Katarik server',
     status: 'ok',
+    roomStorage: roomStore.persistent ? 'redis' : 'memory',
     rooms: rooms.size,
   });
 });
