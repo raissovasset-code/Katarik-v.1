@@ -188,6 +188,13 @@ function setsUpPogon(game, player, move) {
   return isPogonTail(remaining, player.pogonRank);
 }
 
+function finishesPogon(game, player, move) {
+  return game.mode === 'pogoni'
+    && game.pogonReadyPlayerId === player.id
+    && move.cardIds.length === player.hand.length
+    && isPogonTail(move.cards, player.pogonRank);
+}
+
 function moveScore(game, player, move, weights) {
   const selected = new Set(move.cardIds);
   const remaining = player.hand.filter(card => !selected.has(card.id));
@@ -261,6 +268,16 @@ export function chooseBotAction(game, playerId, weights = TRAINED_BOT_WEIGHTS) {
     } else {
       const nonFinishingMoves = moves.filter(move => move.cardIds.length < player.hand.length);
       if (nonFinishingMoves.length) moves = nonFinishingMoves;
+    }
+  } else if (game.mode === 'pogoni' && game.pogonReadyPlayerId === player.id) {
+    const finishingPogonMoves = moves.filter(move => finishesPogon(game, player, move));
+    if (finishingPogonMoves.length) {
+      moves = finishingPogonMoves;
+    } else {
+      const movesWithoutPogon = moves.filter(move => !move.cards.some(
+        card => card.type === 'normal' && card.rank === player.pogonRank,
+      ));
+      if (movesWithoutPogon.length) moves = movesWithoutPogon;
     }
   }
 
