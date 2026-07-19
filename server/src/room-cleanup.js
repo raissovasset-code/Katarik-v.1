@@ -1,4 +1,4 @@
-export const DEFAULT_ROOM_TTL_MS = 24 * 60 * 60 * 1000;
+export const DEFAULT_ROOM_TTL_MS = 60 * 60 * 1000;
 export const DEFAULT_ROOM_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 
 export function parsePositiveDuration(value, fallback) {
