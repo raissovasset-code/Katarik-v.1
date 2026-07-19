@@ -33,10 +33,7 @@ export function claimExistingPlayerSession(player, message) {
 
   if (player.id !== playerId) throw new Error('Сессия игрока не совпадает');
 
-  // Rooms created by an older server version can be claimed once after deployment.
-  if (!player.reconnectToken) {
-    player.reconnectToken = reconnectToken;
-  } else if (player.reconnectToken !== reconnectToken) {
+  if (!player.reconnectToken || player.reconnectToken !== reconnectToken) {
     throw new Error('Это место игрока принадлежит другому устройству');
   }
 
