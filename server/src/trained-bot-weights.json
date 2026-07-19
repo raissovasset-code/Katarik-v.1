@@ -1,0 +1,196 @@
+{
+  "version": 1,
+  "trainedAt": "2026-07-19T09:39:46.410Z",
+  "seed": 20260721,
+  "gamesPerCandidate": 250,
+  "generations": 8,
+  "candidatesPerGeneration": 8,
+  "acceptedGenerations": 0,
+  "verification": {
+    "games": 1250,
+    "wins": 625,
+    "losses": 625,
+    "incomplete": 0,
+    "winRate": 0.5,
+    "averageTurns": 21.392
+  },
+  "weights": {
+    "cardsUrgent": 115,
+    "cardsNormal": 75,
+    "groupStructure": 7,
+    "remainingCard": -18,
+    "remainingSpecial": -4,
+    "freeTableHigh": -2.5,
+    "activeTableHigh": -1,
+    "straightCard": 24,
+    "triple": 30,
+    "preserveQuad": -260,
+    "preserveDvk": -150,
+    "preserveJokerFree": -180,
+    "preserveJokerActive": -90,
+    "urgentHigh": 3,
+    "urgentCard": 35
+  },
+  "history": [
+    {
+      "generation": 1,
+      "improved": false,
+      "training": {
+        "games": 250,
+        "wins": 127,
+        "losses": 123,
+        "incomplete": 0,
+        "winRate": 0.508,
+        "averageTurns": 21.448
+      },
+      "validation": {
+        "games": 500,
+        "wins": 252,
+        "losses": 248,
+        "incomplete": 0,
+        "winRate": 0.504,
+        "averageTurns": 21.184
+      }
+    },
+    {
+      "generation": 2,
+      "improved": false,
+      "training": {
+        "games": 250,
+        "wins": 131,
+        "losses": 119,
+        "incomplete": 0,
+        "winRate": 0.524,
+        "averageTurns": 20.736
+      },
+      "validation": {
+        "games": 500,
+        "wins": 258,
+        "losses": 242,
+        "incomplete": 0,
+        "winRate": 0.516,
+        "averageTurns": 21.348
+      }
+    },
+    {
+      "generation": 3,
+      "improved": false,
+      "training": {
+        "games": 250,
+        "wins": 127,
+        "losses": 123,
+        "incomplete": 0,
+        "winRate": 0.508,
+        "averageTurns": 20.696
+      },
+      "validation": {
+        "games": 500,
+        "wins": 249,
+        "losses": 251,
+        "incomplete": 0,
+        "winRate": 0.498,
+        "averageTurns": 21.526
+      }
+    },
+    {
+      "generation": 4,
+      "improved": false,
+      "training": {
+        "games": 250,
+        "wins": 125,
+        "losses": 125,
+        "incomplete": 0,
+        "winRate": 0.5,
+        "averageTurns": 21.856
+      },
+      "validation": {
+        "games": 500,
+        "wins": 250,
+        "losses": 250,
+        "incomplete": 0,
+        "winRate": 0.5,
+        "averageTurns": 21.824
+      }
+    },
+    {
+      "generation": 5,
+      "improved": false,
+      "training": {
+        "games": 250,
+        "wins": 129,
+        "losses": 121,
+        "incomplete": 0,
+        "winRate": 0.516,
+        "averageTurns": 21.712
+      },
+      "validation": {
+        "games": 500,
+        "wins": 254,
+        "losses": 246,
+        "incomplete": 0,
+        "winRate": 0.508,
+        "averageTurns": 21.584
+      }
+    },
+    {
+      "generation": 6,
+      "improved": false,
+      "training": {
+        "games": 250,
+        "wins": 128,
+        "losses": 122,
+        "incomplete": 0,
+        "winRate": 0.512,
+        "averageTurns": 21.156
+      },
+      "validation": {
+        "games": 500,
+        "wins": 246,
+        "losses": 254,
+        "incomplete": 0,
+        "winRate": 0.492,
+        "averageTurns": 21.496
+      }
+    },
+    {
+      "generation": 7,
+      "improved": false,
+      "training": {
+        "games": 250,
+        "wins": 125,
+        "losses": 125,
+        "incomplete": 0,
+        "winRate": 0.5,
+        "averageTurns": 22.272
+      },
+      "validation": {
+        "games": 500,
+        "wins": 250,
+        "losses": 250,
+        "incomplete": 0,
+        "winRate": 0.5,
+        "averageTurns": 21.54
+      }
+    },
+    {
+      "generation": 8,
+      "improved": false,
+      "training": {
+        "games": 250,
+        "wins": 126,
+        "losses": 124,
+        "incomplete": 0,
+        "winRate": 0.504,
+        "averageTurns": 21.572
+      },
+      "validation": {
+        "games": 500,
+        "wins": 246,
+        "losses": 254,
+        "incomplete": 0,
+        "winRate": 0.492,
+        "averageTurns": 21.752
+      }
+    }
+  ]
+}

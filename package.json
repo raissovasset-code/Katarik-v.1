@@ -10,7 +10,9 @@
     "android:check": "node scripts/check-android-env.mjs",
     "android:open": "npx cap open android",
     "start": "npm start --prefix server",
-    "test": "npm test --prefix server"
+    "test": "npm test --prefix server",
+    "simulate:bots": "npm run simulate:bots --prefix server --",
+    "train:bot": "npm run train:bot --prefix server --"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",

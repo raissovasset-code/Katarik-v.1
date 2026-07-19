@@ -1,4 +1,36 @@
 import { canBeat, detectBestCombination } from './game.js';
+import fs from 'node:fs';
+
+export const DEFAULT_BOT_WEIGHTS = Object.freeze({
+  cardsUrgent: 115,
+  cardsNormal: 75,
+  groupStructure: 7,
+  remainingCard: -18,
+  remainingSpecial: -4,
+  freeTableHigh: -2.5,
+  activeTableHigh: -1,
+  straightCard: 24,
+  triple: 30,
+  preserveQuad: -260,
+  preserveDvk: -150,
+  preserveJokerFree: -180,
+  preserveJokerActive: -90,
+  urgentHigh: 3,
+  urgentCard: 35,
+});
+
+function loadTrainedWeights() {
+  try {
+    const saved = JSON.parse(
+      fs.readFileSync(new URL('./trained-bot-weights.json', import.meta.url), 'utf8'),
+    );
+    return { ...DEFAULT_BOT_WEIGHTS, ...saved.weights };
+  } catch {
+    return { ...DEFAULT_BOT_WEIGHTS };
+  }
+}
+
+export const TRAINED_BOT_WEIGHTS = Object.freeze(loadTrainedWeights());
 
 const STRAIGHT_RANKS = ['4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 const RANK_VALUE = Object.fromEntries(
@@ -114,18 +146,21 @@ export function generateBotMoves(game, player) {
   return [...candidates.values()];
 }
 
-function remainingHandScore(cards) {
+function remainingHandScore(cards, weights) {
   const counts = new Map();
   for (const card of cards.filter(item => item.type === 'normal')) {
     counts.set(card.rank, (counts.get(card.rank) || 0) + 1);
   }
 
-  const grouped = [...counts.values()].reduce((sum, count) => sum + count * count * 7, 0);
+  const grouped = [...counts.values()].reduce(
+    (sum, count) => sum + count * count * weights.groupStructure,
+    0,
+  );
   const specials = cards.filter(card => card.type !== 'normal').length;
-  return grouped - cards.length * 18 - specials * 4;
+  return grouped + cards.length * weights.remainingCard + specials * weights.remainingSpecial;
 }
 
-function moveScore(game, player, move) {
+function moveScore(game, player, move, weights) {
   const selected = new Set(move.cardIds);
   const remaining = player.hand.filter(card => !selected.has(card.id));
   const activeOpponents = game.players.filter(item => item.id !== player.id && item.active);
@@ -143,16 +178,20 @@ function moveScore(game, player, move) {
     card => card.type === 'normal' && card.rank === player.pogonRank,
   );
 
-  let score = move.cardIds.length * (urgent ? 115 : 75);
-  score += remainingHandScore(remaining);
-  score -= move.combo.high * (game.table ? 1 : 2.5);
+  let score = move.cardIds.length * (urgent ? weights.cardsUrgent : weights.cardsNormal);
+  score += remainingHandScore(remaining, weights);
+  score += move.combo.high * (game.table ? weights.activeTableHigh : weights.freeTableHigh);
 
-  if (['straight', 'doubleStraight'].includes(move.combo.type)) score += move.cardIds.length * 24;
-  if (move.combo.type === 'triple') score += 30;
-  if (move.combo.type === 'quad' && !urgent && !winsNow) score -= 260;
-  if (usesDvk && !urgent && !winsNow) score -= 150;
-  if (usesJoker && !urgent && !winsNow) score -= game.table ? 90 : 180;
-  if (urgent) score += move.combo.high * 3 + move.cardIds.length * 35;
+  if (['straight', 'doubleStraight'].includes(move.combo.type)) {
+    score += move.cardIds.length * weights.straightCard;
+  }
+  if (move.combo.type === 'triple') score += weights.triple;
+  if (move.combo.type === 'quad' && !urgent && !winsNow) score += weights.preserveQuad;
+  if (usesDvk && !urgent && !winsNow) score += weights.preserveDvk;
+  if (usesJoker && !urgent && !winsNow) {
+    score += game.table ? weights.preserveJokerActive : weights.preserveJokerFree;
+  }
+  if (urgent) score += move.combo.high * weights.urgentHigh + move.cardIds.length * weights.urgentCard;
   if (winsNow) score += 20_000;
 
   if (isPogoni && !canSetPogon) {
@@ -170,7 +209,7 @@ function moveScore(game, player, move) {
   return score;
 }
 
-export function chooseBotAction(game, playerId) {
+export function chooseBotAction(game, playerId, weights = TRAINED_BOT_WEIGHTS) {
   const player = game.players.find(item => item.id === playerId);
   if (!player || game.currentPlayerId !== playerId || game.status !== 'playing') return null;
   if (player.hand.length === 1 && player.hand[0]?.type === 'wild') {
@@ -178,7 +217,7 @@ export function chooseBotAction(game, playerId) {
   }
 
   const moves = generateBotMoves(game, player)
-    .map(move => ({ ...move, score: moveScore(game, player, move) }))
+    .map(move => ({ ...move, score: moveScore(game, player, move, weights) }))
     .sort((a, b) => b.score - a.score || a.combo.high - b.combo.high);
 
   const best = moves[0];

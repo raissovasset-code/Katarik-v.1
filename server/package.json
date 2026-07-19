@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "simulate:bots": "node scripts/simulate-bots.mjs",
+    "train:bot": "node scripts/train-bot.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",
