@@ -216,7 +216,26 @@ function endgameCaptureGroup(game, player, moves) {
   )) || null;
 }
 
+function directPogonCaptureLead(game, player, moves) {
+  if (game.mode !== 'pogoni') return null;
+  const candidates = moves.filter(move => {
+    if (move.cards.some(card => card.type === 'normal' && card.rank === player.pogonRank)) {
+      return false;
+    }
+    const selected = new Set(move.cardIds);
+    const remaining = player.hand.filter(card => !selected.has(card.id));
+    return isPogonTail(remaining, player.pogonRank);
+  });
+  return candidates.sort((left, right) => (
+    right.cardIds.length - left.cardIds.length
+    || right.combo.high - left.combo.high
+  ))[0] || null;
+}
+
 function preferredFreeLead(game, player, moves) {
+  const directCapture = directPogonCaptureLead(game, player, moves);
+  if (directCapture) return [directCapture];
+
   const endgameGroup = endgameCaptureGroup(game, player, moves);
   if (endgameGroup) return [endgameGroup];
 
