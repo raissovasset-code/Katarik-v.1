@@ -251,6 +251,28 @@ function preferredFreeLead(game, player, moves) {
   ));
 }
 
+function preferredTableResponse(game, player, moves) {
+  const pogonSetupMoves = moves.filter(move => setsUpPogon(game, player, move));
+  if (pogonSetupMoves.length) return pogonSetupMoves;
+
+  const sortWeakestFirst = candidates => candidates.sort((left, right) => (
+    Number(left.cards.some(card => card.type === 'wild'))
+      - Number(right.cards.some(card => card.type === 'wild'))
+    || left.combo.high - right.combo.high
+    || left.cardIds.length - right.cardIds.length
+  ));
+  const sameType = moves.filter(move => move.combo.type === game.table.combo.type);
+  if (sameType.length) return sortWeakestFirst(sameType);
+
+  const triples = moves.filter(move => move.combo.type === 'triple');
+  if (triples.length) return sortWeakestFirst(triples);
+
+  const quads = moves.filter(move => move.combo.type === 'quad');
+  if (quads.length) return sortWeakestFirst(quads);
+
+  return moves;
+}
+
 function moveScore(game, player, move, weights) {
   const selected = new Set(move.cardIds);
   const remaining = player.hand.filter(card => !selected.has(card.id));
@@ -337,7 +359,9 @@ export function chooseBotAction(game, playerId, weights = TRAINED_BOT_WEIGHTS) {
     }
   }
 
-  if (!game.table) {
+  if (game.table) {
+    moves = preferredTableResponse(game, player, moves);
+  } else {
     moves = preferredFreeLead(game, player, moves);
   }
 
