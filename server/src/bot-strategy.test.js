@@ -318,3 +318,28 @@ test('leads the whole final triple instead of splitting it before the pogon', ()
   game.pogonReadyPlayerId = 'bot';
   assert.deepEqual(chooseBotAction(game, 'bot').cardIds, ['4S']);
 });
+
+test('uses a separate higher single instead of breaking a triple to answer the table', () => {
+  const hand = [
+    card('6S', '6'), card('6H', '6', 'normal', 'H'), card('6D', '6', 'normal', 'D'),
+    card('KS', 'K'), card('4S', '4'),
+  ];
+  const table = {
+    cards: [card('TABLE-5', '5')],
+    combo: { type: 'single', high: 2, length: 1 },
+  };
+  const game = gameWith(hand, table);
+  game.mode = 'pogoni';
+
+  assert.deepEqual(chooseBotAction(game, 'bot').cardIds, ['KS']);
+
+  game.players[0].hand = [
+    card('6S', '6'), card('6H', '6', 'normal', 'H'), card('6D', '6', 'normal', 'D'),
+    card('4S', '4'),
+  ];
+  game.table = null;
+  assert.deepEqual(
+    new Set(chooseBotAction(game, 'bot').cardIds),
+    new Set(['6S', '6H', '6D']),
+  );
+});
