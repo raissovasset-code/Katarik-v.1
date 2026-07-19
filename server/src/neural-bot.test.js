@@ -9,6 +9,7 @@ import {
   encodeStateAction,
   legalNeuralActions,
   neuralScore,
+  neuralStepReward,
   sampleNeuralAction,
   shouldReplaceNeuralCheckpoint,
   trainNeuralChoice,
@@ -87,4 +88,17 @@ test('checkpoint replacement requires a completed and measurable improvement', (
   assert.equal(shouldReplaceNeuralCheckpoint(current, { winRate: 0.53, incomplete: 0 }), true);
   assert.equal(shouldReplaceNeuralCheckpoint(current, { winRate: 0.522, incomplete: 0 }), false);
   assert.equal(shouldReplaceNeuralCheckpoint(current, { winRate: 0.60, incomplete: 1 }), false);
+});
+
+test('intermediate reward encourages shedding cards and discourages avoidable passes', () => {
+  const game = startedGame(60);
+  const playerId = game.currentPlayerId;
+  const play = legalNeuralActions(game, playerId).find(action => action.type === 'play');
+  assert.ok(neuralStepReward(game, playerId, play) > 0);
+
+  game.table = { combo: { type: 'single', high: 3, length: 1 } };
+  const actions = legalNeuralActions(game, playerId);
+  if (actions.some(action => action.type === 'play')) {
+    assert.equal(neuralStepReward(game, playerId, { type: 'pass' }), -0.03);
+  }
 });
