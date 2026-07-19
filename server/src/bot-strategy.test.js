@@ -266,3 +266,36 @@ test('after capturing the table, compares singles and pairs by rank instead of d
 
   assert.deepEqual(chooseBotAction(game, 'bot').cardIds, ['5S']);
 });
+
+test('answers a single with the weakest higher single instead of wasting a triple', () => {
+  const hand = [
+    card('5S', '5'), card('5H', '5', 'normal', 'H'), card('5D', '5', 'normal', 'D'),
+    card('6S', '6'), card('9S', '9'), card('4S', '4'),
+  ];
+  const table = {
+    cards: [card('TABLE-5', '5')],
+    combo: { type: 'single', high: 2, length: 1 },
+  };
+  const game = gameWith(hand, table);
+  game.mode = 'pogoni';
+
+  assert.deepEqual(chooseBotAction(game, 'bot').cardIds, ['6S']);
+});
+
+test('uses a triple only when no same-type response can beat the table', () => {
+  const hand = [
+    card('9S', '9'), card('9H', '9', 'normal', 'H'), card('9D', '9', 'normal', 'D'),
+    card('4S', '4'), card('5S', '5'),
+  ];
+  const table = {
+    cards: [card('TABLE-K', 'K')],
+    combo: { type: 'single', high: 10, length: 1 },
+  };
+  const game = gameWith(hand, table);
+  game.mode = 'pogoni';
+
+  assert.deepEqual(
+    new Set(chooseBotAction(game, 'bot').cardIds),
+    new Set(['9S', '9H', '9D']),
+  );
+});
