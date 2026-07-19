@@ -299,3 +299,22 @@ test('uses a triple only when no same-type response can beat the table', () => {
     new Set(['9S', '9H', '9D']),
   );
 });
+
+test('leads the whole final triple instead of splitting it before the pogon', () => {
+  const hand = [
+    card('5S', '5'), card('5H', '5', 'normal', 'H'), card('5D', '5', 'normal', 'D'),
+    card('4S', '4'),
+  ];
+  const game = gameWith(hand);
+  game.mode = 'pogoni';
+
+  assert.deepEqual(
+    new Set(chooseBotAction(game, 'bot').cardIds),
+    new Set(['5S', '5H', '5D']),
+  );
+
+  game.players[0].hand = [card('4S', '4')];
+  game.table = null;
+  game.pogonReadyPlayerId = 'bot';
+  assert.deepEqual(chooseBotAction(game, 'bot').cardIds, ['4S']);
+});
