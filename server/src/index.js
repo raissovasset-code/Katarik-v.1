@@ -24,6 +24,12 @@ import {
 } from './room-cleanup.js';
 import { createRedisRoomStore } from './room-store.js';
 import { parseClientMessage } from './message-validation.js';
+import {
+  enforceMessageRateLimit,
+  getClientIp,
+  MAX_RATE_LIMIT_WINDOW_MS,
+  SlidingWindowRateLimiter,
+} from './rate-limit.js';
 
 const PORT = Number(process.env.PORT || 3001);
 const ROOM_TTL_MS = parsePositiveDuration(process.env.ROOM_TTL_MS, DEFAULT_ROOM_TTL_MS);
@@ -46,6 +52,8 @@ const roomStore = await createRedisRoomStore({
 const rooms = await roomStore.loadRooms();
 const sockets = new Map();
 const playerSockets = new Map();
+const messageRateLimiter = new SlidingWindowRateLimiter();
+let nextConnectionId = 1;
 
 if (roomStore.persistent) {
   console.log(`Restored ${rooms.size} rooms from Redis`);
@@ -99,6 +107,7 @@ const roomCleanupTimer = setInterval(async () => {
     });
 
     await Promise.all(removedRoomIds.map(roomId => roomStore.deleteRoom(roomId)));
+    messageRateLimiter.sweep(MAX_RATE_LIMIT_WINDOW_MS);
 
     if (removedRoomIds.length > 0) {
       console.log(`Removed ${removedRoomIds.length} expired rooms`);
@@ -298,12 +307,19 @@ async function handlePlayerAction(ws, meta, action) {
   broadcast(meta.roomId);
 }
 
-wss.on('connection', ws => {
+wss.on('connection', (ws, request) => {
+  const connectionId = nextConnectionId;
+  nextConnectionId += 1;
+  const clientIp = getClientIp(request);
   sockets.set(ws, {});
 
   ws.on('message', async raw => {
     try {
       const msg = parseClientMessage(raw);
+      enforceMessageRateLimit(messageRateLimiter, msg, {
+        clientIp,
+        connectionId,
+      });
       const meta = sockets.get(ws);
       const game = meta?.roomId ? rooms.get(meta.roomId) : null;
 
@@ -365,6 +381,7 @@ wss.on('connection', ws => {
   });
 
   ws.on('close', () => {
+    messageRateLimiter.delete(`command:${connectionId}`);
     const meta = sockets.get(ws);
     const socketKey = meta?.roomId && meta?.playerId
       ? playerSocketKey(meta.roomId, meta.playerId)
