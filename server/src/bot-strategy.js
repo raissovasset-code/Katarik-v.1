@@ -281,6 +281,21 @@ export function chooseBotAction(game, playerId, weights = TRAINED_BOT_WEIGHTS) {
     }
   }
 
+  if (game.mode === 'pogoni' && !game.table && game.pogonReadyPlayerId !== player.id) {
+    let openingMoves = moves.filter(move => ['single', 'pair'].includes(move.combo.type));
+    const openingMovesWithoutDvk = openingMoves.filter(
+      move => !move.cards.some(card => card.type === 'wild'),
+    );
+    if (openingMovesWithoutDvk.length) openingMoves = openingMovesWithoutDvk;
+    if (openingMoves.length) {
+      moves = openingMoves.sort((left, right) => (
+        left.combo.high - right.combo.high
+        || Number(right.combo.type === 'pair') - Number(left.combo.type === 'pair')
+        || right.cardIds.length - left.cardIds.length
+      ));
+    }
+  }
+
   const best = moves[0];
   if (!best) return game.table ? { type: 'pass' } : null;
 
