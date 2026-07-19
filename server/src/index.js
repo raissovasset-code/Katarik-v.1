@@ -30,6 +30,7 @@ import {
   MAX_RATE_LIMIT_WINDOW_MS,
   SlidingWindowRateLimiter,
 } from './rate-limit.js';
+import { createOriginPolicy, parseAllowedOrigins } from './origin-policy.js';
 
 const PORT = Number(process.env.PORT || 3001);
 const ROOM_TTL_MS = parsePositiveDuration(process.env.ROOM_TTL_MS, DEFAULT_ROOM_TTL_MS);
@@ -39,9 +40,15 @@ const ROOM_CLEANUP_INTERVAL_MS = parsePositiveDuration(
 );
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDistPath = path.resolve(__dirname, '../../client/dist');
+const allowedOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
+const isOriginAllowed = createOriginPolicy(allowedOrigins);
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin(origin, callback) {
+    callback(null, isOriginAllowed(origin));
+  },
+}));
 app.use(express.json());
 app.use(express.static(clientDistPath));
 
@@ -96,7 +103,13 @@ const server = app.listen(PORT, () => {
   console.log(`Katarik server on :${PORT}`);
 });
 
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({
+  server,
+  verifyClient({ origin }, callback) {
+    const allowed = isOriginAllowed(origin);
+    callback(allowed, allowed ? undefined : 403, allowed ? undefined : 'Origin is not allowed');
+  },
+});
 
 const roomCleanupTimer = setInterval(async () => {
   try {
