@@ -251,3 +251,18 @@ test('keeps the red joker and pogon after leading the final capture triple', () 
     new Set(['9S', '9H', '9D']),
   );
 });
+
+test('after capturing the table, compares singles and pairs by rank instead of dumping every pair', () => {
+  const hand = [
+    card('7S', '7'), card('7H', '7', 'normal', 'H'),
+    card('JS', 'J'), card('JH', 'J', 'normal', 'H'),
+    card('3S', '3'), card('3H', '3', 'normal', 'H'),
+    card('5S', '5'), card('8S', '8'), card('QS', 'Q'),
+    card('4S', '4'),
+  ];
+  const game = gameWith(hand);
+  game.mode = 'pogoni';
+  game.pogonReadyPlayerId = 'bot';
+
+  assert.deepEqual(chooseBotAction(game, 'bot').cardIds, ['5S']);
+});
