@@ -8,7 +8,8 @@
     "test": "node --test",
     "simulate:bots": "node scripts/simulate-bots.mjs",
     "train:bot": "node scripts/train-bot.mjs",
-    "train:neural-bot": "node scripts/train-neural-bot.mjs"
+    "train:neural-bot": "node scripts/train-neural-bot.mjs",
+    "train:neural-rl": "node scripts/train-neural-rl.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",

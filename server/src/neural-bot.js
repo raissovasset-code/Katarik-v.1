@@ -98,7 +98,13 @@ export function neuralScore(model, input) {
   return hidden.reduce((sum, value, index) => sum + value * model.weights2[index], model.bias2);
 }
 
-export function trainNeuralChoice(model, inputs, chosenIndex, learningRate = 0.01) {
+export function trainNeuralChoice(
+  model,
+  inputs,
+  chosenIndex,
+  learningRate = 0.01,
+  advantage = 1,
+) {
   if (inputs.length < 2) return { loss: 0, correct: true };
   const caches = inputs.map(input => {
     const pre = model.weights1.map((row, index) =>
@@ -117,7 +123,9 @@ export function trainNeuralChoice(model, inputs, chosenIndex, learningRate = 0.0
   let gradB2 = 0;
 
   caches.forEach((cache, actionIndex) => {
-    const outputGradient = probabilities[actionIndex] - Number(actionIndex === chosenIndex);
+    const outputGradient = (
+      probabilities[actionIndex] - Number(actionIndex === chosenIndex)
+    ) * advantage;
     gradB2 += outputGradient;
     cache.hidden.forEach((value, hiddenIndex) => {
       gradW2[hiddenIndex] += outputGradient * value;
@@ -140,6 +148,37 @@ export function trainNeuralChoice(model, inputs, chosenIndex, learningRate = 0.0
 
   const predicted = probabilities.indexOf(Math.max(...probabilities));
   return { loss: -Math.log(Math.max(probabilities[chosenIndex], 1e-12)), correct: predicted === chosenIndex };
+}
+
+export function sampleNeuralAction(
+  game,
+  playerId,
+  model,
+  { random = Math.random, temperature = 1 } = {},
+) {
+  const actions = legalNeuralActions(game, playerId);
+  if (!actions.length) return null;
+  const inputs = actions.map(action => encodeStateAction(game, playerId, action));
+  const scores = inputs.map(input => neuralScore(model, input) / Math.max(temperature, 0.05));
+  const max = Math.max(...scores);
+  const exps = scores.map(score => Math.exp(score - max));
+  const total = exps.reduce((sum, value) => sum + value, 0);
+  const probabilities = exps.map(value => value / total);
+  let threshold = random();
+  let chosenIndex = probabilities.length - 1;
+  for (let index = 0; index < probabilities.length; index += 1) {
+    threshold -= probabilities[index];
+    if (threshold <= 0) {
+      chosenIndex = index;
+      break;
+    }
+  }
+  return {
+    action: actions[chosenIndex],
+    inputs,
+    chosenIndex,
+    probability: probabilities[chosenIndex],
+  };
 }
 
 function sameAction(left, right) {

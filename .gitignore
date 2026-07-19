@@ -6,3 +6,4 @@ client/dist/
 .env.local
 npm-debug.log*
 server/src/neural-bot-candidate.json
+server/src/neural-bot-rl-candidate.json
