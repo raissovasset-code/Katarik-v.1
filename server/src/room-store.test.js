@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { addPlayer, createGame } from './game.js';
 import { createMemoryRoomStore, createRedisRoomStore } from './room-store.js';
+import { claimExistingPlayerSession } from './sessions.js';
 
 class FakeRedisClient {
   constructor(initial = {}) {
@@ -92,4 +94,39 @@ test('deletes a room key and closes the Redis client', async () => {
 
   assert.deepEqual(client.deleted, ['katarik:room:ABC123']);
   assert.equal(client.quitCalled, true);
+});
+
+test('restores a room and player session after a simulated server restart', async () => {
+  const client = new FakeRedisClient();
+  const firstStore = await createRedisRoomStore({
+    url: 'redis://test',
+    ttlMs: 3_600_000,
+    clientFactory: async () => client,
+  });
+  const game = createGame('ABC123');
+  addPlayer(game, {
+    id: 'player-1',
+    name: 'Игрок',
+    reconnectToken: 'secret-token',
+  });
+  game.hostPlayerId = 'player-1';
+  await firstStore.saveRoom(game);
+
+  const restartedStore = await createRedisRoomStore({
+    url: 'redis://test',
+    ttlMs: 3_600_000,
+    clientFactory: async () => client,
+  });
+  const restoredRooms = await restartedStore.loadRooms();
+  const restoredGame = restoredRooms.get('ABC123');
+  const restoredPlayer = restoredGame.players[0];
+
+  claimExistingPlayerSession(restoredPlayer, {
+    playerId: 'player-1',
+    sessionToken: 'secret-token',
+  });
+
+  assert.equal(restoredGame.hostPlayerId, 'player-1');
+  assert.equal(restoredPlayer.name, 'Игрок');
+  assert.equal(restoredPlayer.reconnectToken, 'secret-token');
 });
