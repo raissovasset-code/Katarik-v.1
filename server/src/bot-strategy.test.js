@@ -343,3 +343,26 @@ test('uses a separate higher single instead of breaking a triple to answer the t
     new Set(['6S', '6H', '6D']),
   );
 });
+
+test('plans a straight with one pogon card and keeps the duplicate for the finishing pogon', () => {
+  const hand = [
+    card('5S', '5'), card('5H', '5', 'normal', 'H'),
+    card('6S', '6'), card('7S', '7'), card('8S', '8'),
+  ];
+  const game = gameWith(hand);
+  game.mode = 'pogoni';
+  game.players[0].pogonRank = '5';
+
+  const lead = chooseBotAction(game, 'bot');
+  assert.equal(lead.type, 'play');
+  assert.deepEqual(
+    new Set(lead.cardIds),
+    new Set(['5S', '6S', '7S', '8S']),
+  );
+
+  game.players[0].hand = hand.filter(cardItem => !lead.cardIds.includes(cardItem.id));
+  game.table = null;
+  game.pogonReadyPlayerId = 'bot';
+
+  assert.deepEqual(chooseBotAction(game, 'bot').cardIds, ['5H']);
+});
