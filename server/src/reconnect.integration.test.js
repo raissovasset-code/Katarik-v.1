@@ -140,6 +140,73 @@ test('only the lobby host can remove another player', async t => {
   assert.deepEqual(game.players.map(player => player.id), [hostIdentity.playerId]);
 });
 
+test('tokens, socket identity and host rights cannot be spoofed', async t => {
+  const port = TEST_PORT + 3;
+  const child = spawn(process.execPath, ['index.js'], {
+    cwd: __dirname,
+    env: { ...process.env, PORT: String(port) },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  t.after(() => child.kill());
+  await waitForServer(child, port);
+
+  const hostIdentity = {
+    playerId: 'secure-host',
+    sessionToken: 'secure-host-token',
+    name: 'Host',
+  };
+  const guestIdentity = {
+    playerId: 'secure-guest',
+    sessionToken: 'secure-guest-token',
+    name: 'Guest',
+  };
+  const [hostSocket, guestSocket, attackerSocket] = await Promise.all([
+    openSocket(port),
+    openSocket(port),
+    openSocket(port),
+  ]);
+
+  t.after(() => {
+    hostSocket.close();
+    guestSocket.close();
+    attackerSocket.close();
+  });
+
+  const created = waitForMessage(hostSocket, 'roomCreated');
+  hostSocket.send(JSON.stringify({ type: 'createRoom', mode: 'classic', ...hostIdentity }));
+  const { roomId } = await created;
+
+  const guestJoined = waitForMessage(guestSocket, 'state');
+  guestSocket.send(JSON.stringify({ type: 'joinRoom', roomId, ...guestIdentity }));
+  await guestJoined;
+
+  const spoofedHostAction = waitForMessage(guestSocket, 'error');
+  guestSocket.send(JSON.stringify({
+    type: 'startGame',
+    playerId: hostIdentity.playerId,
+    sessionToken: hostIdentity.sessionToken,
+  }));
+  assert.match((await spoofedHostAction).message, /хозяин/i);
+
+  const wrongToken = waitForMessage(attackerSocket, 'error');
+  attackerSocket.send(JSON.stringify({
+    type: 'joinRoom',
+    roomId,
+    ...hostIdentity,
+    sessionToken: 'wrong-token',
+  }));
+  assert.match((await wrongToken).message, /другому устройству/);
+
+  const roomSwitch = waitForMessage(guestSocket, 'error');
+  guestSocket.send(JSON.stringify({ type: 'createRoom', mode: 'classic', ...guestIdentity }));
+  assert.match((await roomSwitch).message, /покиньте текущую комнату/);
+
+  const started = waitForMessage(guestSocket, 'state');
+  hostSocket.send(JSON.stringify({ type: 'startGame' }));
+  assert.equal((await started).game.status, 'playing');
+});
+
 test('a pogoni room keeps a leaving host gray and moves host rights clockwise', async t => {
   const port = TEST_PORT + 1;
   const child = spawn(process.execPath, ['index.js'], {
