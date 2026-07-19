@@ -22,6 +22,7 @@ import {
   parsePositiveDuration,
   touchRoom,
 } from './room-cleanup.js';
+import { createRedisRoomStore } from './room-store.js';
 
 const PORT = Number(process.env.PORT || 3001);
 const ROOM_TTL_MS = parsePositiveDuration(process.env.ROOM_TTL_MS, DEFAULT_ROOM_TTL_MS);
@@ -37,9 +38,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(clientDistPath));
 
-const rooms = new Map();
+const roomStore = await createRedisRoomStore({
+  url: process.env.REDIS_URL,
+  ttlMs: ROOM_TTL_MS,
+});
+const rooms = await roomStore.loadRooms();
 const sockets = new Map();
 const playerSockets = new Map();
+
+if (roomStore.persistent) {
+  console.log(`Restored ${rooms.size} rooms from Redis`);
+} else {
+  console.warn('REDIS_URL is not configured; rooms will not survive a server restart');
+}
 
 function playerSocketKey(roomId, playerId) {
   return `${roomId}:${playerId}`;
@@ -77,18 +88,29 @@ const server = app.listen(PORT, () => {
 
 const wss = new WebSocketServer({ server });
 
-const roomCleanupTimer = setInterval(() => {
-  const removedRoomIds = cleanupRooms({
-    rooms,
-    hasConnectedPlayers,
-    ttlMs: ROOM_TTL_MS,
-  });
+const roomCleanupTimer = setInterval(async () => {
+  try {
+    const removedRoomIds = cleanupRooms({
+      rooms,
+      hasConnectedPlayers,
+      ttlMs: ROOM_TTL_MS,
+    });
 
-  if (removedRoomIds.length > 0) {
-    console.log(`Removed ${removedRoomIds.length} expired rooms`);
+    await Promise.all(removedRoomIds.map(roomId => roomStore.deleteRoom(roomId)));
+
+    if (removedRoomIds.length > 0) {
+      console.log(`Removed ${removedRoomIds.length} expired rooms`);
+    }
+  } catch (error) {
+    console.error(`Room cleanup failed: ${error.message}`);
   }
 }, ROOM_CLEANUP_INTERVAL_MS);
 roomCleanupTimer.unref?.();
+
+async function persistRoom(game) {
+  touchRoom(game);
+  await roomStore.saveRoom(game);
+}
 
 function roomCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -143,7 +165,7 @@ function requireHost(game, playerId) {
   }
 }
 
-function leaveRoom(ws) {
+async function leaveRoom(ws) {
   const meta = sockets.get(ws);
   const roomId = meta?.roomId;
   const playerId = meta?.playerId;
@@ -162,7 +184,9 @@ function leaveRoom(ws) {
 
     if (result.empty) {
       rooms.delete(roomId);
+      await roomStore.deleteRoom(roomId);
     } else {
+      await persistRoom(game);
       broadcast(roomId);
     }
   }
@@ -170,26 +194,25 @@ function leaveRoom(ws) {
   sendTo(ws, { type: 'leftRoom' });
 }
 
-function handleCreateRoom(ws, msg) {
+async function handleCreateRoom(ws, msg) {
   const code = roomCode();
   const game = createGame(code, msg.mode || 'classic');
   const player = createPlayerFromMessage(msg);
 
   rooms.set(code, game);
   addPlayer(game, player);
-  touchRoom(game);
   game.hostPlayerId = player.id;
   bindPlayerSocket(ws, code, player.id);
+  await persistRoom(game);
 
   sendTo(ws, { type: 'roomCreated', roomId: code });
   broadcast(code);
 }
 
-function handleJoinRoom(ws, msg) {
+async function handleJoinRoom(ws, msg) {
   const roomId = String(msg.roomId || '').trim().toUpperCase();
   const game = rooms.get(roomId);
   if (!game) throw new Error('Комната не найдена');
-  touchRoom(game);
 
   const existingPlayer = game.players.find(player => player.id === msg.playerId);
 
@@ -199,6 +222,7 @@ function handleJoinRoom(ws, msg) {
     }
     claimExistingPlayerSession(existingPlayer, msg);
     bindPlayerSocket(ws, roomId, existingPlayer.id);
+    await persistRoom(game);
     broadcast(roomId);
     return;
   }
@@ -210,17 +234,19 @@ function handleJoinRoom(ws, msg) {
   const player = createPlayerFromMessage(msg);
   addPlayer(game, player);
   bindPlayerSocket(ws, roomId, player.id);
+  await persistRoom(game);
   broadcast(roomId);
 }
 
-function handleHostAction(ws, meta, action) {
+async function handleHostAction(ws, meta, action) {
   const game = requireRoom(meta);
   requireHost(game, meta.playerId);
   action(game);
+  await persistRoom(game);
   broadcast(meta.roomId);
 }
 
-function handleKickPlayer(ws, meta, msg) {
+async function handleKickPlayer(ws, meta, msg) {
   const game = requireRoom(meta);
   requireHost(game, meta.playerId);
 
@@ -244,6 +270,8 @@ function handleKickPlayer(ws, meta, msg) {
     throw new Error('Игрок не найден');
   }
 
+  await persistRoom(game);
+
   if (targetSocket) {
     playerSockets.delete(targetKey);
     sockets.set(targetSocket, {});
@@ -256,7 +284,7 @@ function handleKickPlayer(ws, meta, msg) {
   broadcast(meta.roomId);
 }
 
-function handlePlayerAction(ws, meta, action) {
+async function handlePlayerAction(ws, meta, action) {
   const game = requireRoom(meta);
 
   if (game.currentPlayerId !== meta.playerId) {
@@ -264,68 +292,69 @@ function handlePlayerAction(ws, meta, action) {
   }
 
   action(game);
+  await persistRoom(game);
   broadcast(meta.roomId);
 }
 
 wss.on('connection', ws => {
   sockets.set(ws, {});
 
-  ws.on('message', raw => {
+  ws.on('message', async raw => {
     try {
       const msg = JSON.parse(raw.toString());
       const meta = sockets.get(ws);
       const game = meta?.roomId ? rooms.get(meta.roomId) : null;
-      if (game) touchRoom(game);
 
       if (msg.type === 'ping') {
+        if (game) await persistRoom(game);
         sendTo(ws, { type: 'pong', timestamp: Date.now() });
         return;
       }
 
       if (msg.type === 'createRoom') {
-        handleCreateRoom(ws, msg);
+        await handleCreateRoom(ws, msg);
         return;
       }
 
       if (msg.type === 'joinRoom') {
-        handleJoinRoom(ws, msg);
+        await handleJoinRoom(ws, msg);
         return;
       }
 
       if (msg.type === 'leaveRoom') {
-        leaveRoom(ws);
+        await leaveRoom(ws);
         return;
       }
 
       if (msg.type === 'kickPlayer') {
-        handleKickPlayer(ws, meta, msg);
+        await handleKickPlayer(ws, meta, msg);
         return;
       }
 
       if (msg.type === 'startGame') {
-        handleHostAction(ws, meta, startGame);
+        await handleHostAction(ws, meta, startGame);
         return;
       }
 
       if (msg.type === 'restartGame') {
-        handleHostAction(ws, meta, restartGame);
+        await handleHostAction(ws, meta, restartGame);
         return;
       }
 
       if (msg.type === 'nextRound') {
-        handleHostAction(ws, meta, nextRound);
+        await handleHostAction(ws, meta, nextRound);
         return;
       }
 
       if (msg.type === 'play') {
-        handlePlayerAction(ws, meta, game => {
+        await handlePlayerAction(ws, meta, game => {
           playCards(game, meta.playerId, msg.cardIds, msg.declaredRanks || {});
         });
         return;
       }
 
       if (msg.type === 'pass') {
-        handlePlayerAction(ws, meta, game => pass(game, meta.playerId));
+        await handlePlayerAction(ws, meta, game => pass(game, meta.playerId));
       }
     } catch (error) {
       sendTo(ws, { type: 'error', message: error.message });
@@ -343,7 +372,11 @@ wss.on('connection', ws => {
     }
 
     const game = meta?.roomId ? rooms.get(meta.roomId) : null;
-    if (game) touchRoom(game);
+    if (game) {
+      persistRoom(game).catch(error => {
+        console.error(`Failed to persist disconnected room: ${error.message}`);
+      });
+    }
 
     sockets.delete(ws);
   });
