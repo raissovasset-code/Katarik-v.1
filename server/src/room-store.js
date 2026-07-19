@@ -46,9 +46,13 @@ export async function createRedisRoomStore({
     async loadRooms() {
       const rooms = new Map();
 
-      for await (const key of client.scanIterator({ MATCH: `${ROOM_KEY_PREFIX}*` })) {
-        const game = parseRoom(await client.get(key), key);
-        if (game) rooms.set(game.roomId, game);
+      for await (const result of client.scanIterator({ MATCH: `${ROOM_KEY_PREFIX}*` })) {
+        const keys = Array.isArray(result) ? result : [result];
+
+        for (const key of keys) {
+          const game = parseRoom(await client.get(key), key);
+          if (game) rooms.set(game.roomId, game);
+        }
       }
 
       return rooms;
