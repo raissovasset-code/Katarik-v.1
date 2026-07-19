@@ -195,6 +195,62 @@ function finishesPogon(game, player, move) {
     && isPogonTail(move.cards, player.pogonRank);
 }
 
+function endgameCaptureGroup(game, player, moves) {
+  if (game.mode !== 'pogoni') return null;
+  const redJokers = player.hand.filter(card => card.rank === 'RED_JOKER');
+  const pogonCards = player.hand.filter(
+    card => card.type === 'normal' && card.rank === player.pogonRank,
+  );
+  const captureCards = player.hand.filter(card => (
+    card.rank !== 'RED_JOKER'
+    && !(card.type === 'normal' && card.rank === player.pogonRank)
+  ));
+  if (redJokers.length !== 1 || !pogonCards.length || ![3, 4].includes(captureCards.length)) return null;
+  if (!captureCards.every(card => card.type === 'normal' && card.rank === captureCards[0].rank)) {
+    return null;
+  }
+  return moves.find(move => (
+    move.cardIds.length === captureCards.length
+    && move.cardIds.every(id => captureCards.some(card => card.id === id))
+    && ['triple', 'quad'].includes(move.combo.type)
+  )) || null;
+}
+
+function preferredFreeLead(game, player, moves) {
+  const endgameGroup = endgameCaptureGroup(game, player, moves);
+  if (endgameGroup) return [endgameGroup];
+
+  const narrowCombinations = moves.filter(
+    move => ['straight', 'doubleStraight'].includes(move.combo.type),
+  );
+  if (narrowCombinations.length) {
+    return narrowCombinations.sort((left, right) => (
+      right.cardIds.length - left.cardIds.length
+      || left.combo.high - right.combo.high
+      || Number(right.combo.type === 'doubleStraight') - Number(left.combo.type === 'doubleStraight')
+    ));
+  }
+
+  let singlesAndPairs = moves.filter(move => ['single', 'pair'].includes(move.combo.type));
+  const rankCounts = cardsByRank(player.hand);
+  const withoutBrokenCaptureGroups = singlesAndPairs.filter(move => !move.cards.some(card => (
+    card.type === 'normal' && (rankCounts.get(card.rank)?.length || 0) >= 3
+  )));
+  if (withoutBrokenCaptureGroups.length) singlesAndPairs = withoutBrokenCaptureGroups;
+  const withoutDvk = singlesAndPairs.filter(move => !move.cards.some(card => card.type === 'wild'));
+  if (withoutDvk.length) singlesAndPairs = withoutDvk;
+  if (singlesAndPairs.length) {
+    return singlesAndPairs.sort((left, right) => (
+      left.combo.high - right.combo.high
+      || Number(right.combo.type === 'pair') - Number(left.combo.type === 'pair')
+    ));
+  }
+
+  return moves.sort((left, right) => (
+    left.combo.high - right.combo.high || right.cardIds.length - left.cardIds.length
+  ));
+}
+
 function moveScore(game, player, move, weights) {
   const selected = new Set(move.cardIds);
   const remaining = player.hand.filter(card => !selected.has(card.id));
@@ -281,19 +337,8 @@ export function chooseBotAction(game, playerId, weights = TRAINED_BOT_WEIGHTS) {
     }
   }
 
-  if (game.mode === 'pogoni' && !game.table && game.pogonReadyPlayerId !== player.id) {
-    let openingMoves = moves.filter(move => ['single', 'pair'].includes(move.combo.type));
-    const openingMovesWithoutDvk = openingMoves.filter(
-      move => !move.cards.some(card => card.type === 'wild'),
-    );
-    if (openingMovesWithoutDvk.length) openingMoves = openingMovesWithoutDvk;
-    if (openingMoves.length) {
-      moves = openingMoves.sort((left, right) => (
-        left.combo.high - right.combo.high
-        || Number(right.combo.type === 'pair') - Number(left.combo.type === 'pair')
-        || right.cardIds.length - left.cardIds.length
-      ));
-    }
+  if (!game.table && !(game.mode === 'pogoni' && game.pogonReadyPlayerId === player.id)) {
+    moves = preferredFreeLead(game, player, moves);
   }
 
   const best = moves[0];
