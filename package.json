@@ -12,7 +12,8 @@
     "start": "npm start --prefix server",
     "test": "npm test --prefix server",
     "simulate:bots": "npm run simulate:bots --prefix server --",
-    "train:bot": "npm run train:bot --prefix server --"
+    "train:bot": "npm run train:bot --prefix server --",
+    "train:neural-bot": "npm run train:neural-bot --prefix server --"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",

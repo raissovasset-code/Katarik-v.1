@@ -21,13 +21,16 @@ function winnerId(game) {
 export function simulateBotGame({
   mode = 'classic',
   playerWeights = [TRAINED_BOT_WEIGHTS, TRAINED_BOT_WEIGHTS],
+  playerPolicies = null,
+  onDecision = null,
   seed = 1,
   maxTurns = 20_000,
 } = {}) {
-  if (mode === 'elimination' && playerWeights.length < 3) {
+  const playerCount = playerPolicies?.length || playerWeights.length;
+  if (mode === 'elimination' && playerCount < 3) {
     throw new Error('Elimination simulation requires at least three bots');
   }
-  if (playerWeights.length < 2 || playerWeights.length > 11) {
+  if (playerCount < 2 || playerCount > 11) {
     throw new Error('Simulation requires 2–11 bots');
   }
 
@@ -36,11 +39,12 @@ export function simulateBotGame({
   Math.random = random;
   try {
     const game = createGame(`SIM-${seed}`, mode);
-    playerWeights.forEach((weights, index) => addPlayer(game, {
+    Array.from({ length: playerCount }, (_, index) => addPlayer(game, {
       id: `bot-${index + 1}`,
       name: `Bot ${index + 1}`,
       isBot: true,
-      simulationWeights: weights,
+      simulationWeights: playerWeights[index],
+      simulationPolicy: playerPolicies?.[index] || null,
     }));
     startGame(game);
 
@@ -55,7 +59,10 @@ export function simulateBotGame({
 
       const player = game.players.find(item => item.id === game.currentPlayerId);
       if (!player) throw new Error('Simulation has no current player');
-      const action = chooseBotAction(game, player.id, player.simulationWeights);
+      const action = player.simulationPolicy
+        ? player.simulationPolicy(game, player.id)
+        : chooseBotAction(game, player.id, player.simulationWeights);
+      onDecision?.({ game, player, action, turn: turns });
       if (action?.type === 'play') {
         playCards(game, player.id, action.cardIds, action.declaredRanks || {});
       } else if (action?.type === 'pass') {
@@ -77,6 +84,40 @@ export function simulateBotGame({
   } finally {
     Math.random = originalRandom;
   }
+}
+
+export function evaluatePolicies({
+  candidate,
+  baseline = (game, playerId) => chooseBotAction(game, playerId),
+  games = 100,
+  seed = 1,
+  mode = 'classic',
+} = {}) {
+  let wins = 0;
+  let losses = 0;
+  let incomplete = 0;
+  let turns = 0;
+  for (let index = 0; index < games; index += 1) {
+    const candidateFirst = index % 2 === 0;
+    const policies = candidateFirst ? [candidate, baseline] : [baseline, candidate];
+    const result = simulateBotGame({
+      mode,
+      playerPolicies: policies,
+      seed: seed + Math.floor(index / 2),
+    });
+    turns += result.turns;
+    if (!result.completed) incomplete += 1;
+    else if (result.winnerId === (candidateFirst ? 'bot-1' : 'bot-2')) wins += 1;
+    else losses += 1;
+  }
+  return {
+    games,
+    wins,
+    losses,
+    incomplete,
+    winRate: games ? wins / games : 0,
+    averageTurns: games ? turns / games : 0,
+  };
 }
 
 export function evaluateWeights({

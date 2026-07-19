@@ -32,6 +32,7 @@ import {
 } from './rate-limit.js';
 import { createOriginPolicy, parseAllowedOrigins } from './origin-policy.js';
 import { chooseBotAction } from './bot-strategy.js';
+import { chooseNeuralAction, PUBLISHED_NEURAL_MODEL } from './neural-bot.js';
 import { randomUUID } from 'node:crypto';
 
 const PORT = Number(process.env.PORT || 3001);
@@ -204,7 +205,9 @@ function scheduleBotTurn(roomId) {
     if (!currentGame || !currentBot || currentGame.status !== 'playing') return;
 
     try {
-      const action = chooseBotAction(currentGame, currentBot.id);
+      const action = PUBLISHED_NEURAL_MODEL
+        ? chooseNeuralAction(currentGame, currentBot.id, PUBLISHED_NEURAL_MODEL)
+        : chooseBotAction(currentGame, currentBot.id);
       if (action?.type === 'play') {
         playCards(currentGame, currentBot.id, action.cardIds, action.declaredRanks || {});
       } else if (action?.type === 'pass') {
