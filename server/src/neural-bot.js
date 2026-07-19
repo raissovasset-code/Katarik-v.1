@@ -207,6 +207,20 @@ export function chooseNeuralAction(game, playerId, model) {
     .sort((left, right) => right.score - left.score)[0].action;
 }
 
+export function neuralStepReward(game, playerId, action) {
+  const player = game.players.find(item => item.id === playerId);
+  if (!player || !action) return 0;
+  if (action.type === 'pass') {
+    const hasPlayableMove = legalNeuralActions(game, playerId).some(item => item.type === 'play');
+    return hasPlayableMove ? -0.03 : 0;
+  }
+  if (action.type !== 'play') return 0;
+
+  const cardsPlayed = action.cardIds?.length || 0;
+  const remaining = Math.max(0, player.hand.length - cardsPlayed);
+  return Math.min(cardsPlayed, 6) * 0.01 + (remaining === 0 ? 0.12 : 0);
+}
+
 export function shouldReplaceNeuralCheckpoint(current, candidate, minimumGain = 0.005) {
   if (!candidate || candidate.incomplete > 0) return false;
   if (!current || current.incomplete > 0) return true;
