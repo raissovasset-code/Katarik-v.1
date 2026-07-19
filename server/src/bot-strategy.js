@@ -337,7 +337,7 @@ export function chooseBotAction(game, playerId, weights = TRAINED_BOT_WEIGHTS) {
     }
   }
 
-  if (!game.table && !(game.mode === 'pogoni' && game.pogonReadyPlayerId === player.id)) {
+  if (!game.table) {
     moves = preferredFreeLead(game, player, moves);
   }
 
