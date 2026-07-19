@@ -9,6 +9,7 @@ import {
   chooseNeuralAction,
   createNeuralModel,
   sampleNeuralAction,
+  neuralStepReward,
   shouldReplaceNeuralCheckpoint,
   trainNeuralChoice,
 } from '../src/neural-bot.js';
@@ -26,12 +27,53 @@ function positiveInteger(name, fallback) {
   return value;
 }
 
+function numberInRange(name, fallback, minimum, maximum) {
+  const value = Number(argument(name, fallback));
+  if (!Number.isFinite(value) || value < minimum || value > maximum) {
+    throw new Error(`--${name} must be between ${minimum} and ${maximum}`);
+  }
+  return value;
+}
+
+function modelPaths(requested) {
+  if (path.isAbsolute(requested)) return [requested];
+  return [...new Set([
+    path.resolve(process.cwd(), requested),
+    path.resolve(__dirname, '..', requested),
+    path.resolve(__dirname, '../..', requested),
+  ])];
+}
+
+function readCompatibleModel(candidate) {
+  const model = JSON.parse(fs.readFileSync(candidate, 'utf8'));
+  if (model.inputSize !== NEURAL_INPUT_SIZE) {
+    throw new Error(`incompatible input size ${model.inputSize}; expected ${NEURAL_INPUT_SIZE}`);
+  }
+  return model;
+}
+
 function loadStartingModel(random) {
-  const requested = argument('model', path.join(__dirname, '../src/neural-bot-candidate.json'));
-  for (const candidate of [requested, path.join(__dirname, '../src/neural-bot-model.json')]) {
+  const requested = argument('model', null);
+  if (requested) {
+    const attempted = modelPaths(requested);
+    let lastError = null;
+    for (const candidate of attempted) {
+      try {
+        return { model: readCompatibleModel(candidate), source: candidate };
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw new Error(`Cannot load --model=${requested}. Tried: ${attempted.join(', ')}. ${lastError?.message || ''}`);
+  }
+
+  for (const candidate of [
+    path.join(__dirname, '../src/neural-bot-rl-candidate.json'),
+    path.join(__dirname, '../src/neural-bot-candidate.json'),
+    path.join(__dirname, '../src/neural-bot-model.json'),
+  ]) {
     try {
-      const model = JSON.parse(fs.readFileSync(path.resolve(candidate), 'utf8'));
-      if (model.inputSize === NEURAL_INPUT_SIZE) return { model, source: path.resolve(candidate) };
+      return { model: readCompatibleModel(candidate), source: candidate };
     } catch {
       // Try the next source; a fresh model is the final safe fallback.
     }
@@ -44,6 +86,8 @@ const generations = positiveInteger('generations', 8);
 const tournamentGames = positiveInteger('tournament-games', 1000);
 const seed = positiveInteger('seed', 20260719);
 const learningRate = Number(argument('learning-rate', 0.002));
+const heuristicRatio = numberInRange('heuristic-ratio', 0.4, 0, 1);
+const shapingScale = numberInRange('shaping-scale', 1, 0, 5);
 const output = path.resolve(argument('output', path.join(__dirname, '../src/neural-bot-rl-candidate.json')));
 const publishedOutput = path.resolve(argument(
   'published-output', path.join(__dirname, '../src/neural-bot-model.json'),
@@ -69,31 +113,44 @@ for (let generation = 1; generation <= generations; generation += 1) {
   const temperature = Math.max(0.4, 1.2 - (generation - 1) * 0.1);
   let decisions = 0;
   let rewardTotal = 0;
+  let heuristicGames = 0;
+  let checkpointGames = 0;
   for (let gameIndex = 0; gameIndex < games; gameIndex += 1) {
-    const trajectories = new Map([['bot-1', []], ['bot-2', []]]);
-    const makePolicy = playerKey => (game, playerId) => {
+    const neuralPlayerId = (gameIndex + generation) % 2 === 0 ? 'bot-1' : 'bot-2';
+    const trajectory = [];
+    const learnerPolicy = (game, playerId) => {
       const sampled = sampleNeuralAction(game, playerId, model, { random, temperature });
-      trajectories.get(playerKey).push({ inputs: sampled.inputs, chosenIndex: sampled.chosenIndex });
+      trajectory.push({
+        inputs: sampled.inputs,
+        chosenIndex: sampled.chosenIndex,
+        shapingReward: neuralStepReward(game, playerId, sampled.action),
+      });
       return sampled.action;
     };
+    const useHeuristic = random() < heuristicRatio;
+    const opponentPolicy = useHeuristic
+      ? heuristicPolicy
+      : (game, playerId) => chooseNeuralAction(game, playerId, bestModel);
+    if (useHeuristic) heuristicGames += 1;
+    else checkpointGames += 1;
+    const playerPolicies = neuralPlayerId === 'bot-1'
+      ? [learnerPolicy, opponentPolicy]
+      : [opponentPolicy, learnerPolicy];
     const result = simulateBotGame({
       mode: 'classic',
-      playerPolicies: [makePolicy('bot-1'), makePolicy('bot-2')],
+      playerPolicies,
       seed: seed + generation * 1_000_000 + gameIndex,
     });
     if (!result.completed) continue;
 
-    const updateOrder = random() < 0.5 ? ['bot-1', 'bot-2'] : ['bot-2', 'bot-1'];
-    for (const playerId of updateOrder) {
-      const reward = playerId === result.winnerId ? 1 : -1;
-      const trajectory = trajectories.get(playerId);
-      trajectory.forEach((step, index) => {
-        const discountedReward = reward * (0.995 ** (trajectory.length - index - 1));
-        trainNeuralChoice(model, step.inputs, step.chosenIndex, learningRate, discountedReward);
-        decisions += 1;
-        rewardTotal += discountedReward;
-      });
-    }
+    const terminalReward = neuralPlayerId === result.winnerId ? 1 : -1;
+    trajectory.forEach((step, index) => {
+      const discountedTerminal = terminalReward * (0.995 ** (trajectory.length - index - 1));
+      const advantage = discountedTerminal + step.shapingReward * shapingScale;
+      trainNeuralChoice(model, step.inputs, step.chosenIndex, learningRate, advantage);
+      decisions += 1;
+      rewardTotal += advantage;
+    });
   }
 
   const validation = evaluatePolicies({
@@ -106,7 +163,9 @@ for (let generation = 1; generation <= generations; generation += 1) {
     bestValidation = validation;
     bestModel = structuredClone(model);
   }
-  const metrics = { generation, temperature, decisions, rewardTotal, validation };
+  const metrics = {
+    generation, temperature, decisions, rewardTotal, heuristicGames, checkpointGames, validation,
+  };
   history.push(metrics);
   console.log(JSON.stringify(metrics));
 }
@@ -133,7 +192,7 @@ const artifact = {
   metadata: {
     trainedAt: new Date().toISOString(), method: 'self-play-policy-gradient',
     startingModel: starting.source, seed, gamesPerGeneration: games, generations,
-    learningRate, startingValidation, bestValidation, startingTournament,
+    learningRate, heuristicRatio, shapingScale, startingValidation, bestValidation, startingTournament,
     candidateTournament, improved, tournament, accepted, history,
   },
 };
