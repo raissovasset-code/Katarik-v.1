@@ -189,6 +189,12 @@ function requireHost(game, playerId) {
   }
 }
 
+function requireUnboundSocket(ws) {
+  if (sockets.get(ws)?.roomId) {
+    throw new Error('Сначала покиньте текущую комнату');
+  }
+}
+
 async function leaveRoom(ws) {
   const meta = sockets.get(ws);
   const roomId = meta?.roomId;
@@ -219,6 +225,7 @@ async function leaveRoom(ws) {
 }
 
 async function handleCreateRoom(ws, msg) {
+  requireUnboundSocket(ws);
   const code = roomCode();
   const game = createGame(code, msg.mode || 'classic');
   const player = createPlayerFromMessage(msg);
@@ -234,6 +241,7 @@ async function handleCreateRoom(ws, msg) {
 }
 
 async function handleJoinRoom(ws, msg) {
+  requireUnboundSocket(ws);
   const roomId = String(msg.roomId || '').trim().toUpperCase();
   const game = rooms.get(roomId);
   if (!game) throw new Error('Комната не найдена');
