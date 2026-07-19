@@ -160,6 +160,33 @@ function remainingHandScore(cards, weights) {
   return grouped + cards.length * weights.remainingCard + specials * weights.remainingSpecial;
 }
 
+function isPogonTail(cards, rank) {
+  if (!cards.length || cards.length > 4 || cards.some(card => card.type === 'joker')) return false;
+  const normalCards = cards.filter(card => card.type === 'normal');
+  if (!normalCards.length || !normalCards.every(card => card.rank === rank)) return false;
+  const declaredRanks = cards.some(card => card.type === 'wild') ? { DVK: rank } : {};
+  return Boolean(detectBestCombination(cards, declaredRanks));
+}
+
+function pogonCaptureBonus(move) {
+  const typeBonus = {
+    single: 0,
+    pair: 3_000,
+    triple: 7_000,
+    straight: 10_000,
+    doubleStraight: 13_000,
+    quad: 18_000,
+  }[move.combo.type] || 0;
+  return 25_000 + typeBonus + move.combo.high * 20 + move.cardIds.length * 100;
+}
+
+function setsUpPogon(game, player, move) {
+  if (game.mode !== 'pogoni' || !game.table || game.pogonReadyPlayerId === player.id) return false;
+  const selected = new Set(move.cardIds);
+  const remaining = player.hand.filter(card => !selected.has(card.id));
+  return isPogonTail(remaining, player.pogonRank);
+}
+
 function moveScore(game, player, move, weights) {
   const selected = new Set(move.cardIds);
   const remaining = player.hand.filter(card => !selected.has(card.id));
@@ -177,6 +204,7 @@ function moveScore(game, player, move, weights) {
   const keepsCurrentPogon = remaining.some(
     card => card.type === 'normal' && card.rank === player.pogonRank,
   );
+  const preparesPogon = setsUpPogon(game, player, move);
 
   let score = move.cardIds.length * (urgent ? weights.cardsUrgent : weights.cardsNormal);
   score += remainingHandScore(remaining, weights);
@@ -199,6 +227,7 @@ function moveScore(game, player, move, weights) {
     // Pogoni. Preserve the rank needed for the next real pogon opportunity.
     if (winsNow) score -= 50_000;
     if (usesCurrentPogon && !keepsCurrentPogon) score -= 12_000;
+    if (preparesPogon) score += pogonCaptureBonus(move);
   }
 
   if (isPogoni && canSetPogon && winsNow) {
@@ -230,6 +259,7 @@ export function chooseBotAction(game, playerId, weights = TRAINED_BOT_WEIGHTS) {
   const urgent = lowestOpponentHand <= 2;
   const usesDvk = best.cards.some(card => card.type === 'wild');
   const emptiesHand = best.cardIds.length === player.hand.length;
+  const preparesPogon = setsUpPogon(game, player, best);
 
   if (
     game.mode === 'pogoni'
@@ -241,8 +271,10 @@ export function chooseBotAction(game, playerId, weights = TRAINED_BOT_WEIGHTS) {
   }
 
   if (game.table && !urgent && player.hand.length > 4) {
-    if (best.combo.type === 'quad' && game.table.combo.type !== 'quad') return { type: 'pass' };
-    if (usesDvk && best.cardIds.length <= 2) return { type: 'pass' };
+    if (!preparesPogon && best.combo.type === 'quad' && game.table.combo.type !== 'quad') {
+      return { type: 'pass' };
+    }
+    if (!preparesPogon && usesDvk && best.cardIds.length <= 2) return { type: 'pass' };
   }
 
   return {
