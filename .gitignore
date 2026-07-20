@@ -5,5 +5,7 @@ client/dist/
 .env
 .env.local
 npm-debug.log*
+playwright-report/
+test-results/
 server/src/neural-bot-candidate.json
 server/src/neural-bot-rl-candidate.json
