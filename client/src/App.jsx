@@ -100,7 +100,7 @@ function isConnectionMessage(message) {
   );
 }
 
-function App() {
+export function App() {
   const user = useMemo(createLocalUser, []);
   const initialRoom = useMemo(getRoomFromUrl, []);
   const initialLayout = useMemo(getLayoutFromUrl, []);
@@ -997,4 +997,6 @@ function modeName(mode) {
   return 'Обычный';
 }
 
-createRoot(document.getElementById('root')).render(<App />);
+if (import.meta.env.MODE !== 'test') {
+  createRoot(document.getElementById('root')).render(<App />);
+}
