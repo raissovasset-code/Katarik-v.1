@@ -1,0 +1,30 @@
+name: Browser E2E
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'server/**'
+      - 'e2e/**'
+      - 'playwright.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/e2e.yml'
+
+jobs:
+  two-player-game:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix server
+      - run: npm ci --prefix client
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
