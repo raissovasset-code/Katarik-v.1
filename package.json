@@ -11,6 +11,8 @@
     "android:open": "npx cap open android",
     "start": "npm start --prefix server",
     "test": "npm test --prefix server",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium",
     "simulate:bots": "npm run simulate:bots --prefix server --",
     "train:bot": "npm run train:bot --prefix server --",
     "train:neural-bot": "npm run train:neural-bot --prefix server --",
@@ -20,5 +22,8 @@
     "@capacitor/android": "^8.4.1",
     "@capacitor/cli": "^8.4.1",
     "@capacitor/core": "^8.4.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1"
   }
 }
