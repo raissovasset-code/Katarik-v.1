@@ -45,6 +45,10 @@ android\app\build\outputs\apk\debug\app-debug.apk
 
 ## Signed release
 
+The complete release, verification, backup, restore, and incident procedure is
+documented in
+[`docs/ANDROID_SIGNED_RELEASE.md`](docs/ANDROID_SIGNED_RELEASE.md).
+
 The release key and its passwords must remain only on the developer's
 computer. They must never be committed to GitHub.
 
@@ -94,4 +98,6 @@ To create the APK locally, install:
 - Android SDK through Android Studio
 
 Java, Android Studio and the Android SDK are installed on the current
-development computer.
+development computer. If `npm run android:check` reports that ADB is missing,
+add the SDK `platform-tools` directory to `PATH` as described in the signed
+release guide.

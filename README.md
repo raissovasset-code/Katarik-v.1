@@ -148,6 +148,10 @@ android/app/build/outputs/apk/debug/app-debug.apk
 
 ### Подписанные APK и AAB
 
+Полная инструкция по сборке, проверке подписи, резервному хранению и
+восстановлению ключа:
+[`docs/ANDROID_SIGNED_RELEASE.md`](docs/ANDROID_SIGNED_RELEASE.md).
+
 1. Создайте release-ключ и сохраните его в безопасном месте.
 2. Скопируйте `android/signing.properties.example` в `android/signing.properties`.
 3. Заполните путь к ключу, alias и пароли.
