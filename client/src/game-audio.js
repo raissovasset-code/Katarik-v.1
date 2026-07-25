@@ -11,6 +11,64 @@ const SOUND_PATTERNS = {
       delay: 0.035,
     },
   ],
+  triple: [
+    { frequency: 196, duration: 0.16, gain: 0.05, type: "sawtooth" },
+    {
+      frequency: 246.94,
+      duration: 0.16,
+      gain: 0.055,
+      type: "sawtooth",
+      delay: 0.11,
+    },
+    {
+      frequency: 293.66,
+      duration: 0.22,
+      gain: 0.06,
+      type: "sawtooth",
+      delay: 0.22,
+    },
+  ],
+  quad: [
+    { frequency: 164.81, duration: 0.14, gain: 0.055, type: "square" },
+    {
+      frequency: 220,
+      duration: 0.14,
+      gain: 0.06,
+      type: "square",
+      delay: 0.1,
+    },
+    {
+      frequency: 329.63,
+      duration: 0.14,
+      gain: 0.065,
+      type: "square",
+      delay: 0.2,
+    },
+    {
+      frequency: 440,
+      duration: 0.25,
+      gain: 0.07,
+      type: "square",
+      delay: 0.3,
+    },
+  ],
+  bomb: [
+    { frequency: 110, duration: 0.18, gain: 0.075, type: "sawtooth" },
+    {
+      frequency: 73.42,
+      duration: 0.28,
+      gain: 0.08,
+      type: "sawtooth",
+      delay: 0.1,
+    },
+    {
+      frequency: 49,
+      duration: 0.42,
+      gain: 0.085,
+      type: "square",
+      delay: 0.22,
+    },
+  ],
   pass: [
     { frequency: 330, duration: 0.09, gain: 0.035, type: "sine" },
     { frequency: 220, duration: 0.12, gain: 0.03, type: "sine", delay: 0.08 },
@@ -81,8 +139,12 @@ export function writeSoundEnabled(enabled, storage = globalThis.localStorage) {
 export function getGameSounds(previousGame, nextGame, playerId) {
   if (!nextGame) return [];
 
+  const combinationSound = playedCombinationSound(previousGame, nextGame);
   if (previousGame?.status !== "finished" && nextGame.status === "finished") {
-    return [didPlayerWin(nextGame, playerId) ? "win" : "lose"];
+    return [
+      ...(combinationSound ? [combinationSound] : []),
+      didPlayerWin(nextGame, playerId) ? "win" : "lose",
+    ];
   }
 
   if (!previousGame) return [];
@@ -99,12 +161,7 @@ export function getGameSounds(previousGame, nextGame, playerId) {
     nextGame.status === "playing";
   if (hasNewPass || passFinishedTrick) sounds.push("pass");
 
-  if (
-    nextGame.table &&
-    tableSignature(previousGame.table) !== tableSignature(nextGame.table)
-  ) {
-    sounds.push("cards");
-  }
+  if (combinationSound) sounds.push(combinationSound);
 
   return sounds;
 }
@@ -130,7 +187,7 @@ export function createGameAudio(
 
   function play(effect, startDelay = 0) {
     const current = getContext();
-    const pattern = SOUND_PATTERNS[effect];
+    const pattern = resolveSoundPattern(effect);
     if (!current || !pattern) return;
 
     void unlock()
@@ -157,6 +214,44 @@ export function createGameAudio(
   }
 
   return { play, unlock };
+}
+
+function resolveSoundPattern(effect) {
+  if (effect === "pair") return repeatCardPattern(2, 0.075);
+  if (effect.startsWith("row:")) {
+    const count = Number.parseInt(effect.slice(4), 10);
+    return repeatCardPattern(Math.max(1, Math.min(count || 1, 13)), 0.08);
+  }
+
+  return SOUND_PATTERNS[effect];
+}
+
+function repeatCardPattern(count, interval) {
+  return Array.from({ length: count }, (_, index) =>
+    SOUND_PATTERNS.cards.map((note) => ({
+      ...note,
+      delay: (note.delay || 0) + index * interval,
+    })),
+  ).flat();
+}
+
+function playedCombinationSound(previousGame, nextGame) {
+  if (
+    !nextGame?.table ||
+    tableSignature(previousGame?.table) === tableSignature(nextGame.table)
+  ) {
+    return null;
+  }
+
+  const comboType = nextGame.table.combo?.type;
+  if (comboType === "pair") return "pair";
+  if (comboType === "triple") return "triple";
+  if (comboType === "quad") return "quad";
+  if (comboType === "straight") {
+    return `row:${nextGame.table.cards?.length || 1}`;
+  }
+  if (comboType === "doubleStraight") return "bomb";
+  return "cards";
 }
 
 function tableSignature(table) {

@@ -471,7 +471,7 @@ export function App() {
           previousGameRef.current = msg.game;
           if (soundEnabledRef.current) {
             sounds.forEach((sound, index) =>
-              audioRef.current?.play(sound, index * 0.11),
+              audioRef.current?.play(sound, index * 0.7),
             );
           }
           setGame(msg.game);
