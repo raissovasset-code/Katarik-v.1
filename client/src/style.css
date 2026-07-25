@@ -1543,12 +1543,12 @@ button:disabled {
   box-shadow: none;
 }
 
-.playing-card[draggable='true'] {
+.playing-card[data-hand-card-id] {
   cursor: grab;
   touch-action: none;
 }
 
-.playing-card[draggable='true']:active {
+.playing-card[data-hand-card-id]:active {
   cursor: grabbing;
 }
 
@@ -1565,6 +1565,21 @@ button:disabled {
   outline: 3px solid #ffd95e;
   outline-offset: -3px;
   z-index: 25;
+}
+
+.card-drag-preview {
+  position: fixed;
+  width: 92px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.card-drag-preview .playing-card {
+  width: 92px;
+  margin: 0;
+  transform: none;
+  opacity: 1;
 }
 
 .playing-card.table-card {

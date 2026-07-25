@@ -172,21 +172,33 @@ describe('active game interface', () => {
     const socket = await renderConnectedGame();
     const five = screen.getByRole('button', { name: /5/ });
     const eight = screen.getByRole('button', { name: /8/ });
-    const dataTransfer = {
-      effectAllowed: '',
-      dropEffect: '',
-      setData: vi.fn(),
-    };
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: vi.fn(() => eight),
+    });
 
-    fireEvent.dragStart(five, { dataTransfer });
-    fireEvent.dragEnter(eight, { dataTransfer });
+    fireEvent.pointerDown(five, {
+      pointerType: 'mouse',
+      button: 0,
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerMove(window, {
+      pointerType: 'mouse',
+      clientX: 40,
+      clientY: 10,
+    });
 
     expect([...document.querySelectorAll('.hand-fan .playing-card')]
-      .map(element => element.getAttribute('aria-label'))).toEqual(['8♥', '5♠']);
-    expect(screen.getByRole('button', { name: /5/ })).toHaveClass('dragging');
+      .map(element => element.getAttribute('aria-label'))).toEqual(['8♥']);
+    expect(document.querySelector('.card-drag-preview .playing-card')).toHaveClass('dragging');
     expect(screen.getByRole('button', { name: /8/ })).toHaveClass('drag-neighbor');
 
-    fireEvent.dragEnd(five, { dataTransfer });
+    fireEvent.pointerUp(window, {
+      pointerType: 'mouse',
+      clientX: 40,
+      clientY: 10,
+    });
     expect(screen.getByRole('button', { name: /5/ })).not.toHaveClass('dragging');
     expect(screen.getByRole('button', { name: /8/ })).not.toHaveClass('drag-neighbor');
 
