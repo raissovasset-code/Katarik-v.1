@@ -162,8 +162,14 @@ export function App() {
     : null;
   const displayedHand = useMemo(() => {
     if (!draggedCardId) return orderedHand;
+    if (!dropTargetId) {
+      return orderedHand.map(card => (
+        card.id === draggedCardId
+          ? { id: '__drag-placeholder__', placeholder: true }
+          : card
+      ));
+    }
     const remainingCards = orderedHand.filter(card => card.id !== draggedCardId);
-    if (!dropTargetId) return remainingCards;
     const targetIndex = remainingCards.findIndex(card => card.id === dropTargetId);
     if (targetIndex < 0) return remainingCards;
     const insertionIndex = targetIndex + (dropSide === 'after' ? 1 : 0);

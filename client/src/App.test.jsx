@@ -203,7 +203,8 @@ describe('active game interface', () => {
       clientY: 10,
     }));
 
-    expect(document.querySelector('.hand-fan .card-placeholder')).not.toBeInTheDocument();
+    expect(document.querySelector('.hand-fan .card-placeholder')).toBeInTheDocument();
+    expect(document.querySelector('.hand-row')?.children[0]).toHaveClass('card-placeholder');
     expect([...document.querySelectorAll('.hand-fan .playing-card')]
       .map(element => element.getAttribute('aria-label'))
       .filter(Boolean)).toEqual(['8♥']);
@@ -218,6 +219,7 @@ describe('active game interface', () => {
     }));
 
     expect(document.querySelector('.hand-fan .card-placeholder')).toBeInTheDocument();
+    expect(document.querySelector('.hand-row')?.children[1]).toHaveClass('card-placeholder');
     expect(screen.getByRole('button', { name: /8/ })).toHaveClass('drag-neighbor');
 
     fireEvent(window, new MouseEvent('pointerup', {
