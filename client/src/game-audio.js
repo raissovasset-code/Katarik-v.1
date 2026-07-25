@@ -169,8 +169,10 @@ export function getGameSounds(previousGame, nextGame, playerId) {
 export function createGameAudio(
   AudioContextConstructor = globalThis.AudioContext ||
     globalThis.webkitAudioContext,
+  AudioConstructor = globalThis.Audio,
 ) {
   let context = null;
+  let bombAudio = null;
 
   function getContext() {
     if (!AudioContextConstructor) return null;
@@ -186,6 +188,19 @@ export function createGameAudio(
   }
 
   function play(effect, startDelay = 0) {
+    if (effect === "bomb" && AudioConstructor) {
+      bombAudio ||= new AudioConstructor("/audio/bomb-muted.wav");
+      bombAudio.currentTime = 0;
+      bombAudio.volume = 0.95;
+      const playback = bombAudio.play();
+      playback?.catch(() => playSynth(effect, startDelay));
+      return;
+    }
+
+    playSynth(effect, startDelay);
+  }
+
+  function playSynth(effect, startDelay = 0) {
     const current = getContext();
     const pattern = resolveSoundPattern(effect);
     if (!current || !pattern) return;

@@ -131,6 +131,37 @@ describe("game audio", () => {
     expect(starts).toHaveLength(10);
   });
 
+  test("plays the approved WAV asset for a bomb", () => {
+    const played = [];
+    class Audio {
+      constructor(source) {
+        this.source = source;
+        this.currentTime = 10;
+        this.volume = 0;
+      }
+
+      play() {
+        played.push({
+          source: this.source,
+          currentTime: this.currentTime,
+          volume: this.volume,
+        });
+        return Promise.resolve();
+      }
+    }
+
+    const audio = createGameAudio(undefined, Audio);
+    audio.play("bomb");
+
+    expect(played).toEqual([
+      {
+        source: "/audio/bomb-muted.wav",
+        currentTime: 0,
+        volume: 0.95,
+      },
+    ]);
+  });
+
   test("distinguishes victory and defeat in the final state", () => {
     expect(
       getGameSounds(
