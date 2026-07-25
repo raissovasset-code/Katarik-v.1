@@ -24,6 +24,7 @@ const DESKTOP_GAME_WIDTH = 1600;
 const DESKTOP_GAME_HEIGHT = 900;
 const MIN_DESKTOP_SCALE = 0.72;
 const MAX_DISPLAY_NAME_LENGTH = 8;
+const TURN_ALARM_DELAY_MS = 30_000;
 
 function displayNameWithLimit(value, maxLength, fallback = "—") {
   const symbols = Array.from(String(value || fallback));
@@ -220,6 +221,22 @@ export function App() {
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
+
+  useEffect(() => {
+    if (
+      !soundEnabled ||
+      game?.status !== "playing" ||
+      game.currentPlayerId !== user.id
+    ) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      audioRef.current?.play("alarm");
+    }, TURN_ALARM_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [game?.currentPlayerId, game?.status, soundEnabled, user.id]);
 
   useEffect(() => {
     function unlockAudio() {
@@ -663,7 +680,6 @@ export function App() {
     writeSoundEnabled(nextValue);
     if (nextValue) {
       void audioRef.current?.unlock();
-      audioRef.current?.play("turn");
     }
   }
 

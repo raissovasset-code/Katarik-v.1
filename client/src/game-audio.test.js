@@ -31,7 +31,7 @@ describe("game audio", () => {
     expect(readSoundEnabled(storage)).toBe(false);
   });
 
-  test("reports confirmed play, pass and own turn transitions", () => {
+  test("reports confirmed play and pass without an immediate turn sound", () => {
     const previous = game();
     const next = game({
       currentPlayerId: "player-1",
@@ -45,7 +45,6 @@ describe("game audio", () => {
     expect(getGameSounds(previous, next, "player-1")).toEqual([
       "pass",
       "cards",
-      "turn",
     ]);
     expect(
       getGameSounds(

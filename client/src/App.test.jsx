@@ -34,6 +34,40 @@ class TestWebSocket {
   }
 }
 
+class TestAudioContext {
+  static starts = [];
+
+  constructor() {
+    this.currentTime = 0;
+    this.destination = {};
+    this.state = "running";
+  }
+
+  createOscillator() {
+    return {
+      connect() {},
+      frequency: { setValueAtTime() {} },
+      start: () => TestAudioContext.starts.push(true),
+      stop() {},
+      type: "sine",
+    };
+  }
+
+  createGain() {
+    return {
+      connect() {},
+      gain: {
+        exponentialRampToValueAtTime() {},
+        setValueAtTime() {},
+      },
+    };
+  }
+
+  resume() {
+    return Promise.resolve();
+  }
+}
+
 function card(id, rank, suit = "S") {
   return { id, rank, suit, type: "normal" };
 }
@@ -65,7 +99,9 @@ async function renderConnectedGame(game = playingGame()) {
 
 beforeEach(() => {
   TestWebSocket.instances = [];
+  TestAudioContext.starts = [];
   globalThis.WebSocket = TestWebSocket;
+  globalThis.AudioContext = TestAudioContext;
   sessionStorage.setItem("katarik_user_id", "player-1");
   sessionStorage.setItem("katarik_session_token", "test-token");
   localStorage.setItem("katarik_name", "Асет");
@@ -73,6 +109,29 @@ beforeEach(() => {
 });
 
 describe("active game interface", () => {
+  test("plays an alarm only after the own turn lasts 30 seconds", async () => {
+    vi.useFakeTimers();
+
+    try {
+      await renderConnectedGame();
+
+      await act(async () => {
+        vi.advanceTimersByTime(29_999);
+        await Promise.resolve();
+      });
+      expect(TestAudioContext.starts).toHaveLength(0);
+
+      await act(async () => {
+        vi.advanceTimersByTime(1);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(TestAudioContext.starts).toHaveLength(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("selects and deselects a card and sends the selected card", async () => {
     const user = userEvent.setup();
     const socket = await renderConnectedGame();

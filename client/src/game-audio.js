@@ -15,14 +15,21 @@ const SOUND_PATTERNS = {
     { frequency: 330, duration: 0.09, gain: 0.035, type: "sine" },
     { frequency: 220, duration: 0.12, gain: 0.03, type: "sine", delay: 0.08 },
   ],
-  turn: [
-    { frequency: 523.25, duration: 0.1, gain: 0.04, type: "sine" },
+  alarm: [
+    { frequency: 880, duration: 0.16, gain: 0.055, type: "square" },
     {
-      frequency: 659.25,
-      duration: 0.14,
-      gain: 0.045,
-      type: "sine",
-      delay: 0.1,
+      frequency: 660,
+      duration: 0.16,
+      gain: 0.05,
+      type: "square",
+      delay: 0.2,
+    },
+    {
+      frequency: 880,
+      duration: 0.2,
+      gain: 0.055,
+      type: "square",
+      delay: 0.4,
     },
   ],
   win: [
@@ -97,14 +104,6 @@ export function getGameSounds(previousGame, nextGame, playerId) {
     tableSignature(previousGame.table) !== tableSignature(nextGame.table)
   ) {
     sounds.push("cards");
-  }
-
-  if (
-    nextGame.status === "playing" &&
-    previousGame.currentPlayerId !== playerId &&
-    nextGame.currentPlayerId === playerId
-  ) {
-    sounds.push("turn");
   }
 
   return sounds;
