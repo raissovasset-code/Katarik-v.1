@@ -240,7 +240,8 @@ export function App() {
           restoringRoom = false;
           clearConnectionError();
           setGame(msg.game);
-          setSelected([]);
+          const handCardIds = new Set((msg.game?.hand || []).map(card => card.id));
+          setSelected(current => current.filter(cardId => handCardIds.has(cardId)));
         }
 
         if (msg.type === 'leftRoom') {
