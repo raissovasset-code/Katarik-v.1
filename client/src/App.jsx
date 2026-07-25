@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import './style.css';
 
@@ -548,20 +549,15 @@ export function App() {
   function startPointerDrag(event, cardId) {
     if (event.button !== 0 && event.pointerType === 'mouse') return;
     const cardRect = event.currentTarget.getBoundingClientRect();
-    const cardStyle = window.getComputedStyle(event.currentTarget);
-    const cardWidth = Number.parseFloat(cardStyle.width) || cardRect.width;
-    const cardHeight = Number.parseFloat(cardStyle.height) || cardRect.height;
-    const relativeX = cardRect.width ? (event.clientX - cardRect.left) / cardRect.width : 0.5;
-    const relativeY = cardRect.height ? (event.clientY - cardRect.top) / cardRect.height : 0.5;
     pointerDragRef.current = {
       cardId,
       moved: false,
       startX: event.clientX,
       startY: event.clientY,
-      offsetX: cardWidth * relativeX,
-      offsetY: cardHeight * relativeY,
-      width: cardWidth,
-      height: cardHeight,
+      offsetX: event.clientX - cardRect.left,
+      offsetY: event.clientY - cardRect.top,
+      width: cardRect.width,
+      height: cardRect.height,
     };
     dropPlacementRef.current = null;
   }
@@ -917,7 +913,7 @@ export function App() {
             ))}
           </div>
         )}
-        {draggedCard && dragPosition && (
+        {draggedCard && dragPosition && createPortal(
           <div
             className="card-drag-preview"
             style={{
@@ -929,7 +925,8 @@ export function App() {
             aria-hidden="true"
           >
             <Card card={draggedCard} dragging />
-          </div>
+          </div>,
+          document.body
         )}
       </section>
 
