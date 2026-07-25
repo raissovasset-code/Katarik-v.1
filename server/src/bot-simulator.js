@@ -1,10 +1,17 @@
-import { addPlayer, createGame, nextRound, pass, playCards, startGame } from './game.js';
-import { chooseBotAction, TRAINED_BOT_WEIGHTS } from './bot-strategy.js';
+import {
+  addPlayer,
+  createGame,
+  nextRound,
+  pass,
+  playCards,
+  startGame,
+} from "./game.js";
+import { chooseBotAction, TRAINED_BOT_WEIGHTS } from "./bot-strategy.js";
 
 export function createSeededRandom(seed = 1) {
   let state = Number(seed) >>> 0 || 1;
   return () => {
-    state = (state + 0x6D2B79F5) >>> 0;
+    state = (state + 0x6d2b79f5) >>> 0;
     let value = state;
     value = Math.imul(value ^ (value >>> 15), value | 1);
     value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
@@ -15,11 +22,11 @@ export function createSeededRandom(seed = 1) {
 function winnerId(game) {
   if (game.roundWinnerId) return game.roundWinnerId;
   if (game.places?.length) return game.places[0];
-  return game.players.find(player => player.id !== game.loserId)?.id || null;
+  return game.players.find((player) => player.id !== game.loserId)?.id || null;
 }
 
 export function simulateBotGame({
-  mode = 'classic',
+  mode = "classic",
   playerWeights = [TRAINED_BOT_WEIGHTS, TRAINED_BOT_WEIGHTS],
   playerPolicies = null,
   onDecision = null,
@@ -27,11 +34,11 @@ export function simulateBotGame({
   maxTurns = 20_000,
 } = {}) {
   const playerCount = playerPolicies?.length || playerWeights.length;
-  if (mode === 'elimination' && playerCount < 3) {
-    throw new Error('Elimination simulation requires at least three bots');
+  if (mode === "elimination" && playerCount < 3) {
+    throw new Error("Elimination simulation requires at least three bots");
   }
   if (playerCount < 2 || playerCount > 11) {
-    throw new Error('Simulation requires 2–11 bots');
+    throw new Error("Simulation requires 2–11 bots");
   }
 
   const random = createSeededRandom(seed);
@@ -39,33 +46,37 @@ export function simulateBotGame({
   Math.random = random;
   try {
     const game = createGame(`SIM-${seed}`, mode);
-    Array.from({ length: playerCount }, (_, index) => addPlayer(game, {
-      id: `bot-${index + 1}`,
-      name: `Bot ${index + 1}`,
-      isBot: true,
-      simulationWeights: playerWeights[index],
-      simulationPolicy: playerPolicies?.[index] || null,
-    }));
+    Array.from({ length: playerCount }, (_, index) =>
+      addPlayer(game, {
+        id: `bot-${index + 1}`,
+        name: `Bot ${index + 1}`,
+        isBot: true,
+        simulationWeights: playerWeights[index],
+        simulationPolicy: playerPolicies?.[index] || null,
+      }),
+    );
     startGame(game);
 
     let turns = 0;
     let rounds = 1;
-    while (game.status !== 'finished' && turns < maxTurns) {
-      if (game.status === 'round_finished') {
+    while (game.status !== "finished" && turns < maxTurns) {
+      if (game.status === "round_finished") {
         nextRound(game);
         rounds += 1;
         continue;
       }
 
-      const player = game.players.find(item => item.id === game.currentPlayerId);
-      if (!player) throw new Error('Simulation has no current player');
+      const player = game.players.find(
+        (item) => item.id === game.currentPlayerId,
+      );
+      if (!player) throw new Error("Simulation has no current player");
       const action = player.simulationPolicy
         ? player.simulationPolicy(game, player.id)
         : chooseBotAction(game, player.id, player.simulationWeights);
       onDecision?.({ game, player, action, turn: turns });
-      if (action?.type === 'play') {
+      if (action?.type === "play") {
         playCards(game, player.id, action.cardIds, action.declaredRanks || {});
-      } else if (action?.type === 'pass') {
+      } else if (action?.type === "pass") {
         pass(game, player.id);
       } else {
         throw new Error(`Bot ${player.id} could not choose an action`);
@@ -76,8 +87,8 @@ export function simulateBotGame({
     return {
       seed,
       mode,
-      winnerId: game.status === 'finished' ? winnerId(game) : null,
-      completed: game.status === 'finished',
+      winnerId: game.status === "finished" ? winnerId(game) : null,
+      completed: game.status === "finished",
       turns,
       rounds,
     };
@@ -91,7 +102,7 @@ export function evaluatePolicies({
   baseline = (game, playerId) => chooseBotAction(game, playerId),
   games = 100,
   seed = 1,
-  mode = 'classic',
+  mode = "classic",
 } = {}) {
   let wins = 0;
   let losses = 0;
@@ -99,7 +110,9 @@ export function evaluatePolicies({
   let turns = 0;
   for (let index = 0; index < games; index += 1) {
     const candidateFirst = index % 2 === 0;
-    const policies = candidateFirst ? [candidate, baseline] : [baseline, candidate];
+    const policies = candidateFirst
+      ? [candidate, baseline]
+      : [baseline, candidate];
     const result = simulateBotGame({
       mode,
       playerPolicies: policies,
@@ -107,7 +120,8 @@ export function evaluatePolicies({
     });
     turns += result.turns;
     if (!result.completed) incomplete += 1;
-    else if (result.winnerId === (candidateFirst ? 'bot-1' : 'bot-2')) wins += 1;
+    else if (result.winnerId === (candidateFirst ? "bot-1" : "bot-2"))
+      wins += 1;
     else losses += 1;
   }
   return {
@@ -125,7 +139,7 @@ export function evaluateWeights({
   baseline = TRAINED_BOT_WEIGHTS,
   games = 100,
   seed = 1,
-  mode = 'classic',
+  mode = "classic",
 } = {}) {
   let wins = 0;
   let losses = 0;
@@ -134,7 +148,9 @@ export function evaluateWeights({
 
   for (let index = 0; index < games; index += 1) {
     const candidateFirst = index % 2 === 0;
-    const weights = candidateFirst ? [candidate, baseline] : [baseline, candidate];
+    const weights = candidateFirst
+      ? [candidate, baseline]
+      : [baseline, candidate];
     // Each deal is played twice with swapped seats, removing first-seat and
     // shuffle luck from the comparison.
     const result = simulateBotGame({
@@ -144,7 +160,8 @@ export function evaluateWeights({
     });
     turns += result.turns;
     if (!result.completed) incomplete += 1;
-    else if (result.winnerId === (candidateFirst ? 'bot-1' : 'bot-2')) wins += 1;
+    else if (result.winnerId === (candidateFirst ? "bot-1" : "bot-2"))
+      wins += 1;
     else losses += 1;
   }
 

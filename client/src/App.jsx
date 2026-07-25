@@ -1,12 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { createRoot } from 'react-dom/client';
-import './style.css';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { createRoot } from "react-dom/client";
+import "./style.css";
 
 function defaultWsUrl() {
-  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-  const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-  const host = isLocal ? `${window.location.hostname}:3001` : window.location.host;
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+  const host = isLocal
+    ? `${window.location.hostname}:3001`
+    : window.location.host;
 
   return `${protocol}://${host}`;
 }
@@ -17,37 +19,37 @@ const DESKTOP_GAME_HEIGHT = 900;
 const MIN_DESKTOP_SCALE = 0.72;
 const MAX_DISPLAY_NAME_LENGTH = 8;
 
-function displayNameWithLimit(value, maxLength, fallback = '—') {
+function displayNameWithLimit(value, maxLength, fallback = "—") {
   const symbols = Array.from(String(value || fallback));
 
   return symbols.length > maxLength
-    ? `${symbols.slice(0, maxLength).join('')}…`
-    : symbols.join('');
+    ? `${symbols.slice(0, maxLength).join("")}…`
+    : symbols.join("");
 }
 
-function displayName(value, fallback = '—') {
+function displayName(value, fallback = "—") {
   return displayNameWithLimit(value, MAX_DISPLAY_NAME_LENGTH, fallback);
 }
 
 function createLocalUser() {
   const storage = isNativeApp() ? localStorage : sessionStorage;
-  const savedId = storage.getItem('katarik_user_id');
-  const savedToken = storage.getItem('katarik_session_token');
+  const savedId = storage.getItem("katarik_user_id");
+  const savedToken = storage.getItem("katarik_session_token");
   const id = savedId || createId();
   const sessionToken = savedToken || createId();
 
   if (!savedId) {
-    storage.setItem('katarik_user_id', id);
+    storage.setItem("katarik_user_id", id);
   }
 
   if (!savedToken) {
-    storage.setItem('katarik_session_token', sessionToken);
+    storage.setItem("katarik_session_token", sessionToken);
   }
 
   return {
     id,
     sessionToken,
-    name: localStorage.getItem('katarik_name') || 'Игрок',
+    name: localStorage.getItem("katarik_name") || "Игрок",
   };
 }
 
@@ -64,40 +66,48 @@ function createId() {
 }
 
 function getRoomFromUrl() {
-  return new URLSearchParams(window.location.search).get('room')?.trim().toUpperCase() || '';
+  return (
+    new URLSearchParams(window.location.search)
+      .get("room")
+      ?.trim()
+      .toUpperCase() || ""
+  );
 }
 
 function getLayoutFromUrl() {
-  const forcedView = new URLSearchParams(window.location.search).get('view');
+  const forcedView = new URLSearchParams(window.location.search).get("view");
 
-  if (forcedView === 'mobile' || forcedView === 'desktop') {
+  if (forcedView === "mobile" || forcedView === "desktop") {
     return forcedView;
   }
 
-  return isLikelyMobileDevice() ? 'mobile' : 'desktop';
+  return isLikelyMobileDevice() ? "mobile" : "desktop";
 }
 
 function isLikelyMobileDevice() {
-  const userAgent = navigator.userAgent || '';
-  const hasMobileUserAgent = /Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini/i.test(userAgent);
+  const userAgent = navigator.userAgent || "";
+  const hasMobileUserAgent =
+    /Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini/i.test(userAgent);
   const hasTouch = navigator.maxTouchPoints > 1;
-  const hasCoarsePointer = window.matchMedia?.('(pointer: coarse)').matches;
-  const narrowScreen = Math.min(window.screen.width, window.screen.height) <= 820;
+  const hasCoarsePointer = window.matchMedia?.("(pointer: coarse)").matches;
+  const narrowScreen =
+    Math.min(window.screen.width, window.screen.height) <= 820;
 
   return hasMobileUserAgent || (hasTouch && hasCoarsePointer && narrowScreen);
 }
 
 function roomPath(roomId) {
   const params = new URLSearchParams(window.location.search);
-  params.set('room', roomId);
+  params.set("room", roomId);
 
   return `${window.location.pathname}?${params.toString()}`;
 }
 
 function isConnectionMessage(message) {
-  return Boolean(message) && (
-    message.startsWith('Соединение потеряно') ||
-    message === 'Нет соединения с сервером.'
+  return (
+    Boolean(message) &&
+    (message.startsWith("Соединение потеряно") ||
+      message === "Нет соединения с сервером.")
   );
 }
 
@@ -107,17 +117,17 @@ export function App() {
   const initialLayout = useMemo(getLayoutFromUrl, []);
   const [joinCode, setJoinCode] = useState(initialRoom);
   const [name, setName] = useState(user.name);
-  const [mode, setMode] = useState('classic');
+  const [mode, setMode] = useState("classic");
   const [game, setGame] = useState(null);
   const [selected, setSelected] = useState([]);
   const [handOrder, setHandOrder] = useState([]);
   const [draggedCardId, setDraggedCardId] = useState(null);
   const [dragPosition, setDragPosition] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
-  const [dropSide, setDropSide] = useState('before');
-  const [error, setError] = useState('');
+  const [dropSide, setDropSide] = useState("before");
+  const [error, setError] = useState("");
   const [connected, setConnected] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [inviteCopied, setInviteCopied] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [kickTarget, setKickTarget] = useState(null);
@@ -134,72 +144,82 @@ export function App() {
   const reconnectTimerRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
   const lastMessageAtRef = useRef(Date.now());
-  const isActiveGame = Boolean(game && game.status !== 'lobby');
+  const isActiveGame = Boolean(game && game.status !== "lobby");
   const orderedHand = useMemo(() => {
     const hand = game?.hand || [];
-    const cardsById = new Map(hand.map(card => [card.id, card]));
+    const cardsById = new Map(hand.map((card) => [card.id, card]));
     const ordered = handOrder
-      .map(cardId => cardsById.get(cardId))
+      .map((cardId) => cardsById.get(cardId))
       .filter(Boolean);
-    const knownIds = new Set(ordered.map(card => card.id));
+    const knownIds = new Set(ordered.map((card) => card.id));
 
-    return [...ordered, ...hand.filter(card => !knownIds.has(card.id))];
+    return [...ordered, ...hand.filter((card) => !knownIds.has(card.id))];
   }, [game?.hand, handOrder]);
   const dragNeighborIds = useMemo(() => {
     if (!draggedCardId || !dropTargetId) return new Set();
-    const remainingCards = orderedHand.filter(card => card.id !== draggedCardId);
-    const targetIndex = remainingCards.findIndex(card => card.id === dropTargetId);
+    const remainingCards = orderedHand.filter(
+      (card) => card.id !== draggedCardId,
+    );
+    const targetIndex = remainingCards.findIndex(
+      (card) => card.id === dropTargetId,
+    );
     if (targetIndex < 0) return new Set();
-    const insertionIndex = targetIndex + (dropSide === 'after' ? 1 : 0);
+    const insertionIndex = targetIndex + (dropSide === "after" ? 1 : 0);
 
-    return new Set([
-      remainingCards[insertionIndex - 1]?.id,
-      remainingCards[insertionIndex]?.id,
-    ].filter(Boolean));
+    return new Set(
+      [
+        remainingCards[insertionIndex - 1]?.id,
+        remainingCards[insertionIndex]?.id,
+      ].filter(Boolean),
+    );
   }, [draggedCardId, dropSide, dropTargetId, orderedHand]);
   const draggedCard = draggedCardId
-    ? orderedHand.find(card => card.id === draggedCardId)
+    ? orderedHand.find((card) => card.id === draggedCardId)
     : null;
   const displayedHand = useMemo(() => {
     if (!draggedCardId) return orderedHand;
     if (!dropTargetId) {
-      return orderedHand.map(card => (
+      return orderedHand.map((card) =>
         card.id === draggedCardId
-          ? { id: '__drag-placeholder__', placeholder: true }
-          : card
-      ));
+          ? { id: "__drag-placeholder__", placeholder: true }
+          : card,
+      );
     }
-    const remainingCards = orderedHand.filter(card => card.id !== draggedCardId);
-    const targetIndex = remainingCards.findIndex(card => card.id === dropTargetId);
+    const remainingCards = orderedHand.filter(
+      (card) => card.id !== draggedCardId,
+    );
+    const targetIndex = remainingCards.findIndex(
+      (card) => card.id === dropTargetId,
+    );
     if (targetIndex < 0) return remainingCards;
-    const insertionIndex = targetIndex + (dropSide === 'after' ? 1 : 0);
+    const insertionIndex = targetIndex + (dropSide === "after" ? 1 : 0);
     const result = [...remainingCards];
     result.splice(insertionIndex, 0, {
-      id: '__drag-placeholder__',
+      id: "__drag-placeholder__",
       placeholder: true,
     });
     return result;
   }, [draggedCardId, dropSide, dropTargetId, orderedHand]);
 
   useEffect(() => {
-    localStorage.setItem('katarik_name', name);
+    localStorage.setItem("katarik_name", name);
     nameRef.current = name;
   }, [name]);
 
   useEffect(() => {
-    const currentIds = (game?.hand || []).map(card => card.id);
+    const currentIds = (game?.hand || []).map((card) => card.id);
     const currentIdSet = new Set(currentIds);
 
-    setHandOrder(previous => [
-      ...previous.filter(cardId => currentIdSet.has(cardId)),
-      ...currentIds.filter(cardId => !previous.includes(cardId)),
+    setHandOrder((previous) => [
+      ...previous.filter((cardId) => currentIdSet.has(cardId)),
+      ...currentIds.filter((cardId) => !previous.includes(cardId)),
     ]);
   }, [game?.hand]);
 
   useEffect(() => {
     if (!isActiveGame || !error || isConnectionMessage(error)) return undefined;
 
-    const timer = window.setTimeout(() => setError(''), 3000);
+    const timer = window.setTimeout(() => setError(""), 3000);
     return () => window.clearTimeout(timer);
   }, [error, isActiveGame]);
 
@@ -211,8 +231,8 @@ export function App() {
       });
     }
 
-    window.addEventListener('resize', updateViewport);
-    return () => window.removeEventListener('resize', updateViewport);
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
   }, []);
 
   useEffect(() => {
@@ -220,7 +240,10 @@ export function App() {
       const drag = pointerDragRef.current;
       if (!drag) return;
 
-      const distance = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
+      const distance = Math.hypot(
+        event.clientX - drag.startX,
+        event.clientY - drag.startY,
+      );
       if (!drag.moved && distance < 6) return;
 
       if (!drag.moved) {
@@ -238,29 +261,39 @@ export function App() {
         height: drag.height,
       });
       const draggedCardBottom = dragTop + drag.height;
-      const touchedRow = [...document.querySelectorAll('[data-hand-row]')]
-        .map(element => ({ element, rect: element.getBoundingClientRect() }))
-        .filter(({ rect }) => (
-          draggedCardBottom >= rect.top &&
-          draggedCardBottom <= rect.top + rect.height * 0.85
-        ))
-        .sort((a, b) => Math.abs(draggedCardBottom - a.rect.top) -
-          Math.abs(draggedCardBottom - b.rect.top))[0];
+      const touchedRow = [...document.querySelectorAll("[data-hand-row]")]
+        .map((element) => ({ element, rect: element.getBoundingClientRect() }))
+        .filter(
+          ({ rect }) =>
+            draggedCardBottom >= rect.top &&
+            draggedCardBottom <= rect.top + rect.height * 0.85,
+        )
+        .sort(
+          (a, b) =>
+            Math.abs(draggedCardBottom - a.rect.top) -
+            Math.abs(draggedCardBottom - b.rect.top),
+        )[0];
       const touchedCard = touchedRow
-        ? [...touchedRow.element.querySelectorAll('[data-hand-card-id]')]
-          .map(element => ({ element, rect: element.getBoundingClientRect() }))
-          .sort((a, b) => {
-            const aCenter = a.rect.left + a.rect.width / 2;
-            const bCenter = b.rect.left + b.rect.width / 2;
-            return Math.abs(event.clientX - aCenter) - Math.abs(event.clientX - bCenter);
-          })[0]
+        ? [...touchedRow.element.querySelectorAll("[data-hand-card-id]")]
+            .map((element) => ({
+              element,
+              rect: element.getBoundingClientRect(),
+            }))
+            .sort((a, b) => {
+              const aCenter = a.rect.left + a.rect.width / 2;
+              const bCenter = b.rect.left + b.rect.width / 2;
+              return (
+                Math.abs(event.clientX - aCenter) -
+                Math.abs(event.clientX - bCenter)
+              );
+            })[0]
         : null;
       const targetId = touchedCard?.element.dataset.handCardId;
       if (targetId && targetId !== drag.cardId) {
-        const side = event.clientX <
-          touchedCard.rect.left + touchedCard.rect.width / 2
-          ? 'before'
-          : 'after';
+        const side =
+          event.clientX < touchedCard.rect.left + touchedCard.rect.width / 2
+            ? "before"
+            : "after";
         dropPlacementRef.current = { targetId, side };
         setDropTargetId(targetId);
         setDropSide(side);
@@ -286,13 +319,13 @@ export function App() {
       setDropTargetId(null);
     }
 
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerEnd);
-    window.addEventListener('pointercancel', handlePointerEnd);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerEnd);
+    window.addEventListener("pointercancel", handlePointerEnd);
     return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerEnd);
-      window.removeEventListener('pointercancel', handlePointerEnd);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerEnd);
+      window.removeEventListener("pointercancel", handlePointerEnd);
     };
   }, []);
 
@@ -308,16 +341,16 @@ export function App() {
     }
 
     function clearConnectionError() {
-      setError(current => (isConnectionMessage(current) ? '' : current));
+      setError((current) => (isConnectionMessage(current) ? "" : current));
     }
 
     function scheduleReconnect() {
       if (!active || reconnectTimerRef.current) return;
 
       const attempt = reconnectAttemptRef.current;
-      const delay = Math.min(8000, 500 * (2 ** attempt));
+      const delay = Math.min(8000, 500 * 2 ** attempt);
       reconnectAttemptRef.current += 1;
-      setConnectionStatus('reconnecting');
+      setConnectionStatus("reconnecting");
 
       reconnectTimerRef.current = window.setTimeout(() => {
         reconnectTimerRef.current = null;
@@ -336,7 +369,9 @@ export function App() {
         return;
       }
 
-      setConnectionStatus(reconnectAttemptRef.current ? 'reconnecting' : 'connecting');
+      setConnectionStatus(
+        reconnectAttemptRef.current ? "reconnecting" : "connecting",
+      );
       const socket = new WebSocket(WS_URL);
       let restoringRoom = false;
       wsRef.current = socket;
@@ -345,23 +380,25 @@ export function App() {
         if (!active || wsRef.current !== socket) return;
 
         setConnected(true);
-        setConnectionStatus('connected');
+        setConnectionStatus("connected");
         reconnectAttemptRef.current = 0;
         lastMessageAtRef.current = Date.now();
         clearConnectionError();
 
-        const savedRoomId = localStorage.getItem('katarik_room');
+        const savedRoomId = localStorage.getItem("katarik_room");
         if (savedRoomId) {
           restoringRoom = true;
-          socket.send(JSON.stringify({
-            type: 'joinRoom',
-            roomId: savedRoomId,
-            ...identityPayload(),
-          }));
+          socket.send(
+            JSON.stringify({
+              type: "joinRoom",
+              roomId: savedRoomId,
+              ...identityPayload(),
+            }),
+          );
         }
       };
 
-      socket.onmessage = event => {
+      socket.onmessage = (event) => {
         if (!active || wsRef.current !== socket) return;
         lastMessageAtRef.current = Date.now();
 
@@ -369,56 +406,63 @@ export function App() {
         try {
           msg = JSON.parse(event.data);
         } catch {
-          setError('Сервер прислал некорректный ответ.');
+          setError("Сервер прислал некорректный ответ.");
           return;
         }
 
-        if (msg.type === 'pong') return;
+        if (msg.type === "pong") return;
 
-        if (msg.type === 'roomCreated') {
+        if (msg.type === "roomCreated") {
           restoringRoom = false;
           setJoinCode(msg.roomId);
-          localStorage.setItem('katarik_room', msg.roomId);
-          window.history.replaceState(null, '', roomPath(msg.roomId));
+          localStorage.setItem("katarik_room", msg.roomId);
+          window.history.replaceState(null, "", roomPath(msg.roomId));
         }
 
-        if (msg.type === 'state') {
+        if (msg.type === "state") {
           restoringRoom = false;
           clearConnectionError();
           setGame(msg.game);
-          const handCardIds = new Set((msg.game?.hand || []).map(card => card.id));
-          setSelected(current => current.filter(cardId => handCardIds.has(cardId)));
+          const handCardIds = new Set(
+            (msg.game?.hand || []).map((card) => card.id),
+          );
+          setSelected((current) =>
+            current.filter((cardId) => handCardIds.has(cardId)),
+          );
         }
 
-        if (msg.type === 'leftRoom') {
+        if (msg.type === "leftRoom") {
           restoringRoom = false;
           setGame(null);
           setSelected([]);
           setHandOrder([]);
-          setJoinCode('');
-          localStorage.removeItem('katarik_room');
-          window.history.replaceState(null, '', window.location.pathname);
+          setJoinCode("");
+          localStorage.removeItem("katarik_room");
+          window.history.replaceState(null, "", window.location.pathname);
         }
 
-        if (msg.type === 'kicked') {
+        if (msg.type === "kicked") {
           restoringRoom = false;
           setGame(null);
           setSelected([]);
           setHandOrder([]);
-          setJoinCode('');
+          setJoinCode("");
           setKickTarget(null);
-          localStorage.removeItem('katarik_room');
-          window.history.replaceState(null, '', window.location.pathname);
-          setError(msg.message || 'Хозяин комнаты удалил вас из комнаты.');
+          localStorage.removeItem("katarik_room");
+          window.history.replaceState(null, "", window.location.pathname);
+          setError(msg.message || "Хозяин комнаты удалил вас из комнаты.");
         }
 
-        if (msg.type === 'error') {
+        if (msg.type === "error") {
           if (
             restoringRoom &&
-            ['Комната не найдена', 'Это место игрока принадлежит другому устройству'].includes(msg.message)
+            [
+              "Комната не найдена",
+              "Это место игрока принадлежит другому устройству",
+            ].includes(msg.message)
           ) {
             restoringRoom = false;
-            localStorage.removeItem('katarik_room');
+            localStorage.removeItem("katarik_room");
             setGame(null);
           }
 
@@ -434,8 +478,8 @@ export function App() {
         if (!active || wsRef.current !== socket) return;
 
         setConnected(false);
-        setConnectionStatus('reconnecting');
-        setError('Соединение потеряно. Переподключаемся…');
+        setConnectionStatus("reconnecting");
+        setError("Соединение потеряно. Переподключаемся…");
         scheduleReconnect();
       };
     }
@@ -444,14 +488,14 @@ export function App() {
       const socket = wsRef.current;
 
       if (socket?.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'ping' }));
+        socket.send(JSON.stringify({ type: "ping" }));
       } else {
         connect();
       }
     }
 
     function handleVisibilityChange() {
-      if (document.visibilityState === 'visible') checkConnection();
+      if (document.visibilityState === "visible") checkConnection();
     }
 
     connect();
@@ -465,42 +509,44 @@ export function App() {
         return;
       }
 
-      socket.send(JSON.stringify({ type: 'ping' }));
+      socket.send(JSON.stringify({ type: "ping" }));
     }, 10000);
 
-    window.addEventListener('online', checkConnection);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener("online", checkConnection);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       active = false;
       window.clearInterval(heartbeatTimer);
       window.clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
-      window.removeEventListener('online', checkConnection);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener("online", checkConnection);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       wsRef.current?.close();
     };
   }, [user]);
 
   function send(type, payload = {}) {
-    setError('');
+    setError("");
 
     if (wsRef.current?.readyState !== WebSocket.OPEN) {
-      setError('Нет соединения с сервером.');
+      setError("Нет соединения с сервером.");
       return;
     }
 
-    wsRef.current.send(JSON.stringify({
-      type,
-      playerId: user.id,
-      sessionToken: user.sessionToken,
-      name: name || user.name,
-      ...payload,
-    }));
+    wsRef.current.send(
+      JSON.stringify({
+        type,
+        playerId: user.id,
+        sessionToken: user.sessionToken,
+        name: name || user.name,
+        ...payload,
+      }),
+    );
   }
 
   function createRoom() {
-    send('createRoom', { mode });
+    send("createRoom", { mode });
   }
 
   function joinRoom() {
@@ -508,9 +554,9 @@ export function App() {
     if (!code) return;
 
     setJoinCode(code);
-    localStorage.setItem('katarik_room', code);
-    window.history.replaceState(null, '', roomPath(code));
-    send('joinRoom', { roomId: code });
+    localStorage.setItem("katarik_room", code);
+    window.history.replaceState(null, "", roomPath(code));
+    send("joinRoom", { roomId: code });
   }
 
   async function copyInvite() {
@@ -529,23 +575,23 @@ export function App() {
       return;
     }
 
-    setSelected(prev =>
+    setSelected((prev) =>
       prev.includes(cardId)
-        ? prev.filter(id => id !== cardId)
-        : [...prev, cardId]
+        ? prev.filter((id) => id !== cardId)
+        : [...prev, cardId],
     );
   }
 
-  function moveCard(draggedId, targetId, side = 'before') {
+  function moveCard(draggedId, targetId, side = "before") {
     if (!draggedId || draggedId === targetId) return;
 
-    setHandOrder(previous => {
-      const currentOrder = orderedHand.map(card => card.id);
+    setHandOrder((previous) => {
+      const currentOrder = orderedHand.map((card) => card.id);
       if (!currentOrder.includes(draggedId)) return previous;
-      const nextOrder = currentOrder.filter(cardId => cardId !== draggedId);
+      const nextOrder = currentOrder.filter((cardId) => cardId !== draggedId);
       const targetIndex = nextOrder.indexOf(targetId);
       if (targetIndex < 0) return previous;
-      const insertionIndex = targetIndex + (side === 'after' ? 1 : 0);
+      const insertionIndex = targetIndex + (side === "after" ? 1 : 0);
       nextOrder.splice(insertionIndex, 0, draggedId);
       return nextOrder;
     });
@@ -553,7 +599,7 @@ export function App() {
   moveCardRef.current = moveCard;
 
   function startPointerDrag(event, cardId) {
-    if (event.button !== 0 && event.pointerType === 'mouse') return;
+    if (event.button !== 0 && event.pointerType === "mouse") return;
     const cardRect = event.currentTarget.getBoundingClientRect();
     pointerDragRef.current = {
       cardId,
@@ -569,12 +615,12 @@ export function App() {
   }
 
   function play() {
-    send('play', { cardIds: selected });
+    send("play", { cardIds: selected });
     setSelected([]);
   }
 
   function leaveRoom() {
-    if (game?.status === 'playing' || game?.status === 'round_finished') {
+    if (game?.status === "playing" || game?.status === "round_finished") {
       setLeaveConfirmOpen(true);
       return;
     }
@@ -584,46 +630,57 @@ export function App() {
 
   function confirmLeaveRoom() {
     setLeaveConfirmOpen(false);
-    send('leaveRoom');
+    send("leaveRoom");
   }
 
   function confirmKickPlayer() {
     if (!kickTarget) return;
-    send('kickPlayer', { targetPlayerId: kickTarget.id });
+    send("kickPlayer", { targetPlayerId: kickTarget.id });
     setKickTarget(null);
   }
 
-  const me = game?.players?.find(p => p.id === user.id);
+  const me = game?.players?.find((p) => p.id === user.id);
   const isMyTurn = game?.currentPlayerId === user.id;
   const isHost = game?.hostPlayerId === user.id;
-  const currentPlayer = game?.players?.find(p => p.id === game.currentPlayerId);
-  const lastPlayedPlayer = game?.players?.find(p => p.id === game.table?.playerId);
-  const clockwiseOpponents = game ? getClockwiseOpponents(game.players, user.id) : [];
-  const minimumPlayers = game?.mode === 'elimination' ? 3 : 2;
-  const missingPlayers = Math.max(0, minimumPlayers - (game?.players?.length || 0));
+  const currentPlayer = game?.players?.find(
+    (p) => p.id === game.currentPlayerId,
+  );
+  const lastPlayedPlayer = game?.players?.find(
+    (p) => p.id === game.table?.playerId,
+  );
+  const clockwiseOpponents = game
+    ? getClockwiseOpponents(game.players, user.id)
+    : [];
+  const minimumPlayers = game?.mode === "elimination" ? 3 : 2;
+  const missingPlayers = Math.max(
+    0,
+    minimumPlayers - (game?.players?.length || 0),
+  );
   const canStartGame = isHost && missingPlayers === 0;
-  const remainingPlayerCount = game?.players?.filter(player => !player.leaving).length || 0;
-  const waitingForHost = !isHost && ['round_finished', 'finished'].includes(game?.status);
+  const remainingPlayerCount =
+    game?.players?.filter((player) => !player.leaving).length || 0;
+  const waitingForHost =
+    !isHost && ["round_finished", "finished"].includes(game?.status);
   const connectionHint = !connected
-    ? (isConnectionMessage(error)
-        ? error
-        : connectionStatus === 'reconnecting'
-          ? 'Соединение потеряно. Переподключаемся…'
-          : 'Подключение к серверу…')
-    : '';
-  const isMobileLayout = initialLayout === 'mobile';
+    ? isConnectionMessage(error)
+      ? error
+      : connectionStatus === "reconnecting"
+        ? "Соединение потеряно. Переподключаемся…"
+        : "Подключение к серверу…"
+    : "";
+  const isMobileLayout = initialLayout === "mobile";
   const gameScale = Math.max(
     MIN_DESKTOP_SCALE,
     Math.min(
       1,
       viewport.width / DESKTOP_GAME_WIDTH,
-      viewport.height / DESKTOP_GAME_HEIGHT
-    )
+      viewport.height / DESKTOP_GAME_HEIGHT,
+    ),
   );
 
   if (!game) {
     return (
-      <main className={`welcome ${isMobileLayout ? 'mobile-welcome' : ''}`}>
+      <main className={`welcome ${isMobileLayout ? "mobile-welcome" : ""}`}>
         <section className="welcome-card">
           <div className="brand">
             <div className="brand-mark">♠ ♥ ♦ ♣</div>
@@ -636,42 +693,57 @@ export function App() {
               <span>Имя</span>
               <input
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Твое имя"
               />
             </label>
 
             <div className="mode-grid" aria-label="Режим игры">
-              <button className={mode === 'classic' ? 'active' : ''} onClick={() => setMode('classic')}>
+              <button
+                className={mode === "classic" ? "active" : ""}
+                onClick={() => setMode("classic")}
+              >
                 Обычный
               </button>
-              <button className={mode === 'elimination' ? 'active' : ''} onClick={() => setMode('elimination')}>
+              <button
+                className={mode === "elimination" ? "active" : ""}
+                onClick={() => setMode("elimination")}
+              >
                 На вылет
               </button>
-              <button className={mode === 'pogoni' ? 'active' : ''} onClick={() => setMode('pogoni')}>
+              <button
+                className={mode === "pogoni" ? "active" : ""}
+                onClick={() => setMode("pogoni")}
+              >
                 Погоны
               </button>
             </div>
 
-            <button className="primary" disabled={!connected} onClick={createRoom}>
+            <button
+              className="primary"
+              disabled={!connected}
+              onClick={createRoom}
+            >
               Создать комнату
             </button>
 
             <div className="join-row">
               <input
                 value={joinCode}
-                onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                 placeholder="Код комнаты"
               />
-              <button disabled={!connected} onClick={joinRoom}>Войти</button>
+              <button disabled={!connected} onClick={joinRoom}>
+                Войти
+              </button>
             </div>
 
-            <div className={connected ? 'connection online' : 'connection'}>
-              {connectionStatus === 'connected'
-                ? 'Сервер подключен'
-                : connectionStatus === 'reconnecting'
-                  ? 'Переподключение...'
-                  : 'Подключение...'}
+            <div className={connected ? "connection online" : "connection"}>
+              {connectionStatus === "connected"
+                ? "Сервер подключен"
+                : connectionStatus === "reconnecting"
+                  ? "Переподключение..."
+                  : "Подключение..."}
             </div>
 
             {error && <div className="toast error">{error}</div>}
@@ -683,342 +755,460 @@ export function App() {
 
   return (
     <div
-      className={`game-page ${isMobileLayout ? 'mobile-layout' : 'desktop-layout'}`}
-      style={{ '--game-scale': isMobileLayout ? 1 : gameScale }}
+      className={`game-page ${isMobileLayout ? "mobile-layout" : "desktop-layout"}`}
+      style={{ "--game-scale": isMobileLayout ? 1 : gameScale }}
     >
       <div className="game-frame">
         <main className="game-screen game-scale">
-      <header className="topbar">
-        <div className="room-chip">
-          <span>Комната</span>
-          <b>{game.roomId}</b>
-        </div>
-
-        <div className={`top-actions ${game.status === 'lobby' ? 'lobby-actions' : ''}`}>
-          <div className="side-room-info">
-            <span>{game.status === 'lobby' ? 'Комната' : 'Режим'}</span>
-            <b>{game.status === 'lobby' ? game.roomId : modeName(game.mode)}</b>
-          </div>
-          {game.status === 'lobby' && <span className="mode-chip">{modeName(game.mode)}</span>}
-          <button className="ghost-button" onClick={copyInvite}>
-            {inviteCopied ? 'Скопировано' : 'Пригласить'}
-          </button>
-          <button className="ghost-button leave-button" onClick={leaveRoom}>
-            Выйти
-          </button>
-          {isHost && game.status === 'round_finished' && (
-            <button className="solid-button" disabled={!connected || remainingPlayerCount < 2} onClick={() => send('nextRound')}>
-              Следующий кон
-            </button>
-          )}
-          {isHost && game.status === 'finished' && game.mode !== 'pogoni' && (
-            <button className="solid-button" disabled={!connected || remainingPlayerCount < minimumPlayers} onClick={() => send('restartGame')}>
-              Играть заново
-            </button>
-          )}
-        </div>
-      </header>
-
-      {game.status === 'lobby' && (
-        <aside className={`waiting-sidebar ${game.players.length >= 10 ? 'compact' : ''}`}>
-          <div className="waiting-sidebar-title">
-            <span>Игроки</span>
-            <b>{game.players.length}/11</b>
-          </div>
-
-          <div className="waiting-list">
-            {game.players.map(player => (
-              <div
-                className={`waiting-player ${player.id === user.id ? 'me' : ''}`}
-                key={player.id}
-              >
-                <div className="avatar">{player.name?.[0] || '?'}</div>
-                <div>
-                  <b>{displayName(player.name)}</b>
-                  <span>{player.id === game.hostPlayerId ? 'Хозяин комнаты' : player.isBot ? 'Сложный бот' : 'Игрок'}</span>
-                </div>
-                {isHost && player.id !== user.id ? (
-                  <button
-                    type="button"
-                    className="kick-player-button"
-                    aria-label={`Удалить игрока ${player.name}`}
-                    title="Удалить игрока"
-                    onClick={() => setKickTarget({ id: player.id, name: player.name })}
-                  >
-                    &times;
-                  </button>
-                ) : player.id === user.id ? <em>Вы</em> : null}
-              </div>
-            ))}
-          </div>
-        </aside>
-      )}
-
-      {game.status === 'lobby' ? (
-        <section className="waiting-room">
-          <div className="waiting-panel">
-            <div className="waiting-kicker">{modeName(game.mode)}</div>
-            <h2>Комната готовится</h2>
-            <p>
-              Игроки заходят по ссылке приглашения. Начать игру сможет хозяин комнаты.
-            </p>
-
-            <div className="waiting-code">
-              <span>Код комнаты</span>
+          <header className="topbar">
+            <div className="room-chip">
+              <span>Комната</span>
               <b>{game.roomId}</b>
             </div>
 
-            <div className="waiting-list">
-              {game.players.map(player => (
-                <div
-                  className={`waiting-player ${player.id === user.id ? 'me' : ''}`}
-                  key={player.id}
-                >
-                  <div className="avatar">{player.name?.[0] || '?'}</div>
-                  <div>
-                    <b>{displayName(player.name)}</b>
-                    <span>{player.id === game.hostPlayerId ? 'Хозяин комнаты' : player.isBot ? 'Сложный бот' : 'Игрок'}</span>
-                  </div>
-                  {isHost && player.id !== user.id ? (
-                    <button
-                      type="button"
-                      className="kick-player-button"
-                      aria-label={`Удалить игрока ${player.name}`}
-                      title="Удалить игрока"
-                      onClick={() => setKickTarget({ id: player.id, name: player.name })}
-                    >
-                      &times;
-                    </button>
-                  ) : player.id === user.id ? <em>Вы</em> : null}
-                </div>
-              ))}
-            </div>
-
-            <div className={`waiting-actions ${isHost ? 'host-actions' : ''}`}>
-              <button className="ghost-button" onClick={copyInvite}>
-                {inviteCopied ? 'Ссылка скопирована' : 'Пригласить'}
-              </button>
-              {isHost && (
-                <button
-                  className="ghost-button"
-                  disabled={!connected || game.players.length >= 11}
-                  onClick={() => send('addBot')}
-                >
-                  Добавить бота
-                </button>
-              )}
-              {isHost ? (
-                <button
-                  className="solid-button start-game-button"
-                  disabled={!connected || !canStartGame}
-                  onClick={() => send('startGame')}
-                >
-                  Начать игру
-                </button>
-              ) : (
-                <span className="host-wait">Ждем хозяина</span>
-              )}
-            </div>
-
-            {isHost && !canStartGame && (
-              <div className="waiting-note">
-                {missingPlayers === 1 ? 'Нужен еще один игрок' : `Нужно еще ${missingPlayers} игрока`}
+            <div
+              className={`top-actions ${game.status === "lobby" ? "lobby-actions" : ""}`}
+            >
+              <div className="side-room-info">
+                <span>{game.status === "lobby" ? "Комната" : "Режим"}</span>
+                <b>
+                  {game.status === "lobby" ? game.roomId : modeName(game.mode)}
+                </b>
               </div>
-            )}
-          </div>
-        </section>
-      ) : (
-        <>
-      <section className={`table-shell opponent-layout-${clockwiseOpponents.length}`}>
-        <div className={`opponents opponents-${clockwiseOpponents.length}`}>
-          {clockwiseOpponents.map((p, index) => (
-            <PlayerBadge
-              key={p.id}
-              player={p}
-              game={game}
-              position={index}
-            />
-          ))}
-        </div>
+              {game.status === "lobby" && (
+                <span className="mode-chip">{modeName(game.mode)}</span>
+              )}
+              <button className="ghost-button" onClick={copyInvite}>
+                {inviteCopied ? "Скопировано" : "Пригласить"}
+              </button>
+              <button className="ghost-button leave-button" onClick={leaveRoom}>
+                Выйти
+              </button>
+              {isHost && game.status === "round_finished" && (
+                <button
+                  className="solid-button"
+                  disabled={!connected || remainingPlayerCount < 2}
+                  onClick={() => send("nextRound")}
+                >
+                  Следующий кон
+                </button>
+              )}
+              {isHost &&
+                game.status === "finished" &&
+                game.mode !== "pogoni" && (
+                  <button
+                    className="solid-button"
+                    disabled={
+                      !connected || remainingPlayerCount < minimumPlayers
+                    }
+                    onClick={() => send("restartGame")}
+                  >
+                    Играть заново
+                  </button>
+                )}
+            </div>
+          </header>
 
-        <div className={isMyTurn ? 'turn-pill your-turn' : 'turn-pill'}>
-          {lastPlayedPlayer ? (
-            <>
-              Ходил: <b>{displayNameWithLimit(lastPlayedPlayer.name, isMobileLayout ? 5 : MAX_DISPLAY_NAME_LENGTH)}</b>. Ходит: <b>{displayNameWithLimit(currentPlayer?.name, isMobileLayout ? 5 : MAX_DISPLAY_NAME_LENGTH)}</b>
-            </>
-          ) : (
-            <>Ходит: <b>{displayNameWithLimit(currentPlayer?.name, isMobileLayout ? 5 : MAX_DISPLAY_NAME_LENGTH)}</b></>
-          )}
-        </div>
+          {game.status === "lobby" && (
+            <aside
+              className={`waiting-sidebar ${game.players.length >= 10 ? "compact" : ""}`}
+            >
+              <div className="waiting-sidebar-title">
+                <span>Игроки</span>
+                <b>{game.players.length}/11</b>
+              </div>
 
-        <div className={`table-cards ${game.table?.cards?.length > 5 ? 'multi-row' : ''}`}>
-          {game.table?.cards?.length ? (
-            splitTableRows(game.table.cards, !isMobileLayout).map((row, rowIndex) => (
-              <div className="table-card-row" key={rowIndex}>
-                {row.map((card, i) => (
-                  <Card
-                    key={card.id}
-                    card={card}
-                    table
-                    tableCompact={game.table.cards.length > 5}
-                    index={i}
-                  />
+              <div className="waiting-list">
+                {game.players.map((player) => (
+                  <div
+                    className={`waiting-player ${player.id === user.id ? "me" : ""}`}
+                    key={player.id}
+                  >
+                    <div className="avatar">{player.name?.[0] || "?"}</div>
+                    <div>
+                      <b>{displayName(player.name)}</b>
+                      <span>
+                        {player.id === game.hostPlayerId
+                          ? "Хозяин комнаты"
+                          : player.isBot
+                            ? "Сложный бот"
+                            : "Игрок"}
+                      </span>
+                    </div>
+                    {isHost && player.id !== user.id ? (
+                      <button
+                        type="button"
+                        className="kick-player-button"
+                        aria-label={`Удалить игрока ${player.name}`}
+                        title="Удалить игрока"
+                        onClick={() =>
+                          setKickTarget({ id: player.id, name: player.name })
+                        }
+                      >
+                        &times;
+                      </button>
+                    ) : player.id === user.id ? (
+                      <em>Вы</em>
+                    ) : null}
+                  </div>
                 ))}
               </div>
-            ))
-          ) : (
-            <div className="empty-table">Стол пустой</div>
+            </aside>
           )}
-        </div>
 
-        {game.table?.combo && (
-          <div className="combo-pill">{comboText(game.table.combo, game.table.cards)}</div>
-        )}
+          {game.status === "lobby" ? (
+            <section className="waiting-room">
+              <div className="waiting-panel">
+                <div className="waiting-kicker">{modeName(game.mode)}</div>
+                <h2>Комната готовится</h2>
+                <p>
+                  Игроки заходят по ссылке приглашения. Начать игру сможет
+                  хозяин комнаты.
+                </p>
 
-        {error && !isConnectionMessage(error) && (
-          <div className="toast error table-error" role="status">
-            {error}
-          </div>
-        )}
-      </section>
-      <section className={`my-zone ${game.status === 'finished' ? 'finished' : ''}`}>
-        {game.status === 'finished' ? (
-          <div className="result-card">
-            <h2>Игра окончена</h2>
-            <p>{finishedGameText(game)}</p>
-          </div>
-        ) : (
-          <div className="hand-fan">
-            {splitHandRows(displayedHand).map((row, rowIndex) => (
-              <div className="hand-row" data-hand-row key={rowIndex}>
-                {row.map((card, index) => (
-                  card.placeholder ? (
+                <div className="waiting-code">
+                  <span>Код комнаты</span>
+                  <b>{game.roomId}</b>
+                </div>
+
+                <div className="waiting-list">
+                  {game.players.map((player) => (
                     <div
-                      className="playing-card card-placeholder"
-                      key={card.id}
+                      className={`waiting-player ${player.id === user.id ? "me" : ""}`}
+                      key={player.id}
+                    >
+                      <div className="avatar">{player.name?.[0] || "?"}</div>
+                      <div>
+                        <b>{displayName(player.name)}</b>
+                        <span>
+                          {player.id === game.hostPlayerId
+                            ? "Хозяин комнаты"
+                            : player.isBot
+                              ? "Сложный бот"
+                              : "Игрок"}
+                        </span>
+                      </div>
+                      {isHost && player.id !== user.id ? (
+                        <button
+                          type="button"
+                          className="kick-player-button"
+                          aria-label={`Удалить игрока ${player.name}`}
+                          title="Удалить игрока"
+                          onClick={() =>
+                            setKickTarget({ id: player.id, name: player.name })
+                          }
+                        >
+                          &times;
+                        </button>
+                      ) : player.id === user.id ? (
+                        <em>Вы</em>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  className={`waiting-actions ${isHost ? "host-actions" : ""}`}
+                >
+                  <button className="ghost-button" onClick={copyInvite}>
+                    {inviteCopied ? "Ссылка скопирована" : "Пригласить"}
+                  </button>
+                  {isHost && (
+                    <button
+                      className="ghost-button"
+                      disabled={!connected || game.players.length >= 11}
+                      onClick={() => send("addBot")}
+                    >
+                      Добавить бота
+                    </button>
+                  )}
+                  {isHost ? (
+                    <button
+                      className="solid-button start-game-button"
+                      disabled={!connected || !canStartGame}
+                      onClick={() => send("startGame")}
+                    >
+                      Начать игру
+                    </button>
+                  ) : (
+                    <span className="host-wait">Ждем хозяина</span>
+                  )}
+                </div>
+
+                {isHost && !canStartGame && (
+                  <div className="waiting-note">
+                    {missingPlayers === 1
+                      ? "Нужен еще один игрок"
+                      : `Нужно еще ${missingPlayers} игрока`}
+                  </div>
+                )}
+              </div>
+            </section>
+          ) : (
+            <>
+              <section
+                className={`table-shell opponent-layout-${clockwiseOpponents.length}`}
+              >
+                <div
+                  className={`opponents opponents-${clockwiseOpponents.length}`}
+                >
+                  {clockwiseOpponents.map((p, index) => (
+                    <PlayerBadge
+                      key={p.id}
+                      player={p}
+                      game={game}
+                      position={index}
+                    />
+                  ))}
+                </div>
+
+                <div className={isMyTurn ? "turn-pill your-turn" : "turn-pill"}>
+                  {lastPlayedPlayer ? (
+                    <>
+                      Ходил:{" "}
+                      <b>
+                        {displayNameWithLimit(
+                          lastPlayedPlayer.name,
+                          isMobileLayout ? 5 : MAX_DISPLAY_NAME_LENGTH,
+                        )}
+                      </b>
+                      . Ходит:{" "}
+                      <b>
+                        {displayNameWithLimit(
+                          currentPlayer?.name,
+                          isMobileLayout ? 5 : MAX_DISPLAY_NAME_LENGTH,
+                        )}
+                      </b>
+                    </>
+                  ) : (
+                    <>
+                      Ходит:{" "}
+                      <b>
+                        {displayNameWithLimit(
+                          currentPlayer?.name,
+                          isMobileLayout ? 5 : MAX_DISPLAY_NAME_LENGTH,
+                        )}
+                      </b>
+                    </>
+                  )}
+                </div>
+
+                <div
+                  className={`table-cards ${game.table?.cards?.length > 5 ? "multi-row" : ""}`}
+                >
+                  {game.table?.cards?.length ? (
+                    splitTableRows(game.table.cards, !isMobileLayout).map(
+                      (row, rowIndex) => (
+                        <div className="table-card-row" key={rowIndex}>
+                          {row.map((card, i) => (
+                            <Card
+                              key={card.id}
+                              card={card}
+                              table
+                              tableCompact={game.table.cards.length > 5}
+                              index={i}
+                            />
+                          ))}
+                        </div>
+                      ),
+                    )
+                  ) : (
+                    <div className="empty-table">Стол пустой</div>
+                  )}
+                </div>
+
+                {game.table?.combo && (
+                  <div className="combo-pill">
+                    {comboText(game.table.combo, game.table.cards)}
+                  </div>
+                )}
+
+                {error && !isConnectionMessage(error) && (
+                  <div className="toast error table-error" role="status">
+                    {error}
+                  </div>
+                )}
+              </section>
+              <section
+                className={`my-zone ${game.status === "finished" ? "finished" : ""}`}
+              >
+                {game.status === "finished" ? (
+                  <div className="result-card">
+                    <h2>Игра окончена</h2>
+                    <p>{finishedGameText(game)}</p>
+                  </div>
+                ) : (
+                  <div className="hand-fan">
+                    {splitHandRows(displayedHand).map((row, rowIndex) => (
+                      <div className="hand-row" data-hand-row key={rowIndex}>
+                        {row.map((card, index) =>
+                          card.placeholder ? (
+                            <div
+                              className="playing-card card-placeholder"
+                              key={card.id}
+                              style={{
+                                "--card-transform": `translateX(${(index - (row.length - 1) / 2) * -7}px) rotate(0deg)`,
+                              }}
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <Card
+                              key={card.id}
+                              card={card}
+                              selected={selected.includes(card.id)}
+                              onClick={() => toggle(card.id)}
+                              dragNeighbor={dragNeighborIds.has(card.id)}
+                              onPointerDown={(event) =>
+                                startPointerDrag(event, card.id)
+                              }
+                              handCard
+                              index={index}
+                              total={row.length}
+                            />
+                          ),
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {draggedCard &&
+                  dragPosition &&
+                  createPortal(
+                    <div
+                      className="card-drag-preview"
                       style={{
-                        '--card-transform': `translateX(${(index - (row.length - 1) / 2) * -7}px) rotate(0deg)`,
+                        left: dragPosition.x,
+                        top: dragPosition.y,
+                        width: dragPosition.width,
+                        height: dragPosition.height,
                       }}
                       aria-hidden="true"
-                    />
-                  ) : (
-                    <Card
-                      key={card.id}
-                      card={card}
-                      selected={selected.includes(card.id)}
-                      onClick={() => toggle(card.id)}
-                      dragNeighbor={dragNeighborIds.has(card.id)}
-                      onPointerDown={event => startPointerDrag(event, card.id)}
-                      handCard
-                      index={index}
-                      total={row.length}
-                    />
-                  )
-                ))}
+                    >
+                      <Card card={draggedCard} dragging />
+                    </div>,
+                    document.body,
+                  )}
+              </section>
+
+              <div className="me-badge">
+                <span>{displayName(me?.name || name)}</span>
+                <small>Количество карт: {me?.handCount ?? 0} карт</small>
+                {game.mode === "pogoni" && (
+                  <small>Погон: {me?.pogonRank}</small>
+                )}
               </div>
-            ))}
-          </div>
-        )}
-        {draggedCard && dragPosition && createPortal(
-          <div
-            className="card-drag-preview"
-            style={{
-              left: dragPosition.x,
-              top: dragPosition.y,
-              width: dragPosition.width,
-              height: dragPosition.height,
-            }}
-            aria-hidden="true"
-          >
-            <Card card={draggedCard} dragging />
-          </div>,
-          document.body
-        )}
-      </section>
 
-      <div className="me-badge">
-        <span>{displayName(me?.name || name)}</span>
-        <small>Количество карт: {me?.handCount ?? 0} карт</small>
-        {game.mode === 'pogoni' && <small>Погон: {me?.pogonRank}</small>}
-      </div>
+              <div className="action-bar">
+                <button
+                  className="play-button"
+                  disabled={!connected || !isMyTurn || selected.length === 0}
+                  onClick={play}
+                >
+                  Походить{selected.length ? ` (${selected.length})` : ""}
+                </button>
+                <button
+                  className="pass-button"
+                  disabled={!connected || !isMyTurn || !game.table}
+                  onClick={() => send("pass")}
+                >
+                  Пас
+                </button>
+              </div>
 
-        <div className="action-bar">
-          <button
-            className="play-button"
-            disabled={!connected || !isMyTurn || selected.length === 0}
-            onClick={play}
-          >
-            Походить{selected.length ? ` (${selected.length})` : ''}
-          </button>
-          <button
-            className="pass-button"
-            disabled={!connected || !isMyTurn || !game.table}
-            onClick={() => send('pass')}
-          >
-            Пас
-          </button>
-        </div>
+              <div
+                className={`hint ${connectionHint ? "connection-warning" : isMyTurn && !waitingForHost ? "your-turn" : ""}`}
+              >
+                {connectionHint ||
+                  (waitingForHost
+                    ? "Ждем хозяина"
+                    : isMyTurn
+                      ? "Ваш ход"
+                      : "Ждем ход другого игрока")}
+              </div>
+            </>
+          )}
 
-        <div className={`hint ${connectionHint ? 'connection-warning' : isMyTurn && !waitingForHost ? 'your-turn' : ''}`}>
-          {connectionHint || (waitingForHost ? 'Ждем хозяина' : isMyTurn ? 'Ваш ход' : 'Ждем ход другого игрока')}
-        </div>
-        </>
-      )}
-
-      {error && game.status === 'lobby' && (
-        <div className={`toast error floating ${game.status === 'finished' ? 'finished-toast' : ''}`}>
-          {error}
-        </div>
-      )}
-
-      {leaveConfirmOpen && (
-        <div className="leave-confirm-backdrop" role="presentation" onClick={() => setLeaveConfirmOpen(false)}>
-          <section
-            className="leave-confirm-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="leave-confirm-title"
-            onClick={event => event.stopPropagation()}
-          >
-            <h2 id="leave-confirm-title">Выйти из игры?</h2>
-            <p>
-              Вы покинете активную игру и больше не сможете вернуться в эту комнату.
-            </p>
-            <div className="leave-confirm-actions">
-              <button type="button" className="ghost-button" onClick={() => setLeaveConfirmOpen(false)}>
-                Остаться
-              </button>
-              <button type="button" className="leave-confirm-button" onClick={confirmLeaveRoom}>
-                Выйти из игры
-              </button>
+          {error && game.status === "lobby" && (
+            <div
+              className={`toast error floating ${game.status === "finished" ? "finished-toast" : ""}`}
+            >
+              {error}
             </div>
-          </section>
-        </div>
-      )}
+          )}
 
-      {kickTarget && (
-        <div className="leave-confirm-backdrop" role="presentation" onClick={() => setKickTarget(null)}>
-          <section
-            className="leave-confirm-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="kick-confirm-title"
-            onClick={event => event.stopPropagation()}
-          >
-            <h2 id="kick-confirm-title">Удалить игрока?</h2>
-            <p>Игрок «{kickTarget.name}» будет удалён из комнаты.</p>
-            <div className="leave-confirm-actions">
-              <button type="button" className="ghost-button" onClick={() => setKickTarget(null)}>
-                Отмена
-              </button>
-              <button type="button" className="leave-confirm-button" onClick={confirmKickPlayer}>
-                Удалить
-              </button>
+          {leaveConfirmOpen && (
+            <div
+              className="leave-confirm-backdrop"
+              role="presentation"
+              onClick={() => setLeaveConfirmOpen(false)}
+            >
+              <section
+                className="leave-confirm-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="leave-confirm-title"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <h2 id="leave-confirm-title">Выйти из игры?</h2>
+                <p>
+                  Вы покинете активную игру и больше не сможете вернуться в эту
+                  комнату.
+                </p>
+                <div className="leave-confirm-actions">
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => setLeaveConfirmOpen(false)}
+                  >
+                    Остаться
+                  </button>
+                  <button
+                    type="button"
+                    className="leave-confirm-button"
+                    onClick={confirmLeaveRoom}
+                  >
+                    Выйти из игры
+                  </button>
+                </div>
+              </section>
             </div>
-          </section>
-        </div>
-      )}
-    </main>
+          )}
+
+          {kickTarget && (
+            <div
+              className="leave-confirm-backdrop"
+              role="presentation"
+              onClick={() => setKickTarget(null)}
+            >
+              <section
+                className="leave-confirm-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="kick-confirm-title"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <h2 id="kick-confirm-title">Удалить игрока?</h2>
+                <p>Игрок «{kickTarget.name}» будет удалён из комнаты.</p>
+                <div className="leave-confirm-actions">
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => setKickTarget(null)}
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="button"
+                    className="leave-confirm-button"
+                    onClick={confirmKickPlayer}
+                  >
+                    Удалить
+                  </button>
+                </div>
+              </section>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );
@@ -1031,14 +1221,18 @@ function PlayerBadge({ player, game, position }) {
   const count = player.handCount ?? 0;
 
   return (
-    <div className={`seat seat-${position} ${isTurn ? 'turn' : ''} ${eliminated ? 'eliminated' : ''} ${leaving ? 'leaving' : ''}`}>
+    <div
+      className={`seat seat-${position} ${isTurn ? "turn" : ""} ${eliminated ? "eliminated" : ""} ${leaving ? "leaving" : ""}`}
+    >
       <div className="seat-info">
-        <div className="avatar">{player.name?.[0] || '?'}</div>
+        <div className="avatar">{player.name?.[0] || "?"}</div>
 
         <div>
           <b>{displayName(player.name)}</b>
-          <span>{leaving ? 'вышел' : eliminated ? 'вылетел' : `${count} карт`}</span>
-          {game.mode === 'pogoni' && <small>Погон: {player.pogonRank}</small>}
+          <span>
+            {leaving ? "вышел" : eliminated ? "вылетел" : `${count} карт`}
+          </span>
+          {game.mode === "pogoni" && <small>Погон: {player.pogonRank}</small>}
         </div>
       </div>
     </div>
@@ -1046,15 +1240,13 @@ function PlayerBadge({ player, game, position }) {
 }
 
 function getClockwiseOpponents(players = [], viewerId) {
-  const viewerIndex = players.findIndex(p => p.id === viewerId);
+  const viewerIndex = players.findIndex((p) => p.id === viewerId);
 
   if (viewerIndex < 0) {
-    return players.filter(p => p.id !== viewerId);
+    return players.filter((p) => p.id !== viewerId);
   }
 
-  return players
-    .slice(viewerIndex + 1)
-    .concat(players.slice(0, viewerIndex));
+  return players.slice(viewerIndex + 1).concat(players.slice(0, viewerIndex));
 }
 
 function splitHandRows(cards = []) {
@@ -1064,16 +1256,12 @@ function splitHandRows(cards = []) {
 
   const firstRowCount = Math.ceil(cards.length / 2);
 
-  return [
-    cards.slice(0, firstRowCount),
-    cards.slice(firstRowCount),
-  ];
+  return [cards.slice(0, firstRowCount), cards.slice(firstRowCount)];
 }
 
 function splitTableRows(cards = [], forceTwoRows = false) {
-  const cardsPerRow = forceTwoRows && cards.length > 10
-    ? Math.ceil(cards.length / 2)
-    : 5;
+  const cardsPerRow =
+    forceTwoRows && cards.length > 10 ? Math.ceil(cards.length / 2) : 5;
   const rows = [];
 
   for (let i = 0; i < cards.length; i += cardsPerRow) {
@@ -1096,18 +1284,19 @@ function Card({
   index = 0,
   total = 1,
 }) {
-  const red = card.suit === 'H' || card.suit === 'D' || card.rank === 'RED_JOKER';
+  const red =
+    card.suit === "H" || card.suit === "D" || card.rank === "RED_JOKER";
   const label = cardLabel(card);
 
   const style = {
-    '--card-transform': table
-      ? 'rotate(0deg)'
+    "--card-transform": table
+      ? "rotate(0deg)"
       : `translateX(${(index - (total - 1) / 2) * -7}px) rotate(0deg)`,
   };
 
   return (
     <button
-      className={`playing-card ${red ? 'red' : ''} ${selected ? 'selected' : ''} ${table ? 'table-card' : ''} ${tableCompact ? 'compact' : ''} ${dragging ? 'dragging' : ''} ${dragNeighbor ? 'drag-neighbor' : ''}`}
+      className={`playing-card ${red ? "red" : ""} ${selected ? "selected" : ""} ${table ? "table-card" : ""} ${tableCompact ? "compact" : ""} ${dragging ? "dragging" : ""} ${dragNeighbor ? "drag-neighbor" : ""}`}
       onClick={onClick}
       onPointerDown={onPointerDown}
       data-hand-card-id={handCard ? card.id : undefined}
@@ -1124,35 +1313,35 @@ function Card({
 }
 
 function cardLabel(card) {
-  if (card.rank === 'BLACK_JOKER') return 'Joker ♠';
-  if (card.rank === 'RED_JOKER') return 'Joker ♥';
-  if (card.rank === 'DVK') return 'DVK';
+  if (card.rank === "BLACK_JOKER") return "Joker ♠";
+  if (card.rank === "RED_JOKER") return "Joker ♥";
+  if (card.rank === "DVK") return "DVK";
 
   return `${card.rank}${suit(card.suit)}`;
 }
 
 function cardImage(card) {
-  if (card.rank === 'BLACK_JOKER') return 'BLACK_JOKER.png';
-  if (card.rank === 'RED_JOKER') return 'RED_JOKER.png';
-  if (card.rank === 'DVK') return 'DVK.png';
+  if (card.rank === "BLACK_JOKER") return "BLACK_JOKER.png";
+  if (card.rank === "RED_JOKER") return "RED_JOKER.png";
+  if (card.rank === "DVK") return "DVK.png";
 
   return `${card.rank}${card.suit}.png`;
 }
 
 function suit(s) {
-  return { S: '♠', H: '♥', D: '♦', C: '♣' }[s] || '';
+  return { S: "♠", H: "♥", D: "♦", C: "♣" }[s] || "";
 }
 
 function comboText(c, cards = []) {
-  if (!c) return '';
+  if (!c) return "";
 
   const map = {
-    single: 'одна карта',
-    pair: 'двойник',
-    triple: 'три одинаковых',
-    quad: 'четыре одинаковых',
-    straight: 'катарик',
-    doubleStraight: 'бомба',
+    single: "одна карта",
+    pair: "двойник",
+    triple: "три одинаковых",
+    quad: "четыре одинаковых",
+    straight: "катарик",
+    doubleStraight: "бомба",
   };
 
   const name = map[c.type] || c.type;
@@ -1162,58 +1351,62 @@ function comboText(c, cards = []) {
 }
 
 function comboDetail(c, cards) {
-  if (c.type === 'single') {
+  if (c.type === "single") {
     return cardRankText(cards[0]) || rankFromValue(c.high);
   }
 
-  if (['pair', 'triple', 'quad'].includes(c.type)) {
+  if (["pair", "triple", "quad"].includes(c.type)) {
     return rankFromValue(c.high);
   }
 
-  if (['straight', 'doubleStraight'].includes(c.type)) {
+  if (["straight", "doubleStraight"].includes(c.type)) {
     const from = rankFromValue(c.high - c.length + 1);
     const to = rankFromValue(c.high);
-    return from && to ? `от ${from} до ${to}` : '';
+    return from && to ? `от ${from} до ${to}` : "";
   }
 
-  return '';
+  return "";
 }
 
 function cardRankText(card) {
-  if (!card) return '';
-  if (card.rank === 'BLACK_JOKER') return 'черный джокер';
-  if (card.rank === 'RED_JOKER') return 'красный джокер';
-  if (card.rank === 'DVK') return 'ДВК';
+  if (!card) return "";
+  if (card.rank === "BLACK_JOKER") return "черный джокер";
+  if (card.rank === "RED_JOKER") return "красный джокер";
+  if (card.rank === "DVK") return "ДВК";
   return card.rank;
 }
 
 function rankFromValue(value) {
   const ranks = {
-    1: '4',
-    2: '5',
-    3: '6',
-    4: '7',
-    5: '8',
-    6: '9',
-    7: '10',
-    8: 'J',
-    9: 'Q',
-    10: 'K',
-    11: 'A',
-    12: '2',
-    13: '3',
-    14: 'черный джокер',
-    15: 'красный джокер',
+    1: "4",
+    2: "5",
+    3: "6",
+    4: "7",
+    5: "8",
+    6: "9",
+    7: "10",
+    8: "J",
+    9: "Q",
+    10: "K",
+    11: "A",
+    12: "2",
+    13: "3",
+    14: "черный джокер",
+    15: "красный джокер",
   };
 
-  return ranks[value] || '';
+  return ranks[value] || "";
 }
 
 function finishedGameText(game) {
-  const winnerName = game.players.find(player => player.id === game.roundWinnerId)?.name;
-  const loserName = game.players.find(player => player.id === game.loserId)?.name;
+  const winnerName = game.players.find(
+    (player) => player.id === game.roundWinnerId,
+  )?.name;
+  const loserName = game.players.find(
+    (player) => player.id === game.loserId,
+  )?.name;
 
-  if (game.mode !== 'classic' || !loserName) {
+  if (game.mode !== "classic" || !loserName) {
     return `Победил: ${displayName(winnerName)}`;
   }
 
@@ -1221,11 +1414,11 @@ function finishedGameText(game) {
 }
 
 function modeName(mode) {
-  if (mode === 'elimination') return 'На вылет';
-  if (mode === 'pogoni') return 'Погоны';
-  return 'Обычный';
+  if (mode === "elimination") return "На вылет";
+  if (mode === "pogoni") return "Погоны";
+  return "Обычный";
 }
 
-if (import.meta.env.MODE !== 'test') {
-  createRoot(document.getElementById('root')).render(<App />);
+if (import.meta.env.MODE !== "test") {
+  createRoot(document.getElementById("root")).render(<App />);
 }

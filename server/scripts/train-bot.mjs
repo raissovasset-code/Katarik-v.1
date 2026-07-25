@@ -1,38 +1,43 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { evaluateWeights, createSeededRandom } from '../src/bot-simulator.js';
-import { DEFAULT_BOT_WEIGHTS } from '../src/bot-strategy.js';
+import { evaluateWeights, createSeededRandom } from "../src/bot-simulator.js";
+import { DEFAULT_BOT_WEIGHTS } from "../src/bot-strategy.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function argument(name, fallback) {
-  const entry = process.argv.find(value => value.startsWith(`--${name}=`));
+  const entry = process.argv.find((value) => value.startsWith(`--${name}=`));
   return entry ? entry.slice(name.length + 3) : fallback;
 }
 
 function positiveInteger(name, fallback) {
   const value = Number(argument(name, fallback));
-  if (!Number.isInteger(value) || value <= 0) throw new Error(`--${name} must be positive`);
+  if (!Number.isInteger(value) || value <= 0)
+    throw new Error(`--${name} must be positive`);
   return value;
 }
 
 function mutate(weights, random, scale) {
-  return Object.fromEntries(Object.entries(weights).map(([key, value]) => {
-    const magnitude = Math.max(Math.abs(value) * scale, scale * 10);
-    return [key, Math.round((value + (random() * 2 - 1) * magnitude) * 100) / 100];
-  }));
+  return Object.fromEntries(
+    Object.entries(weights).map(([key, value]) => {
+      const magnitude = Math.max(Math.abs(value) * scale, scale * 10);
+      return [
+        key,
+        Math.round((value + (random() * 2 - 1) * magnitude) * 100) / 100,
+      ];
+    }),
+  );
 }
 
-const games = positiveInteger('games', 120);
-const generations = positiveInteger('generations', 6);
-const candidates = positiveInteger('candidates', 6);
-const seed = positiveInteger('seed', 20260719);
-const output = path.resolve(argument(
-  'output',
-  path.join(__dirname, '../src/trained-bot-weights.json'),
-));
+const games = positiveInteger("games", 120);
+const generations = positiveInteger("generations", 6);
+const candidates = positiveInteger("candidates", 6);
+const seed = positiveInteger("seed", 20260719);
+const output = path.resolve(
+  argument("output", path.join(__dirname, "../src/trained-bot-weights.json")),
+);
 const random = createSeededRandom(seed);
 
 let champion = { ...DEFAULT_BOT_WEIGHTS };
@@ -50,7 +55,8 @@ for (let generation = 1; generation <= generations; generation += 1) {
       games,
       seed: seed + generation * 100_000 + index * games,
     });
-    if (!best || result.winRate > best.result.winRate) best = { weights: candidate, result };
+    if (!best || result.winRate > best.result.winRate)
+      best = { weights: candidate, result };
   }
 
   const validation = evaluateWeights({
@@ -65,7 +71,9 @@ for (let generation = 1; generation <= generations; generation += 1) {
     accepted += 1;
   }
   history.push({ generation, improved, training: best.result, validation });
-  console.log(JSON.stringify({ generation, improved, training: best.result, validation }));
+  console.log(
+    JSON.stringify({ generation, improved, training: best.result, validation }),
+  );
 }
 
 const verification = evaluateWeights({
@@ -88,5 +96,5 @@ const artifact = {
   history,
 };
 
-fs.writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`, 'utf8');
+fs.writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
 console.log(JSON.stringify({ output, verification }));

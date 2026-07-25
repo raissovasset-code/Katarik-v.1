@@ -9,6 +9,9 @@
     "cap:sync": "npm run mobile:build && npx cap sync android",
     "android:check": "node scripts/check-android-env.mjs",
     "android:open": "npx cap open android",
+    "lint": "eslint client server scripts *.config.js",
+    "format": "prettier --write \"client/**/*.{js,jsx,json,css,html}\" \"server/**/*.{js,mjs,json}\" \"scripts/**/*.mjs\" \"*.{js,json}\"",
+    "format:check": "prettier --check \"client/**/*.{js,jsx,json,css,html}\" \"server/**/*.{js,mjs,json}\" \"scripts/**/*.mjs\" \"*.{js,json}\"",
     "start": "npm start --prefix server",
     "test": "npm test --prefix server",
     "test:e2e": "playwright test",
@@ -24,6 +27,12 @@
     "@capacitor/core": "^8.4.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.1"
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.61.1",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.6"
   }
 }

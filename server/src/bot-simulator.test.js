@@ -1,10 +1,14 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { DEFAULT_BOT_WEIGHTS } from './bot-strategy.js';
-import { createSeededRandom, evaluateWeights, simulateBotGame } from './bot-simulator.js';
+import { DEFAULT_BOT_WEIGHTS } from "./bot-strategy.js";
+import {
+  createSeededRandom,
+  evaluateWeights,
+  simulateBotGame,
+} from "./bot-simulator.js";
 
-test('seeded random produces a reproducible sequence', () => {
+test("seeded random produces a reproducible sequence", () => {
   const first = createSeededRandom(42);
   const second = createSeededRandom(42);
   assert.deepEqual(
@@ -13,14 +17,17 @@ test('seeded random produces a reproducible sequence', () => {
   );
 });
 
-test('the same simulated classic game is reproducible', () => {
-  const options = { seed: 77, playerWeights: [DEFAULT_BOT_WEIGHTS, DEFAULT_BOT_WEIGHTS] };
+test("the same simulated classic game is reproducible", () => {
+  const options = {
+    seed: 77,
+    playerWeights: [DEFAULT_BOT_WEIGHTS, DEFAULT_BOT_WEIGHTS],
+  };
   assert.deepEqual(simulateBotGame(options), simulateBotGame(options));
 });
 
-test('simulator completes all game modes', () => {
-  for (const mode of ['classic', 'elimination', 'pogoni']) {
-    const count = mode === 'elimination' ? 3 : 2;
+test("simulator completes all game modes", () => {
+  for (const mode of ["classic", "elimination", "pogoni"]) {
+    const count = mode === "elimination" ? 3 : 2;
     const result = simulateBotGame({
       mode,
       seed: 19,
@@ -31,7 +38,7 @@ test('simulator completes all game modes', () => {
   }
 });
 
-test('weight evaluation alternates seats and reports every game', () => {
+test("weight evaluation alternates seats and reports every game", () => {
   const result = evaluateWeights({
     candidate: DEFAULT_BOT_WEIGHTS,
     baseline: DEFAULT_BOT_WEIGHTS,

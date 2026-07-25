@@ -4,10 +4,10 @@ export const RATE_LIMITS = Object.freeze({
   command: { limit: 120, windowMs: 60_000 },
 });
 export const MAX_RATE_LIMIT_WINDOW_MS = Math.max(
-  ...Object.values(RATE_LIMITS).map(policy => policy.windowMs),
+  ...Object.values(RATE_LIMITS).map((policy) => policy.windowMs),
 );
 
-const UNLIMITED_MESSAGE_TYPES = new Set(['ping']);
+const UNLIMITED_MESSAGE_TYPES = new Set(["ping"]);
 
 export class SlidingWindowRateLimiter {
   constructor() {
@@ -16,7 +16,9 @@ export class SlidingWindowRateLimiter {
 
   consume(key, policy, now = Date.now()) {
     const cutoff = now - policy.windowMs;
-    const recent = (this.buckets.get(key) || []).filter(timestamp => timestamp > cutoff);
+    const recent = (this.buckets.get(key) || []).filter(
+      (timestamp) => timestamp > cutoff,
+    );
 
     if (recent.length >= policy.limit) {
       this.buckets.set(key, recent);
@@ -38,47 +40,54 @@ export class SlidingWindowRateLimiter {
   sweep(maxAgeMs, now = Date.now()) {
     const cutoff = now - maxAgeMs;
     for (const [key, timestamps] of this.buckets.entries()) {
-      const recent = timestamps.filter(timestamp => timestamp > cutoff);
+      const recent = timestamps.filter((timestamp) => timestamp > cutoff);
       if (recent.length > 0) this.buckets.set(key, recent);
       else this.buckets.delete(key);
     }
   }
 }
 
-export function enforceMessageRateLimit(limiter, message, {
-  clientIp,
-  connectionId,
-  now = Date.now(),
-}) {
+export function enforceMessageRateLimit(
+  limiter,
+  message,
+  { clientIp, connectionId, now = Date.now() },
+) {
   if (UNLIMITED_MESSAGE_TYPES.has(message.type)) return;
 
   let key;
   let policy;
   let label;
 
-  if (message.type === 'createRoom') {
+  if (message.type === "createRoom") {
     key = `create:${clientIp}`;
     policy = RATE_LIMITS.createRoom;
-    label = 'создания комнат';
-  } else if (message.type === 'joinRoom') {
+    label = "создания комнат";
+  } else if (message.type === "joinRoom") {
     key = `join:${clientIp}`;
     policy = RATE_LIMITS.joinRoom;
-    label = 'входа в комнаты';
+    label = "входа в комнаты";
   } else {
     key = `command:${connectionId}`;
     policy = RATE_LIMITS.command;
-    label = 'игровых команд';
+    label = "игровых команд";
   }
 
   const result = limiter.consume(key, policy, now);
   if (!result.allowed) {
-    const retryAfterSeconds = Math.max(1, Math.ceil(result.retryAfterMs / 1000));
-    throw new Error(`Слишком много запросов ${label}. Повторите через ${retryAfterSeconds} сек.`);
+    const retryAfterSeconds = Math.max(
+      1,
+      Math.ceil(result.retryAfterMs / 1000),
+    );
+    throw new Error(
+      `Слишком много запросов ${label}. Повторите через ${retryAfterSeconds} сек.`,
+    );
   }
 }
 
 export function getClientIp(request) {
-  const forwarded = request.headers['x-forwarded-for'];
-  const firstForwarded = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(',')[0];
-  return firstForwarded?.trim() || request.socket.remoteAddress || 'unknown';
+  const forwarded = request.headers["x-forwarded-for"];
+  const firstForwarded = Array.isArray(forwarded)
+    ? forwarded[0]
+    : forwarded?.split(",")[0];
+  return firstForwarded?.trim() || request.socket.remoteAddress || "unknown";
 }

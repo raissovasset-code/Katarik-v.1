@@ -1,5 +1,5 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
 import {
   addPlayer,
@@ -12,42 +12,44 @@ import {
   removePlayer,
   restartGame,
   startGame,
-} from './game.js';
+} from "./game.js";
 
-function makeCard(id, rank, suit = 'S') {
-  return { id, rank, suit, type: 'normal' };
+function makeCard(id, rank, suit = "S") {
+  return { id, rank, suit, type: "normal" };
 }
 
 function makeDvk() {
-  return { id: 'DVK', rank: 'DVK', suit: null, type: 'wild' };
+  return { id: "DVK", rank: "DVK", suit: null, type: "wild" };
 }
 
 function makeJoker(id, rank) {
-  return { id, rank, suit: null, type: 'joker' };
+  return { id, rank, suit: null, type: "joker" };
 }
 
-function makeGame(mode = 'classic', playerIds = ['A', 'B', 'C']) {
-  const game = createGame('TEST', mode);
-  playerIds.forEach(id => addPlayer(game, { id, name: id }));
-  game.status = 'playing';
+function makeGame(mode = "classic", playerIds = ["A", "B", "C"]) {
+  const game = createGame("TEST", mode);
+  playerIds.forEach((id) => addPlayer(game, { id, name: id }));
+  game.status = "playing";
   game.currentPlayerId = playerIds[0];
   game.roundStarterId = playerIds[0];
   return game;
 }
 
 function player(game, playerId) {
-  return game.players.find(item => item.id === playerId);
+  return game.players.find((item) => item.id === playerId);
 }
 
 const PLAYER_COUNTS = [2, 3, 4, 5];
-const TEST_RANKS = ['4', '5', '6', '7', '8'];
+const TEST_RANKS = ["4", "5", "6", "7", "8"];
 
 function playerIds(count) {
-  return Array.from({ length: count }, (_, index) => String.fromCharCode(65 + index));
+  return Array.from({ length: count }, (_, index) =>
+    String.fromCharCode(65 + index),
+  );
 }
 
 function prepareSingleCardRound(game, activeIds) {
-  game.status = 'playing';
+  game.status = "playing";
   game.currentPlayerId = activeIds[0];
   game.roundStarterId = activeIds[0];
   game.lastPlayedPlayerId = null;
@@ -57,12 +59,18 @@ function prepareSingleCardRound(game, activeIds) {
   game.places = [];
   game.loserId = null;
 
-  game.players.forEach(item => {
+  game.players.forEach((item) => {
     const activeIndex = activeIds.indexOf(item.id);
     item.active = activeIndex !== -1;
-    item.hand = activeIndex === -1
-      ? []
-      : [makeCard(`${TEST_RANKS[activeIndex]}${item.id}`, TEST_RANKS[activeIndex])];
+    item.hand =
+      activeIndex === -1
+        ? []
+        : [
+            makeCard(
+              `${TEST_RANKS[activeIndex]}${item.id}`,
+              TEST_RANKS[activeIndex],
+            ),
+          ];
   });
 }
 
@@ -75,240 +83,273 @@ function playSingleCardRound(game, activeIds) {
   });
 }
 
-test('startGame creates a playable room state', () => {
-  const game = createGame('ROOM', 'pogoni');
-  addPlayer(game, { id: 'A', name: 'Aset' });
-  addPlayer(game, { id: 'B', name: 'Player' });
+test("startGame creates a playable room state", () => {
+  const game = createGame("ROOM", "pogoni");
+  addPlayer(game, { id: "A", name: "Aset" });
+  addPlayer(game, { id: "B", name: "Player" });
 
   startGame(game);
 
-  assert.equal(game.status, 'playing');
+  assert.equal(game.status, "playing");
   assert.ok(game.currentPlayerId);
   assert.equal(game.players.length, 2);
-  assert.ok(player(game, 'A').hand.length > 0);
-  assert.ok(player(game, 'B').hand.length > 0);
+  assert.ok(player(game, "A").hand.length > 0);
+  assert.ok(player(game, "B").hand.length > 0);
 });
 
-test('two-player rounds always deal 18 cards each and burn 19 cards', () => {
-  const game = createGame('ROOM', 'pogoni');
-  addPlayer(game, { id: 'A', name: 'A' });
-  addPlayer(game, { id: 'B', name: 'B' });
+test("two-player rounds always deal 18 cards each and burn 19 cards", () => {
+  const game = createGame("ROOM", "pogoni");
+  addPlayer(game, { id: "A", name: "A" });
+  addPlayer(game, { id: "B", name: "B" });
 
   startGame(game);
 
-  assert.deepEqual(game.players.map(item => item.hand.length), [18, 18]);
+  assert.deepEqual(
+    game.players.map((item) => item.hand.length),
+    [18, 18],
+  );
   assert.equal(game.burned.length, 19);
 
-  game.status = 'round_finished';
-  game.roundWinnerId = 'A';
+  game.status = "round_finished";
+  game.roundWinnerId = "A";
   nextRound(game);
 
-  assert.deepEqual(game.players.map(item => item.hand.length), [18, 18]);
+  assert.deepEqual(
+    game.players.map((item) => item.hand.length),
+    [18, 18],
+  );
   assert.equal(game.burned.length, 19);
 });
 
-test('elimination requires at least three players to start', () => {
-  const game = createGame('ROOM', 'elimination');
-  addPlayer(game, { id: 'A', name: 'A' });
-  addPlayer(game, { id: 'B', name: 'B' });
+test("elimination requires at least three players to start", () => {
+  const game = createGame("ROOM", "elimination");
+  addPlayer(game, { id: "A", name: "A" });
+  addPlayer(game, { id: "B", name: "B" });
 
   assert.throws(() => startGame(game), /3/);
 
-  addPlayer(game, { id: 'C', name: 'C' });
+  addPlayer(game, { id: "C", name: "C" });
   assert.doesNotThrow(() => startGame(game));
-  assert.equal(game.status, 'playing');
+  assert.equal(game.status, "playing");
 });
 
-test('elimination restart requires at least three remaining players', () => {
-  const game = makeGame('elimination', ['A', 'B']);
-  game.status = 'finished';
+test("elimination restart requires at least three remaining players", () => {
+  const game = makeGame("elimination", ["A", "B"]);
+  game.status = "finished";
 
   assert.throws(() => restartGame(game), /3/);
-  assert.equal(game.status, 'finished');
+  assert.equal(game.status, "finished");
 });
 
-test('deal extra cards rotates around the table each round', () => {
-  const game = createGame('ROOM', 'pogoni');
-  ['A', 'B', 'C', 'D'].forEach(id => addPlayer(game, { id, name: id }));
+test("deal extra cards rotates around the table each round", () => {
+  const game = createGame("ROOM", "pogoni");
+  ["A", "B", "C", "D"].forEach((id) => addPlayer(game, { id, name: id }));
 
   startGame(game);
 
-  assert.deepEqual(game.players.map(item => item.hand.length), [14, 14, 14, 13]);
+  assert.deepEqual(
+    game.players.map((item) => item.hand.length),
+    [14, 14, 14, 13],
+  );
 
-  game.status = 'round_finished';
-  game.roundWinnerId = 'A';
+  game.status = "round_finished";
+  game.roundWinnerId = "A";
   nextRound(game);
 
-  assert.deepEqual(game.players.map(item => item.hand.length), [13, 14, 14, 14]);
+  assert.deepEqual(
+    game.players.map((item) => item.hand.length),
+    [13, 14, 14, 14],
+  );
 
-  game.status = 'round_finished';
-  game.roundWinnerId = 'A';
+  game.status = "round_finished";
+  game.roundWinnerId = "A";
   nextRound(game);
 
-  assert.deepEqual(game.players.map(item => item.hand.length), [14, 13, 14, 14]);
+  assert.deepEqual(
+    game.players.map((item) => item.hand.length),
+    [14, 13, 14, 14],
+  );
 });
 
-test('players with the same requested name receive unique display names', () => {
-  const game = createGame('ROOM', 'classic');
-  addPlayer(game, { id: 'A', name: 'Асет' });
-  addPlayer(game, { id: 'B', name: 'Асет' });
-  addPlayer(game, { id: 'C', name: 'Асет' });
+test("players with the same requested name receive unique display names", () => {
+  const game = createGame("ROOM", "classic");
+  addPlayer(game, { id: "A", name: "Асет" });
+  addPlayer(game, { id: "B", name: "Асет" });
+  addPlayer(game, { id: "C", name: "Асет" });
 
-  assert.deepEqual(game.players.map(item => item.name), ['Асет', 'Асет 2', 'Асет 3']);
+  assert.deepEqual(
+    game.players.map((item) => item.name),
+    ["Асет", "Асет 2", "Асет 3"],
+  );
 });
 
-test('one card cannot be played twice in the same move', () => {
-  const game = makeGame('classic', ['A', 'B']);
-  player(game, 'A').hand = [makeCard('4S', '4')];
+test("one card cannot be played twice in the same move", () => {
+  const game = makeGame("classic", ["A", "B"]);
+  player(game, "A").hand = [makeCard("4S", "4")];
 
-  assert.throws(() => playCards(game, 'A', ['4S', '4S']));
+  assert.throws(() => playCards(game, "A", ["4S", "4S"]));
 });
 
-test('a move cannot leave DVK as the only card', () => {
-  const game = makeGame('classic', ['A', 'B']);
-  player(game, 'A').hand = [makeCard('4S', '4'), makeDvk()];
+test("a move cannot leave DVK as the only card", () => {
+  const game = makeGame("classic", ["A", "B"]);
+  player(game, "A").hand = [makeCard("4S", "4"), makeDvk()];
 
-  assert.throws(() => playCards(game, 'A', ['4S']), /ДВК/);
-  assert.deepEqual(player(game, 'A').hand.map(card => card.id), ['4S', 'DVK']);
+  assert.throws(() => playCards(game, "A", ["4S"]), /ДВК/);
+  assert.deepEqual(
+    player(game, "A").hand.map((card) => card.id),
+    ["4S", "DVK"],
+  );
   assert.equal(game.table, null);
-  assert.equal(game.currentPlayerId, 'A');
+  assert.equal(game.currentPlayerId, "A");
 });
 
-test('a move cannot leave DVK with only jokers', () => {
-  const game = makeGame('classic', ['A', 'B']);
-  player(game, 'A').hand = [
-    makeCard('4S', '4'),
+test("a move cannot leave DVK with only jokers", () => {
+  const game = makeGame("classic", ["A", "B"]);
+  player(game, "A").hand = [
+    makeCard("4S", "4"),
     makeDvk(),
-    makeJoker('RED_JOKER', 'RED_JOKER'),
-    makeJoker('BLACK_JOKER', 'BLACK_JOKER'),
+    makeJoker("RED_JOKER", "RED_JOKER"),
+    makeJoker("BLACK_JOKER", "BLACK_JOKER"),
   ];
 
-  assert.throws(() => playCards(game, 'A', ['4S']), /ДВК/);
-  assert.equal(player(game, 'A').hand.length, 4);
+  assert.throws(() => playCards(game, "A", ["4S"]), /ДВК/);
+  assert.equal(player(game, "A").hand.length, 4);
   assert.equal(game.table, null);
-  assert.equal(game.currentPlayerId, 'A');
+  assert.equal(game.currentPlayerId, "A");
 });
 
-test('DVK may remain when the hand still has a normal card', () => {
-  const game = makeGame('classic', ['A', 'B']);
-  player(game, 'A').hand = [
-    makeCard('4S', '4'),
-    makeCard('5S', '5'),
+test("DVK may remain when the hand still has a normal card", () => {
+  const game = makeGame("classic", ["A", "B"]);
+  player(game, "A").hand = [
+    makeCard("4S", "4"),
+    makeCard("5S", "5"),
     makeDvk(),
-    makeJoker('RED_JOKER', 'RED_JOKER'),
+    makeJoker("RED_JOKER", "RED_JOKER"),
   ];
 
-  playCards(game, 'A', ['4S']);
+  playCards(game, "A", ["4S"]);
 
-  assert.deepEqual(player(game, 'A').hand.map(card => card.id), ['5S', 'DVK', 'RED_JOKER']);
-  assert.equal(game.currentPlayerId, 'B');
+  assert.deepEqual(
+    player(game, "A").hand.map((card) => card.id),
+    ["5S", "DVK", "RED_JOKER"],
+  );
+  assert.equal(game.currentPlayerId, "B");
 });
 
-test('detects base combinations', () => {
-  assert.equal(detectBestCombination([makeCard('4S', '4')]).type, 'single');
+test("detects base combinations", () => {
+  assert.equal(detectBestCombination([makeCard("4S", "4")]).type, "single");
 
-  const pair = detectBestCombination([makeCard('5S', '5'), makeCard('5H', '5')]);
-  assert.equal(pair.type, 'pair');
+  const pair = detectBestCombination([
+    makeCard("5S", "5"),
+    makeCard("5H", "5"),
+  ]);
+  assert.equal(pair.type, "pair");
 
   const triple = detectBestCombination([
-    makeCard('6S', '6'),
-    makeCard('6H', '6'),
-    makeCard('6D', '6'),
+    makeCard("6S", "6"),
+    makeCard("6H", "6"),
+    makeCard("6D", "6"),
   ]);
-  assert.equal(triple.type, 'triple');
+  assert.equal(triple.type, "triple");
 
   const quad = detectBestCombination([
-    makeCard('7S', '7'),
-    makeCard('7H', '7'),
-    makeCard('7D', '7'),
-    makeCard('7C', '7'),
+    makeCard("7S", "7"),
+    makeCard("7H", "7"),
+    makeCard("7D", "7"),
+    makeCard("7C", "7"),
   ]);
-  assert.equal(quad.type, 'quad');
+  assert.equal(quad.type, "quad");
 });
 
-test('detects katarik and bomb combinations', () => {
+test("detects katarik and bomb combinations", () => {
   const straight = detectBestCombination([
-    makeCard('4S', '4'),
-    makeCard('5H', '5'),
-    makeCard('6D', '6'),
-    makeCard('7C', '7'),
-    makeCard('8S', '8'),
+    makeCard("4S", "4"),
+    makeCard("5H", "5"),
+    makeCard("6D", "6"),
+    makeCard("7C", "7"),
+    makeCard("8S", "8"),
   ]);
 
-  assert.equal(straight.type, 'straight');
+  assert.equal(straight.type, "straight");
   assert.equal(straight.length, 5);
 
   const doubleStraight = detectBestCombination([
-    makeCard('4S', '4'),
-    makeCard('4H', '4'),
-    makeCard('5S', '5'),
-    makeCard('5H', '5'),
-    makeCard('6S', '6'),
-    makeCard('6H', '6'),
+    makeCard("4S", "4"),
+    makeCard("4H", "4"),
+    makeCard("5S", "5"),
+    makeCard("5H", "5"),
+    makeCard("6S", "6"),
+    makeCard("6H", "6"),
   ]);
 
-  assert.equal(doubleStraight.type, 'doubleStraight');
+  assert.equal(doubleStraight.type, "doubleStraight");
   assert.equal(doubleStraight.length, 3);
 });
 
-test('DVK can complete regular groups and katarik', () => {
-  const pair = detectBestCombination([makeCard('9S', '9'), makeDvk()]);
-  assert.equal(pair.type, 'pair');
+test("DVK can complete regular groups and katarik", () => {
+  const pair = detectBestCombination([makeCard("9S", "9"), makeDvk()]);
+  assert.equal(pair.type, "pair");
 
   const straight = detectBestCombination([
-    makeCard('4S', '4'),
-    makeCard('5H', '5'),
+    makeCard("4S", "4"),
+    makeCard("5H", "5"),
     makeDvk(),
-    makeCard('7C', '7'),
-    makeCard('8S', '8'),
+    makeCard("7C", "7"),
+    makeCard("8S", "8"),
   ]);
 
-  assert.equal(straight.type, 'straight');
+  assert.equal(straight.type, "straight");
   assert.equal(straight.length, 5);
 });
 
-test('DVK extends an ambiguous katarik upward', () => {
+test("DVK extends an ambiguous katarik upward", () => {
   const withDvk = detectBestCombination([
-    makeCard('8S', '8'),
-    makeCard('9H', '9'),
-    makeCard('10D', '10'),
+    makeCard("8S", "8"),
+    makeCard("9H", "9"),
+    makeCard("10D", "10"),
     makeDvk(),
   ]);
   const throughJack = detectBestCombination([
-    makeCard('8S', '8'),
-    makeCard('9H', '9'),
-    makeCard('10D', '10'),
-    makeCard('JC', 'J'),
+    makeCard("8S", "8"),
+    makeCard("9H", "9"),
+    makeCard("10D", "10"),
+    makeCard("JC", "J"),
   ]);
 
-  assert.equal(withDvk.type, 'straight');
+  assert.equal(withDvk.type, "straight");
   assert.equal(withDvk.high, throughJack.high);
 });
 
-test('jokers are only single cards and cannot join groups', () => {
-  const redJoker = makeJoker('RED_JOKER', 'RED_JOKER');
+test("jokers are only single cards and cannot join groups", () => {
+  const redJoker = makeJoker("RED_JOKER", "RED_JOKER");
 
-  assert.equal(detectBestCombination([redJoker]).type, 'single');
-  assert.equal(detectBestCombination([redJoker, makeCard('AS', 'A')]), null);
+  assert.equal(detectBestCombination([redJoker]).type, "single");
+  assert.equal(detectBestCombination([redJoker, makeCard("AS", "A")]), null);
 });
 
-test('combination beating rules stay stable', () => {
-  const singleFive = detectBestCombination([makeCard('5S', '5')]);
-  const singleSix = detectBestCombination([makeCard('6S', '6')]);
-  const pairFive = detectBestCombination([makeCard('5S', '5'), makeCard('5H', '5')]);
-  const pairSix = detectBestCombination([makeCard('6S', '6'), makeCard('6H', '6')]);
+test("combination beating rules stay stable", () => {
+  const singleFive = detectBestCombination([makeCard("5S", "5")]);
+  const singleSix = detectBestCombination([makeCard("6S", "6")]);
+  const pairFive = detectBestCombination([
+    makeCard("5S", "5"),
+    makeCard("5H", "5"),
+  ]);
+  const pairSix = detectBestCombination([
+    makeCard("6S", "6"),
+    makeCard("6H", "6"),
+  ]);
   const tripleFour = detectBestCombination([
-    makeCard('4S', '4'),
-    makeCard('4H', '4'),
-    makeCard('4D', '4'),
+    makeCard("4S", "4"),
+    makeCard("4H", "4"),
+    makeCard("4D", "4"),
   ]);
   const quadFour = detectBestCombination([
-    makeCard('4S', '4'),
-    makeCard('4H', '4'),
-    makeCard('4D', '4'),
-    makeCard('4C', '4'),
+    makeCard("4S", "4"),
+    makeCard("4H", "4"),
+    makeCard("4D", "4"),
+    makeCard("4C", "4"),
   ]);
-  const redJoker = detectBestCombination([makeJoker('RED_JOKER', 'RED_JOKER')]);
+  const redJoker = detectBestCombination([makeJoker("RED_JOKER", "RED_JOKER")]);
 
   assert.equal(canBeat(singleFive, singleSix), true);
   assert.equal(canBeat(singleSix, singleFive), false);
@@ -319,36 +360,36 @@ test('combination beating rules stay stable', () => {
   assert.equal(canBeat(redJoker, quadFour), true);
 });
 
-test('turn moves clockwise after a valid move', () => {
-  const game = makeGame('classic', ['A', 'B', 'C']);
-  player(game, 'A').hand = [makeCard('4S', '4'), makeCard('9S', '9')];
-  player(game, 'B').hand = [makeCard('5S', '5')];
-  player(game, 'C').hand = [makeCard('6S', '6')];
+test("turn moves clockwise after a valid move", () => {
+  const game = makeGame("classic", ["A", "B", "C"]);
+  player(game, "A").hand = [makeCard("4S", "4"), makeCard("9S", "9")];
+  player(game, "B").hand = [makeCard("5S", "5")];
+  player(game, "C").hand = [makeCard("6S", "6")];
 
-  playCards(game, 'A', ['4S']);
+  playCards(game, "A", ["4S"]);
 
-  assert.equal(game.currentPlayerId, 'B');
+  assert.equal(game.currentPlayerId, "B");
 });
 
 for (const count of PLAYER_COUNTS) {
   test(`classic completes a full clockwise ${count}-player match`, () => {
     const ids = playerIds(count);
-    const game = makeGame('classic', ids);
+    const game = makeGame("classic", ids);
 
     playSingleCardRound(game, ids);
 
-    assert.equal(game.status, 'finished');
+    assert.equal(game.status, "finished");
     assert.deepEqual(game.places, ids.slice(0, -1));
     assert.equal(game.loserId, ids.at(-1));
   });
 
   test(`pogoni completes a full clockwise ${count}-player round`, () => {
     const ids = playerIds(count);
-    const game = makeGame('pogoni', ids);
+    const game = makeGame("pogoni", ids);
 
     playSingleCardRound(game, ids);
 
-    assert.equal(game.status, 'round_finished');
+    assert.equal(game.status, "round_finished");
     assert.deepEqual(game.places, ids.slice(0, -1));
     assert.equal(game.roundWinnerId, ids[0]);
     assert.equal(game.loserId, ids.at(-1));
@@ -358,13 +399,13 @@ for (const count of PLAYER_COUNTS) {
 for (const count of PLAYER_COUNTS) {
   test(`elimination reaches one winner from ${count} players`, () => {
     const ids = playerIds(count);
-    const game = makeGame('elimination', ids);
+    const game = makeGame("elimination", ids);
 
-    while (game.status !== 'finished') {
-      const activeIds = ids.filter(id => !game.eliminatedIds.includes(id));
+    while (game.status !== "finished") {
+      const activeIds = ids.filter((id) => !game.eliminatedIds.includes(id));
       playSingleCardRound(game, activeIds);
 
-      if (game.status === 'round_finished') nextRound(game);
+      if (game.status === "round_finished") nextRound(game);
     }
 
     assert.equal(game.roundWinnerId, ids[0]);
@@ -372,301 +413,331 @@ for (const count of PLAYER_COUNTS) {
   });
 }
 
-test('pogoni advances through every rank from 4 to A and finishes the match', () => {
-  const game = makeGame('pogoni', ['A', 'B', 'C']);
-  const pogonRanks = ['4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+test("pogoni advances through every rank from 4 to A and finishes the match", () => {
+  const game = makeGame("pogoni", ["A", "B", "C"]);
+  const pogonRanks = ["4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 
   pogonRanks.forEach((rank, index) => {
-    game.status = 'playing';
-    game.currentPlayerId = 'A';
+    game.status = "playing";
+    game.currentPlayerId = "A";
     game.table = null;
     game.lastPlayedPlayerId = null;
     game.passedPlayerIds = [];
-    game.pogonReadyPlayerId = 'A';
+    game.pogonReadyPlayerId = "A";
     game.places = [];
-    game.players.forEach(item => {
+    game.players.forEach((item) => {
       item.active = true;
-      item.hand = item.id === 'A'
-        ? [makeCard(`${rank}S`, rank)]
-        : [makeCard(`3${item.id}`, '3')];
+      item.hand =
+        item.id === "A"
+          ? [makeCard(`${rank}S`, rank)]
+          : [makeCard(`3${item.id}`, "3")];
     });
 
-    playCards(game, 'A', [`${rank}S`]);
+    playCards(game, "A", [`${rank}S`]);
 
     const expectedRank = pogonRanks[Math.min(index + 1, pogonRanks.length - 1)];
-    assert.equal(player(game, 'A').pogonRank, expectedRank);
-    assert.equal(game.roundWinnerId, 'A');
-    assert.equal(game.status, rank === 'A' ? 'finished' : 'round_finished');
+    assert.equal(player(game, "A").pogonRank, expectedRank);
+    assert.equal(game.roundWinnerId, "A");
+    assert.equal(game.status, rank === "A" ? "finished" : "round_finished");
 
-    if (rank !== 'A') nextRound(game);
+    if (rank !== "A") nextRound(game);
   });
 });
 
-test('the player who sets the final pogon is the match winner', () => {
-  const game = makeGame('pogoni', ['A', 'B', 'C']);
-  game.currentPlayerId = 'B';
-  game.pogonReadyPlayerId = 'B';
-  game.places = ['A'];
-  player(game, 'A').active = false;
-  player(game, 'A').hand = [];
-  player(game, 'B').pogonRank = 'A';
-  player(game, 'B').hand = [makeCard('AS', 'A')];
-  player(game, 'C').hand = [makeCard('3S', '3')];
+test("the player who sets the final pogon is the match winner", () => {
+  const game = makeGame("pogoni", ["A", "B", "C"]);
+  game.currentPlayerId = "B";
+  game.pogonReadyPlayerId = "B";
+  game.places = ["A"];
+  player(game, "A").active = false;
+  player(game, "A").hand = [];
+  player(game, "B").pogonRank = "A";
+  player(game, "B").hand = [makeCard("AS", "A")];
+  player(game, "C").hand = [makeCard("3S", "3")];
 
-  playCards(game, 'B', ['AS']);
+  playCards(game, "B", ["AS"]);
 
-  assert.equal(game.status, 'finished');
-  assert.equal(game.roundWinnerId, 'B');
+  assert.equal(game.status, "finished");
+  assert.equal(game.roundWinnerId, "B");
 });
 
-for (const mode of ['classic', 'elimination']) {
+for (const mode of ["classic", "elimination"]) {
   test(`${mode} restart resets the game and gives the first turn to 4S`, () => {
-    const game = createGame('ROOM', mode);
-    ['A', 'B', 'C'].forEach(id => addPlayer(game, { id, name: id }));
-    game.status = 'finished';
-    game.eliminatedIds = ['B', 'C'];
-    game.roundWinnerId = 'A';
-    game.loserId = 'C';
-    game.players.forEach(item => {
-      item.active = item.id === 'A';
-      item.pogonRank = '9';
+    const game = createGame("ROOM", mode);
+    ["A", "B", "C"].forEach((id) => addPlayer(game, { id, name: id }));
+    game.status = "finished";
+    game.eliminatedIds = ["B", "C"];
+    game.roundWinnerId = "A";
+    game.loserId = "C";
+    game.players.forEach((item) => {
+      item.active = item.id === "A";
+      item.pogonRank = "9";
     });
 
     restartGame(game);
 
-    const fourSpadesOwner = game.players.find(item => item.hand.some(card => card.id === '4S'));
+    const fourSpadesOwner = game.players.find((item) =>
+      item.hand.some((card) => card.id === "4S"),
+    );
     assert.deepEqual(game.eliminatedIds, []);
-    assert.ok(game.players.every(item => item.active));
-    assert.ok(game.players.every(item => item.pogonRank === '4'));
+    assert.ok(game.players.every((item) => item.active));
+    assert.ok(game.players.every((item) => item.pogonRank === "4"));
     assert.equal(game.currentPlayerId, fourSpadesOwner.id);
     assert.equal(game.roundStarterId, fourSpadesOwner.id);
-    assert.equal(game.status, 'playing');
+    assert.equal(game.status, "playing");
     assert.equal(game.loserId, null);
   });
 }
 
-test('all other players passing gives the turn back to the table winner', () => {
-  const game = makeGame('pogoni', ['A', 'B', 'C']);
-  player(game, 'A').hand = [makeCard('6S', '6'), makeCard('4S', '4')];
-  player(game, 'B').hand = [makeCard('5S', '5')];
-  player(game, 'C').hand = [makeCard('7S', '7')];
+test("all other players passing gives the turn back to the table winner", () => {
+  const game = makeGame("pogoni", ["A", "B", "C"]);
+  player(game, "A").hand = [makeCard("6S", "6"), makeCard("4S", "4")];
+  player(game, "B").hand = [makeCard("5S", "5")];
+  player(game, "C").hand = [makeCard("7S", "7")];
 
-  playCards(game, 'A', ['6S']);
-  pass(game, 'B');
-  pass(game, 'C');
+  playCards(game, "A", ["6S"]);
+  pass(game, "B");
+  pass(game, "C");
 
-  assert.equal(game.currentPlayerId, 'A');
-  assert.equal(game.pogonReadyPlayerId, 'A');
+  assert.equal(game.currentPlayerId, "A");
+  assert.equal(game.pogonReadyPlayerId, "A");
 });
 
-test('pogon is counted only after a player captured the table', () => {
-  const game = makeGame('pogoni', ['A', 'B', 'C']);
-  player(game, 'A').hand = [makeCard('6S', '6'), makeCard('4S', '4')];
-  player(game, 'B').hand = [makeCard('5S', '5')];
-  player(game, 'C').hand = [makeCard('7S', '7')];
+test("pogon is counted only after a player captured the table", () => {
+  const game = makeGame("pogoni", ["A", "B", "C"]);
+  player(game, "A").hand = [makeCard("6S", "6"), makeCard("4S", "4")];
+  player(game, "B").hand = [makeCard("5S", "5")];
+  player(game, "C").hand = [makeCard("7S", "7")];
 
-  playCards(game, 'A', ['6S']);
-  pass(game, 'B');
-  pass(game, 'C');
-  playCards(game, 'A', ['4S']);
+  playCards(game, "A", ["6S"]);
+  pass(game, "B");
+  pass(game, "C");
+  playCards(game, "A", ["4S"]);
 
-  assert.equal(player(game, 'A').pogonRank, '5');
-  assert.equal(game.status, 'round_finished');
-  assert.equal(game.roundWinnerId, 'A');
+  assert.equal(player(game, "A").pogonRank, "5");
+  assert.equal(game.status, "round_finished");
+  assert.equal(game.roundWinnerId, "A");
 });
 
-test('pogon with DVK advances only by matching normal cards', () => {
-  const game = makeGame('pogoni', ['A', 'B', 'C']);
-  player(game, 'A').hand = [makeCard('6S', '6'), makeCard('4S', '4'), makeCard('4H', '4', 'H'), makeDvk()];
-  player(game, 'B').hand = [makeCard('5S', '5')];
-  player(game, 'C').hand = [makeCard('7S', '7')];
+test("pogon with DVK advances only by matching normal cards", () => {
+  const game = makeGame("pogoni", ["A", "B", "C"]);
+  player(game, "A").hand = [
+    makeCard("6S", "6"),
+    makeCard("4S", "4"),
+    makeCard("4H", "4", "H"),
+    makeDvk(),
+  ];
+  player(game, "B").hand = [makeCard("5S", "5")];
+  player(game, "C").hand = [makeCard("7S", "7")];
 
-  playCards(game, 'A', ['6S']);
-  pass(game, 'B');
-  pass(game, 'C');
-  playCards(game, 'A', ['4S', '4H', 'DVK']);
+  playCards(game, "A", ["6S"]);
+  pass(game, "B");
+  pass(game, "C");
+  playCards(game, "A", ["4S", "4H", "DVK"]);
 
-  assert.equal(player(game, 'A').pogonRank, '6');
-  assert.equal(game.status, 'round_finished');
+  assert.equal(player(game, "A").pogonRank, "6");
+  assert.equal(game.status, "round_finished");
 });
 
-test('free turn after the previous player exited does not count as pogon-ready', () => {
-  const game = makeGame('pogoni', ['A', 'B', 'C']);
-  player(game, 'A').hand = [makeCard('6S', '6')];
-  player(game, 'B').hand = [makeCard('4S', '4'), makeCard('5S', '5')];
-  player(game, 'C').hand = [makeCard('7S', '7'), makeCard('8S', '8')];
+test("free turn after the previous player exited does not count as pogon-ready", () => {
+  const game = makeGame("pogoni", ["A", "B", "C"]);
+  player(game, "A").hand = [makeCard("6S", "6")];
+  player(game, "B").hand = [makeCard("4S", "4"), makeCard("5S", "5")];
+  player(game, "C").hand = [makeCard("7S", "7"), makeCard("8S", "8")];
 
-  playCards(game, 'A', ['6S']);
-  pass(game, 'B');
-  pass(game, 'C');
+  playCards(game, "A", ["6S"]);
+  pass(game, "B");
+  pass(game, "C");
 
-  assert.equal(game.currentPlayerId, 'B');
+  assert.equal(game.currentPlayerId, "B");
   assert.equal(game.pogonReadyPlayerId, null);
 
-  playCards(game, 'B', ['4S']);
+  playCards(game, "B", ["4S"]);
 
-  assert.equal(player(game, 'B').pogonRank, '4');
+  assert.equal(player(game, "B").pogonRank, "4");
 });
 
-test('in pogoni, the first player who exited starts the next round', () => {
-  const game = makeGame('pogoni', ['A', 'B', 'C']);
-  player(game, 'A').hand = [makeCard('6S', '6')];
-  player(game, 'B').hand = [makeCard('7S', '7'), makeCard('4S', '4')];
-  player(game, 'C').hand = [makeCard('8S', '8')];
+test("in pogoni, the first player who exited starts the next round", () => {
+  const game = makeGame("pogoni", ["A", "B", "C"]);
+  player(game, "A").hand = [makeCard("6S", "6")];
+  player(game, "B").hand = [makeCard("7S", "7"), makeCard("4S", "4")];
+  player(game, "C").hand = [makeCard("8S", "8")];
 
-  playCards(game, 'A', ['6S']);
-  pass(game, 'B');
-  pass(game, 'C');
-  playCards(game, 'B', ['7S']);
-  pass(game, 'C');
-  playCards(game, 'B', ['4S']);
+  playCards(game, "A", ["6S"]);
+  pass(game, "B");
+  pass(game, "C");
+  playCards(game, "B", ["7S"]);
+  pass(game, "C");
+  playCards(game, "B", ["4S"]);
 
-  assert.equal(game.status, 'round_finished');
-  assert.equal(game.roundWinnerId, 'A');
+  assert.equal(game.status, "round_finished");
+  assert.equal(game.roundWinnerId, "A");
 
   nextRound(game);
 
-  assert.equal(game.status, 'playing');
-  assert.equal(game.currentPlayerId, 'A');
+  assert.equal(game.status, "playing");
+  assert.equal(game.currentPlayerId, "A");
 });
 
-test('leaving a classic game ends it and makes the leaver the loser', () => {
-  const game = makeGame('classic', ['A', 'B', 'C']);
+test("leaving a classic game ends it and makes the leaver the loser", () => {
+  const game = makeGame("classic", ["A", "B", "C"]);
 
-  removePlayer(game, 'B');
+  removePlayer(game, "B");
 
-  assert.equal(game.status, 'finished');
+  assert.equal(game.status, "finished");
   assert.equal(game.currentPlayerId, null);
-  assert.equal(game.loserId, 'B');
-  assert.equal(player(game, 'B').leaving, true);
-  assert.equal(player(game, 'B').active, false);
-  assert.deepEqual(game.players.map(item => item.id), ['A', 'B', 'C']);
+  assert.equal(game.loserId, "B");
+  assert.equal(player(game, "B").leaving, true);
+  assert.equal(player(game, "B").active, false);
+  assert.deepEqual(
+    game.players.map((item) => item.id),
+    ["A", "B", "C"],
+  );
 });
 
-test('leaving an elimination game ends the round and eliminates the leaver', () => {
-  const game = makeGame('elimination', ['A', 'B', 'C']);
+test("leaving an elimination game ends the round and eliminates the leaver", () => {
+  const game = makeGame("elimination", ["A", "B", "C"]);
 
-  removePlayer(game, 'B');
+  removePlayer(game, "B");
 
-  assert.equal(game.status, 'round_finished');
-  assert.equal(game.loserId, 'B');
-  assert.equal(player(game, 'B').leaving, true);
-  assert.ok(game.eliminatedIds.includes('B'));
+  assert.equal(game.status, "round_finished");
+  assert.equal(game.loserId, "B");
+  assert.equal(player(game, "B").leaving, true);
+  assert.ok(game.eliminatedIds.includes("B"));
 
   nextRound(game);
 
-  assert.deepEqual(game.players.map(item => item.id), ['A', 'C']);
-  assert.equal(game.status, 'playing');
+  assert.deepEqual(
+    game.players.map((item) => item.id),
+    ["A", "C"],
+  );
+  assert.equal(game.status, "playing");
 });
 
-test('with two pogoni players, the leaving player loses immediately', () => {
-  const game = makeGame('pogoni', ['A', 'B']);
+test("with two pogoni players, the leaving player loses immediately", () => {
+  const game = makeGame("pogoni", ["A", "B"]);
 
-  removePlayer(game, 'B');
+  removePlayer(game, "B");
 
-  assert.equal(game.status, 'finished');
-  assert.equal(game.roundWinnerId, 'A');
-  assert.equal(game.loserId, 'B');
-  assert.equal(player(game, 'B').leaving, true);
+  assert.equal(game.status, "finished");
+  assert.equal(game.roundWinnerId, "A");
+  assert.equal(game.loserId, "B");
+  assert.equal(player(game, "B").leaving, true);
 });
 
-test('a waiting leaver stays gray until the end of a pogoni round', () => {
-  const game = makeGame('pogoni', ['A', 'B', 'C', 'D']);
-  game.currentPlayerId = 'A';
+test("a waiting leaver stays gray until the end of a pogoni round", () => {
+  const game = makeGame("pogoni", ["A", "B", "C", "D"]);
+  game.currentPlayerId = "A";
 
-  removePlayer(game, 'C');
+  removePlayer(game, "C");
 
-  assert.deepEqual(game.players.map(item => item.id), ['A', 'B', 'C', 'D']);
-  assert.equal(player(game, 'C').leaving, true);
-  assert.equal(player(game, 'C').active, true);
-  assert.equal(game.currentPlayerId, 'A');
-  assert.equal(game.status, 'playing');
+  assert.deepEqual(
+    game.players.map((item) => item.id),
+    ["A", "B", "C", "D"],
+  );
+  assert.equal(player(game, "C").leaving, true);
+  assert.equal(player(game, "C").active, true);
+  assert.equal(game.currentPlayerId, "A");
+  assert.equal(game.status, "playing");
 });
 
-test('a pogoni leaver automatically passes when a table is active', () => {
-  const game = makeGame('pogoni', ['A', 'B', 'C', 'D']);
-  game.currentPlayerId = 'B';
-  game.lastPlayedPlayerId = 'A';
+test("a pogoni leaver automatically passes when a table is active", () => {
+  const game = makeGame("pogoni", ["A", "B", "C", "D"]);
+  game.currentPlayerId = "B";
+  game.lastPlayedPlayerId = "A";
   game.table = {
-    playerId: 'A',
-    cards: [makeCard('4S', '4')],
-    combo: { type: 'single', high: 1, length: 1 },
+    playerId: "A",
+    cards: [makeCard("4S", "4")],
+    combo: { type: "single", high: 1, length: 1 },
   };
 
-  removePlayer(game, 'B');
+  removePlayer(game, "B");
 
-  assert.ok(game.passedPlayerIds.includes('B'));
-  assert.equal(game.currentPlayerId, 'C');
-  assert.equal(game.status, 'playing');
+  assert.ok(game.passedPlayerIds.includes("B"));
+  assert.equal(game.currentPlayerId, "C");
+  assert.equal(game.status, "playing");
 });
 
-test('a pogoni leaver plays the smallest normal card together with DVK on a free turn', () => {
-  const game = makeGame('pogoni', ['A', 'B', 'C', 'D']);
-  game.currentPlayerId = 'B';
-  player(game, 'B').hand = [makeCard('7S', '7'), makeDvk(), makeCard('4S', '4')];
+test("a pogoni leaver plays the smallest normal card together with DVK on a free turn", () => {
+  const game = makeGame("pogoni", ["A", "B", "C", "D"]);
+  game.currentPlayerId = "B";
+  player(game, "B").hand = [
+    makeCard("7S", "7"),
+    makeDvk(),
+    makeCard("4S", "4"),
+  ];
 
-  removePlayer(game, 'B');
+  removePlayer(game, "B");
 
-  assert.equal(game.table.playerId, 'B');
-  assert.deepEqual(game.table.cards.map(card => card.id), ['4S', 'DVK']);
-  assert.deepEqual(player(game, 'B').hand.map(card => card.id), ['7S']);
-  assert.equal(game.currentPlayerId, 'C');
+  assert.equal(game.table.playerId, "B");
+  assert.deepEqual(
+    game.table.cards.map((card) => card.id),
+    ["4S", "DVK"],
+  );
+  assert.deepEqual(
+    player(game, "B").hand.map((card) => card.id),
+    ["7S"],
+  );
+  assert.equal(game.currentPlayerId, "C");
 });
 
-test('pogoni leavers are removed before the next round', () => {
-  const game = makeGame('pogoni', ['A', 'B', 'C']);
-  game.currentPlayerId = 'A';
-  removePlayer(game, 'B');
-  game.status = 'round_finished';
-  game.roundWinnerId = 'A';
+test("pogoni leavers are removed before the next round", () => {
+  const game = makeGame("pogoni", ["A", "B", "C"]);
+  game.currentPlayerId = "A";
+  removePlayer(game, "B");
+  game.status = "round_finished";
+  game.roundWinnerId = "A";
 
   nextRound(game);
 
-  assert.deepEqual(game.players.map(item => item.id), ['A', 'C']);
-  assert.equal(game.status, 'playing');
+  assert.deepEqual(
+    game.players.map((item) => item.id),
+    ["A", "C"],
+  );
+  assert.equal(game.status, "playing");
 });
 
-test('the next clockwise player becomes host after the host leaves', () => {
-  const game = makeGame('classic', ['A', 'B', 'C', 'D']);
-  game.hostPlayerId = 'C';
+test("the next clockwise player becomes host after the host leaves", () => {
+  const game = makeGame("classic", ["A", "B", "C", "D"]);
+  game.hostPlayerId = "C";
 
-  removePlayer(game, 'C');
+  removePlayer(game, "C");
 
-  assert.equal(game.hostPlayerId, 'D');
+  assert.equal(game.hostPlayerId, "D");
 });
 
-test('the remaining player wins when the opponent leaves', () => {
-  const game = makeGame('classic', ['A', 'B']);
-  game.currentPlayerId = 'B';
+test("the remaining player wins when the opponent leaves", () => {
+  const game = makeGame("classic", ["A", "B"]);
+  game.currentPlayerId = "B";
 
-  removePlayer(game, 'B');
+  removePlayer(game, "B");
 
-  assert.equal(game.status, 'finished');
-  assert.equal(game.roundWinnerId, 'A');
+  assert.equal(game.status, "finished");
+  assert.equal(game.roundWinnerId, "A");
   assert.equal(game.currentPlayerId, null);
 });
 
-test('a finished game cannot deal the full deck to one remaining player', () => {
-  const game = makeGame('classic', ['A', 'B']);
-  removePlayer(game, 'B');
-  const handBeforeRestart = [...player(game, 'A').hand];
+test("a finished game cannot deal the full deck to one remaining player", () => {
+  const game = makeGame("classic", ["A", "B"]);
+  removePlayer(game, "B");
+  const handBeforeRestart = [...player(game, "A").hand];
 
   assert.throws(() => restartGame(game), /2/);
-  assert.equal(game.status, 'finished');
-  assert.deepEqual(player(game, 'A').hand, handBeforeRestart);
+  assert.equal(game.status, "finished");
+  assert.deepEqual(player(game, "A").hand, handBeforeRestart);
 });
 
-test('leaving after finishing does not erase another player turn', () => {
-  const game = makeGame('pogoni', ['A', 'B', 'C']);
-  player(game, 'A').active = false;
-  game.places = ['A'];
-  game.roundWinnerId = 'A';
-  game.currentPlayerId = 'B';
+test("leaving after finishing does not erase another player turn", () => {
+  const game = makeGame("pogoni", ["A", "B", "C"]);
+  player(game, "A").active = false;
+  game.places = ["A"];
+  game.roundWinnerId = "A";
+  game.currentPlayerId = "B";
 
-  removePlayer(game, 'A');
+  removePlayer(game, "A");
 
-  assert.equal(game.status, 'playing');
-  assert.equal(game.currentPlayerId, 'B');
-  assert.equal(game.roundWinnerId, 'A');
-  assert.equal(player(game, 'A').leaving, true);
+  assert.equal(game.status, "playing");
+  assert.equal(game.currentPlayerId, "B");
+  assert.equal(game.roundWinnerId, "A");
+  assert.equal(player(game, "A").leaving, true);
 });

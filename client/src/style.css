@@ -34,7 +34,11 @@ body,
 body {
   background:
     radial-gradient(circle at 24% 0%, rgba(44, 157, 87, 0.42), transparent 32%),
-    radial-gradient(circle at 85% 18%, rgba(243, 189, 97, 0.16), transparent 24%),
+    radial-gradient(
+      circle at 85% 18%,
+      rgba(243, 189, 97, 0.16),
+      transparent 24%
+    ),
     linear-gradient(135deg, #051811 0%, #03120b 48%, #061f15 100%);
 }
 
@@ -65,7 +69,11 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 22px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03)),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.09),
+      rgba(255, 255, 255, 0.03)
+    ),
     rgba(3, 18, 11, 0.88);
   box-shadow: var(--shadow);
   backdrop-filter: blur(18px);
@@ -142,7 +150,11 @@ button:disabled {
   border-radius: 12px;
   color: var(--text);
   font-weight: 800;
-  transition: transform 0.16s, box-shadow 0.16s, background 0.16s, opacity 0.16s;
+  transition:
+    transform 0.16s,
+    box-shadow 0.16s,
+    background 0.16s,
+    opacity 0.16s;
 }
 
 .mode-grid button {
@@ -216,7 +228,8 @@ button:disabled {
 
 .mobile-welcome {
   min-height: 100svh;
-  padding: max(22px, calc(env(safe-area-inset-top) + 18px)) 14px max(24px, calc(env(safe-area-inset-bottom) + 18px));
+  padding: max(22px, calc(env(safe-area-inset-top) + 18px)) 14px
+    max(24px, calc(env(safe-area-inset-bottom) + 18px));
   place-items: center;
 }
 
@@ -301,7 +314,7 @@ button:disabled {
 }
 
 .game-screen::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   right: auto;
@@ -488,7 +501,7 @@ button:disabled {
 }
 
 .mode-chip::before {
-  content: 'Режим: ';
+  content: "Режим: ";
   margin-right: 4px;
   color: var(--muted);
 }
@@ -533,7 +546,11 @@ button:disabled {
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 18px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.025)
+    ),
     rgba(3, 18, 11, 0.74);
   box-shadow: var(--shadow);
   backdrop-filter: blur(16px);
@@ -732,7 +749,10 @@ button:disabled {
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
 }
 
 .kick-player-button:hover,
@@ -778,7 +798,7 @@ button:disabled {
   width: calc(var(--game-width) - var(--side-panel));
   height: calc(var(--game-height) - 260px);
   min-width: 0;
-  background-image: url('/table-desktop.png');
+  background-image: url("/table-desktop.png");
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
@@ -830,7 +850,9 @@ button:disabled {
 
 .turn-pill.your-turn {
   border-color: rgba(37, 198, 111, 0.62);
-  box-shadow: 0 0 24px rgba(37, 198, 111, 0.26), 0 12px 28px rgba(0, 0, 0, 0.26);
+  box-shadow:
+    0 0 24px rgba(37, 198, 111, 0.26),
+    0 12px 28px rgba(0, 0, 0, 0.26);
 }
 
 .table-cards {
@@ -941,7 +963,9 @@ button:disabled {
 
 .seat.turn .seat-info {
   border-color: rgba(37, 198, 111, 0.9);
-  box-shadow: 0 0 22px rgba(37, 198, 111, 0.34), 0 14px 32px rgba(0, 0, 0, 0.32);
+  box-shadow:
+    0 0 22px rgba(37, 198, 111, 0.34),
+    0 14px 32px rgba(0, 0, 0, 0.32);
 }
 
 .seat.eliminated {
@@ -1443,8 +1467,12 @@ button:disabled {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  background:
-    linear-gradient(180deg, rgba(3, 18, 11, 0), rgba(3, 18, 11, 0.72) 24%, #03120b 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(3, 18, 11, 0),
+    rgba(3, 18, 11, 0.72) 24%,
+    #03120b 100%
+  );
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -1526,7 +1554,10 @@ button:disabled {
   box-shadow: none;
   transform-origin: center 90%;
   transform: var(--card-transform);
-  transition: transform 0.18s, box-shadow 0.18s, filter 0.18s;
+  transition:
+    transform 0.18s,
+    box-shadow 0.18s,
+    filter 0.18s;
 }
 
 .playing-card:first-child {
@@ -1614,8 +1645,7 @@ button:disabled {
 }
 
 .playing-card.selected .card-image {
-  filter:
-    drop-shadow(0 0 8px rgba(37, 198, 111, 0.78))
+  filter: drop-shadow(0 0 8px rgba(37, 198, 111, 0.78))
     drop-shadow(0 18px 18px rgba(0, 0, 0, 0.46));
 }
 
@@ -1741,7 +1771,8 @@ button:disabled {
     transform: translate(-50%, calc(-50% + 8px));
   }
 
-  12%, 78% {
+  12%,
+  78% {
     opacity: 1;
     transform: translate(-50%, -50%);
   }
@@ -1978,7 +2009,7 @@ button:disabled {
   height: clamp(330px, 45svh, 420px);
   min-height: 330px;
   margin-top: 2px;
-  background-image: url('/table.png');
+  background-image: url("/table.png");
   background-size: auto 100%;
   background-position: center;
 }
@@ -2233,7 +2264,12 @@ button:disabled {
   height: auto;
   min-height: 150px;
   padding: 0 6px 4px;
-  background: linear-gradient(180deg, rgba(3, 18, 11, 0), rgba(3, 18, 11, 0.72) 22%, #03120b 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(3, 18, 11, 0),
+    rgba(3, 18, 11, 0.72) 22%,
+    #03120b 100%
+  );
 }
 
 .mobile-layout .my-zone.finished {

@@ -21,9 +21,10 @@ export function cleanupRooms({
   for (const [roomId, game] of rooms.entries()) {
     const isEmpty = game.players.length === 0;
     const lastActivityAt = Number(game.lastActivityAt || 0);
-    const isExpired = !hasConnectedPlayers(roomId)
-      && lastActivityAt > 0
-      && now - lastActivityAt >= ttlMs;
+    const isExpired =
+      !hasConnectedPlayers(roomId) &&
+      lastActivityAt > 0 &&
+      now - lastActivityAt >= ttlMs;
 
     if (isEmpty || isExpired) {
       rooms.delete(roomId);

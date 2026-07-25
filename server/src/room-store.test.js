@@ -1,8 +1,8 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
-import { addPlayer, createGame } from './game.js';
-import { createMemoryRoomStore, createRedisRoomStore } from './room-store.js';
-import { claimExistingPlayerSession } from './sessions.js';
+import assert from "node:assert/strict";
+import test from "node:test";
+import { addPlayer, createGame } from "./game.js";
+import { createMemoryRoomStore, createRedisRoomStore } from "./room-store.js";
+import { claimExistingPlayerSession } from "./sessions.js";
 
 class FakeRedisClient {
   constructor(initial = {}) {
@@ -35,22 +35,22 @@ class FakeRedisClient {
   }
 }
 
-test('memory store is a no-op fallback when Redis is not configured', async () => {
+test("memory store is a no-op fallback when Redis is not configured", async () => {
   const store = createMemoryRoomStore();
   assert.equal(store.persistent, false);
   assert.deepEqual(await store.loadRooms(), new Map());
-  await store.saveRoom({ roomId: 'ABC123' });
-  await store.deleteRoom('ABC123');
+  await store.saveRoom({ roomId: "ABC123" });
+  await store.deleteRoom("ABC123");
   await store.close();
 });
 
-test('loads valid rooms from Redis and skips malformed entries', async () => {
+test("loads valid rooms from Redis and skips malformed entries", async () => {
   const client = new FakeRedisClient({
-    'katarik:room:ABC123': JSON.stringify({ roomId: 'ABC123', players: [] }),
-    'katarik:room:BROKEN': '{bad json',
+    "katarik:room:ABC123": JSON.stringify({ roomId: "ABC123", players: [] }),
+    "katarik:room:BROKEN": "{bad json",
   });
   const store = await createRedisRoomStore({
-    url: 'redis://test',
+    url: "redis://test",
     ttlMs: 60_000,
     clientFactory: async () => client,
   });
@@ -58,75 +58,77 @@ test('loads valid rooms from Redis and skips malformed entries', async () => {
   const rooms = await store.loadRooms();
   assert.equal(store.persistent, true);
   assert.equal(rooms.size, 1);
-  assert.deepEqual(rooms.get('ABC123'), { roomId: 'ABC123', players: [] });
+  assert.deepEqual(rooms.get("ABC123"), { roomId: "ABC123", players: [] });
 });
 
-test('saves the complete room with the configured expiry', async () => {
+test("saves the complete room with the configured expiry", async () => {
   const client = new FakeRedisClient();
   const store = await createRedisRoomStore({
-    url: 'redis://test',
+    url: "redis://test",
     ttlMs: 3_600_000,
     clientFactory: async () => client,
   });
-  const game = { roomId: 'ABC123', players: [{ id: 'p1' }], status: 'lobby' };
+  const game = { roomId: "ABC123", players: [{ id: "p1" }], status: "lobby" };
 
   await store.saveRoom(game);
 
-  assert.deepEqual(client.setCalls, [{
-    key: 'katarik:room:ABC123',
-    value: JSON.stringify(game),
-    options: { PX: 3_600_000 },
-  }]);
+  assert.deepEqual(client.setCalls, [
+    {
+      key: "katarik:room:ABC123",
+      value: JSON.stringify(game),
+      options: { PX: 3_600_000 },
+    },
+  ]);
 });
 
-test('deletes a room key and closes the Redis client', async () => {
+test("deletes a room key and closes the Redis client", async () => {
   const client = new FakeRedisClient({
-    'katarik:room:ABC123': JSON.stringify({ roomId: 'ABC123', players: [] }),
+    "katarik:room:ABC123": JSON.stringify({ roomId: "ABC123", players: [] }),
   });
   const store = await createRedisRoomStore({
-    url: 'redis://test',
+    url: "redis://test",
     ttlMs: 60_000,
     clientFactory: async () => client,
   });
 
-  await store.deleteRoom('ABC123');
+  await store.deleteRoom("ABC123");
   await store.close();
 
-  assert.deepEqual(client.deleted, ['katarik:room:ABC123']);
+  assert.deepEqual(client.deleted, ["katarik:room:ABC123"]);
   assert.equal(client.quitCalled, true);
 });
 
-test('restores a room and player session after a simulated server restart', async () => {
+test("restores a room and player session after a simulated server restart", async () => {
   const client = new FakeRedisClient();
   const firstStore = await createRedisRoomStore({
-    url: 'redis://test',
+    url: "redis://test",
     ttlMs: 3_600_000,
     clientFactory: async () => client,
   });
-  const game = createGame('ABC123');
+  const game = createGame("ABC123");
   addPlayer(game, {
-    id: 'player-1',
-    name: 'Игрок',
-    reconnectToken: 'secret-token',
+    id: "player-1",
+    name: "Игрок",
+    reconnectToken: "secret-token",
   });
-  game.hostPlayerId = 'player-1';
+  game.hostPlayerId = "player-1";
   await firstStore.saveRoom(game);
 
   const restartedStore = await createRedisRoomStore({
-    url: 'redis://test',
+    url: "redis://test",
     ttlMs: 3_600_000,
     clientFactory: async () => client,
   });
   const restoredRooms = await restartedStore.loadRooms();
-  const restoredGame = restoredRooms.get('ABC123');
+  const restoredGame = restoredRooms.get("ABC123");
   const restoredPlayer = restoredGame.players[0];
 
   claimExistingPlayerSession(restoredPlayer, {
-    playerId: 'player-1',
-    sessionToken: 'secret-token',
+    playerId: "player-1",
+    sessionToken: "secret-token",
   });
 
-  assert.equal(restoredGame.hostPlayerId, 'player-1');
-  assert.equal(restoredPlayer.name, 'Игрок');
-  assert.equal(restoredPlayer.reconnectToken, 'secret-token');
+  assert.equal(restoredGame.hostPlayerId, "player-1");
+  assert.equal(restoredPlayer.name, "Игрок");
+  assert.equal(restoredPlayer.reconnectToken, "secret-token");
 });

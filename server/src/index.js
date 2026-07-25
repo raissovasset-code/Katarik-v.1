@@ -1,8 +1,8 @@
-import express from 'express';
-import cors from 'cors';
-import { WebSocketServer } from 'ws';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import express from "express";
+import cors from "cors";
+import { WebSocketServer } from "ws";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   addPlayer,
   createGame,
@@ -13,46 +13,57 @@ import {
   removePlayer,
   restartGame,
   startGame,
-} from './game.js';
-import { claimExistingPlayerSession, createPlayerFromMessage } from './sessions.js';
+} from "./game.js";
+import {
+  claimExistingPlayerSession,
+  createPlayerFromMessage,
+} from "./sessions.js";
 import {
   cleanupRooms,
   DEFAULT_ROOM_CLEANUP_INTERVAL_MS,
   DEFAULT_ROOM_TTL_MS,
   parsePositiveDuration,
   touchRoom,
-} from './room-cleanup.js';
-import { createRedisRoomStore } from './room-store.js';
-import { parseClientMessage } from './message-validation.js';
+} from "./room-cleanup.js";
+import { createRedisRoomStore } from "./room-store.js";
+import { parseClientMessage } from "./message-validation.js";
 import {
   enforceMessageRateLimit,
   getClientIp,
   MAX_RATE_LIMIT_WINDOW_MS,
   SlidingWindowRateLimiter,
-} from './rate-limit.js';
-import { createOriginPolicy, parseAllowedOrigins } from './origin-policy.js';
-import { chooseBotAction } from './bot-strategy.js';
-import { chooseNeuralAction, PUBLISHED_NEURAL_MODEL } from './neural-bot.js';
-import { randomUUID } from 'node:crypto';
+} from "./rate-limit.js";
+import { createOriginPolicy, parseAllowedOrigins } from "./origin-policy.js";
+import { chooseBotAction } from "./bot-strategy.js";
+import { chooseNeuralAction, PUBLISHED_NEURAL_MODEL } from "./neural-bot.js";
+import { randomUUID } from "node:crypto";
 
 const PORT = Number(process.env.PORT || 3001);
-const ROOM_TTL_MS = parsePositiveDuration(process.env.ROOM_TTL_MS, DEFAULT_ROOM_TTL_MS);
+const ROOM_TTL_MS = parsePositiveDuration(
+  process.env.ROOM_TTL_MS,
+  DEFAULT_ROOM_TTL_MS,
+);
 const ROOM_CLEANUP_INTERVAL_MS = parsePositiveDuration(
   process.env.ROOM_CLEANUP_INTERVAL_MS,
   DEFAULT_ROOM_CLEANUP_INTERVAL_MS,
 );
-const BOT_TURN_DELAY_MS = parsePositiveDuration(process.env.BOT_TURN_DELAY_MS, 2500);
+const BOT_TURN_DELAY_MS = parsePositiveDuration(
+  process.env.BOT_TURN_DELAY_MS,
+  2500,
+);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const clientDistPath = path.resolve(__dirname, '../../client/dist');
+const clientDistPath = path.resolve(__dirname, "../../client/dist");
 const allowedOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
 const isOriginAllowed = createOriginPolicy(allowedOrigins);
 
 const app = express();
-app.use(cors({
-  origin(origin, callback) {
-    callback(null, isOriginAllowed(origin));
-  },
-}));
+app.use(
+  cors({
+    origin(origin, callback) {
+      callback(null, isOriginAllowed(origin));
+    },
+  }),
+);
 app.use(express.json());
 app.use(express.static(clientDistPath));
 
@@ -70,7 +81,9 @@ const botTurnTimers = new Map();
 if (roomStore.persistent) {
   console.log(`Restored ${rooms.size} rooms from Redis`);
 } else {
-  console.warn('REDIS_URL is not configured; rooms will not survive a server restart');
+  console.warn(
+    "REDIS_URL is not configured; rooms will not survive a server restart",
+  );
 }
 
 function playerSocketKey(roomId, playerId) {
@@ -84,22 +97,22 @@ function hasConnectedPlayers(roomId) {
   return false;
 }
 
-app.get('/api/health', (req, res) => {
+app.get("/api/health", (req, res) => {
   res.json({
-    name: 'Katarik server',
-    status: 'ok',
-    roomStorage: roomStore.persistent ? 'redis' : 'memory',
+    name: "Katarik server",
+    status: "ok",
+    roomStorage: roomStore.persistent ? "redis" : "memory",
     rooms: rooms.size,
   });
 });
 
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api')) {
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api")) {
     next();
     return;
   }
 
-  res.sendFile(path.join(clientDistPath, 'index.html'), error => {
+  res.sendFile(path.join(clientDistPath, "index.html"), (error) => {
     if (error) next();
   });
 });
@@ -112,7 +125,11 @@ const wss = new WebSocketServer({
   server,
   verifyClient({ origin }, callback) {
     const allowed = isOriginAllowed(origin);
-    callback(allowed, allowed ? undefined : 403, allowed ? undefined : 'Origin is not allowed');
+    callback(
+      allowed,
+      allowed ? undefined : 403,
+      allowed ? undefined : "Origin is not allowed",
+    );
   },
 });
 
@@ -124,7 +141,9 @@ const roomCleanupTimer = setInterval(async () => {
       ttlMs: ROOM_TTL_MS,
     });
 
-    await Promise.all(removedRoomIds.map(roomId => roomStore.deleteRoom(roomId)));
+    await Promise.all(
+      removedRoomIds.map((roomId) => roomStore.deleteRoom(roomId)),
+    );
     messageRateLimiter.sweep(MAX_RATE_LIMIT_WINDOW_MS);
 
     if (removedRoomIds.length > 0) {
@@ -175,7 +194,7 @@ function broadcast(roomId) {
   for (const [ws, meta] of sockets.entries()) {
     if (meta.roomId === roomId) {
       sendTo(ws, {
-        type: 'state',
+        type: "state",
         game: publicGameState(game, meta.playerId),
       });
     }
@@ -193,27 +212,34 @@ function clearBotTurn(roomId) {
 function scheduleBotTurn(roomId) {
   clearBotTurn(roomId);
   const game = rooms.get(roomId);
-  const bot = game?.players.find(player => player.id === game.currentPlayerId && player.isBot);
-  if (!bot || game.status !== 'playing') return;
+  const bot = game?.players.find(
+    (player) => player.id === game.currentPlayerId && player.isBot,
+  );
+  if (!bot || game.status !== "playing") return;
 
   const timer = setTimeout(async () => {
     botTurnTimers.delete(roomId);
     const currentGame = rooms.get(roomId);
     const currentBot = currentGame?.players.find(
-      player => player.id === currentGame.currentPlayerId && player.isBot,
+      (player) => player.id === currentGame.currentPlayerId && player.isBot,
     );
-    if (!currentGame || !currentBot || currentGame.status !== 'playing') return;
+    if (!currentGame || !currentBot || currentGame.status !== "playing") return;
 
     try {
       const action = PUBLISHED_NEURAL_MODEL
         ? chooseNeuralAction(currentGame, currentBot.id, PUBLISHED_NEURAL_MODEL)
         : chooseBotAction(currentGame, currentBot.id);
-      if (action?.type === 'play') {
-        playCards(currentGame, currentBot.id, action.cardIds, action.declaredRanks || {});
-      } else if (action?.type === 'pass') {
+      if (action?.type === "play") {
+        playCards(
+          currentGame,
+          currentBot.id,
+          action.cardIds,
+          action.declaredRanks || {},
+        );
+      } else if (action?.type === "pass") {
         pass(currentGame, currentBot.id);
       } else {
-        throw new Error('Бот не нашёл допустимый ход');
+        throw new Error("Бот не нашёл допустимый ход");
       }
       await persistRoom(currentGame);
       broadcast(roomId);
@@ -228,19 +254,19 @@ function scheduleBotTurn(roomId) {
 
 function requireRoom(meta) {
   const game = rooms.get(meta?.roomId);
-  if (!game) throw new Error('Комната не найдена');
+  if (!game) throw new Error("Комната не найдена");
   return game;
 }
 
 function requireHost(game, playerId) {
   if (game.hostPlayerId !== playerId) {
-    throw new Error('Только хозяин комнаты может управлять игрой');
+    throw new Error("Только хозяин комнаты может управлять игрой");
   }
 }
 
 function requireUnboundSocket(ws) {
   if (sockets.get(ws)?.roomId) {
-    throw new Error('Сначала покиньте текущую комнату');
+    throw new Error("Сначала покиньте текущую комнату");
   }
 }
 
@@ -250,7 +276,8 @@ async function leaveRoom(ws) {
   const playerId = meta?.playerId;
   const game = roomId ? rooms.get(roomId) : null;
 
-  const socketKey = roomId && playerId ? playerSocketKey(roomId, playerId) : null;
+  const socketKey =
+    roomId && playerId ? playerSocketKey(roomId, playerId) : null;
 
   if (socketKey && playerSockets.get(socketKey) === ws) {
     playerSockets.delete(socketKey);
@@ -261,7 +288,9 @@ async function leaveRoom(ws) {
   if (game && playerId) {
     const result = removePlayer(game, playerId);
 
-    const hasHumanPlayer = game.players.some(player => !player.isBot && !player.leaving);
+    const hasHumanPlayer = game.players.some(
+      (player) => !player.isBot && !player.leaving,
+    );
     if (result.empty || !hasHumanPlayer) {
       rooms.delete(roomId);
       clearBotTurn(roomId);
@@ -272,13 +301,13 @@ async function leaveRoom(ws) {
     }
   }
 
-  sendTo(ws, { type: 'leftRoom' });
+  sendTo(ws, { type: "leftRoom" });
 }
 
 async function handleCreateRoom(ws, msg) {
   requireUnboundSocket(ws);
   const code = roomCode();
-  const game = createGame(code, msg.mode || 'classic');
+  const game = createGame(code, msg.mode || "classic");
   const player = createPlayerFromMessage(msg);
 
   rooms.set(code, game);
@@ -287,21 +316,25 @@ async function handleCreateRoom(ws, msg) {
   bindPlayerSocket(ws, code, player.id);
   await persistRoom(game);
 
-  sendTo(ws, { type: 'roomCreated', roomId: code });
+  sendTo(ws, { type: "roomCreated", roomId: code });
   broadcast(code);
 }
 
 async function handleJoinRoom(ws, msg) {
   requireUnboundSocket(ws);
-  const roomId = String(msg.roomId || '').trim().toUpperCase();
+  const roomId = String(msg.roomId || "")
+    .trim()
+    .toUpperCase();
   const game = rooms.get(roomId);
-  if (!game) throw new Error('Комната не найдена');
+  if (!game) throw new Error("Комната не найдена");
 
-  const existingPlayer = game.players.find(player => player.id === msg.playerId);
+  const existingPlayer = game.players.find(
+    (player) => player.id === msg.playerId,
+  );
 
   if (existingPlayer) {
     if (existingPlayer.leaving) {
-      throw new Error('Вы уже покинули эту игру');
+      throw new Error("Вы уже покинули эту игру");
     }
     claimExistingPlayerSession(existingPlayer, msg);
     bindPlayerSocket(ws, roomId, existingPlayer.id);
@@ -310,8 +343,8 @@ async function handleJoinRoom(ws, msg) {
     return;
   }
 
-  if (game.status !== 'lobby') {
-    throw new Error('Игра уже началась');
+  if (game.status !== "lobby") {
+    throw new Error("Игра уже началась");
   }
 
   const player = createPlayerFromMessage(msg);
@@ -324,10 +357,11 @@ async function handleJoinRoom(ws, msg) {
 async function handleAddBot(meta) {
   const game = requireRoom(meta);
   requireHost(game, meta.playerId);
-  if (game.status !== 'lobby') throw new Error('Добавлять бота можно только до начала игры');
-  if (game.players.length >= 11) throw new Error('Максимум 11 игроков');
+  if (game.status !== "lobby")
+    throw new Error("Добавлять бота можно только до начала игры");
+  if (game.players.length >= 11) throw new Error("Максимум 11 игроков");
 
-  const number = game.players.filter(player => player.isBot).length + 1;
+  const number = game.players.filter((player) => player.isBot).length + 1;
   addPlayer(game, {
     id: `bot-${randomUUID()}`,
     name: `Бот ${number}`,
@@ -350,16 +384,19 @@ async function handleKickPlayer(ws, meta, msg) {
   const game = requireRoom(meta);
   requireHost(game, meta.playerId);
 
-  if (game.status !== 'lobby') {
-    throw new Error('Удалять игроков можно только до начала игры');
+  if (game.status !== "lobby") {
+    throw new Error("Удалять игроков можно только до начала игры");
   }
 
-  const targetPlayerId = String(msg.targetPlayerId || '');
-  if (!targetPlayerId || !game.players.some(player => player.id === targetPlayerId)) {
-    throw new Error('Игрок не найден');
+  const targetPlayerId = String(msg.targetPlayerId || "");
+  if (
+    !targetPlayerId ||
+    !game.players.some((player) => player.id === targetPlayerId)
+  ) {
+    throw new Error("Игрок не найден");
   }
   if (targetPlayerId === meta.playerId) {
-    throw new Error('Хозяин комнаты не может удалить себя');
+    throw new Error("Хозяин комнаты не может удалить себя");
   }
 
   const targetKey = playerSocketKey(meta.roomId, targetPlayerId);
@@ -367,7 +404,7 @@ async function handleKickPlayer(ws, meta, msg) {
   const result = removePlayer(game, targetPlayerId);
 
   if (!result.removed) {
-    throw new Error('Игрок не найден');
+    throw new Error("Игрок не найден");
   }
 
   await persistRoom(game);
@@ -376,8 +413,8 @@ async function handleKickPlayer(ws, meta, msg) {
     playerSockets.delete(targetKey);
     sockets.set(targetSocket, {});
     sendTo(targetSocket, {
-      type: 'kicked',
-      message: 'Хозяин комнаты удалил вас из комнаты.',
+      type: "kicked",
+      message: "Хозяин комнаты удалил вас из комнаты.",
     });
   }
 
@@ -388,7 +425,7 @@ async function handlePlayerAction(ws, meta, action) {
   const game = requireRoom(meta);
 
   if (game.currentPlayerId !== meta.playerId) {
-    throw new Error('Сейчас ход другого игрока');
+    throw new Error("Сейчас ход другого игрока");
   }
 
   action(game);
@@ -396,13 +433,13 @@ async function handlePlayerAction(ws, meta, action) {
   broadcast(meta.roomId);
 }
 
-wss.on('connection', (ws, request) => {
+wss.on("connection", (ws, request) => {
   const connectionId = nextConnectionId;
   nextConnectionId += 1;
   const clientIp = getClientIp(request);
   sockets.set(ws, {});
 
-  ws.on('message', async raw => {
+  ws.on("message", async (raw) => {
     try {
       const msg = parseClientMessage(raw);
       enforceMessageRateLimit(messageRateLimiter, msg, {
@@ -412,74 +449,75 @@ wss.on('connection', (ws, request) => {
       const meta = sockets.get(ws);
       const game = meta?.roomId ? rooms.get(meta.roomId) : null;
 
-      if (msg.type === 'ping') {
+      if (msg.type === "ping") {
         if (game) await persistRoom(game);
-        sendTo(ws, { type: 'pong', timestamp: Date.now() });
+        sendTo(ws, { type: "pong", timestamp: Date.now() });
         return;
       }
 
-      if (msg.type === 'createRoom') {
+      if (msg.type === "createRoom") {
         await handleCreateRoom(ws, msg);
         return;
       }
 
-      if (msg.type === 'joinRoom') {
+      if (msg.type === "joinRoom") {
         await handleJoinRoom(ws, msg);
         return;
       }
 
-      if (msg.type === 'addBot') {
+      if (msg.type === "addBot") {
         await handleAddBot(meta);
         return;
       }
 
-      if (msg.type === 'leaveRoom') {
+      if (msg.type === "leaveRoom") {
         await leaveRoom(ws);
         return;
       }
 
-      if (msg.type === 'kickPlayer') {
+      if (msg.type === "kickPlayer") {
         await handleKickPlayer(ws, meta, msg);
         return;
       }
 
-      if (msg.type === 'startGame') {
+      if (msg.type === "startGame") {
         await handleHostAction(ws, meta, startGame);
         return;
       }
 
-      if (msg.type === 'restartGame') {
+      if (msg.type === "restartGame") {
         await handleHostAction(ws, meta, restartGame);
         return;
       }
 
-      if (msg.type === 'nextRound') {
+      if (msg.type === "nextRound") {
         await handleHostAction(ws, meta, nextRound);
         return;
       }
 
-      if (msg.type === 'play') {
-        await handlePlayerAction(ws, meta, game => {
+      if (msg.type === "play") {
+        await handlePlayerAction(ws, meta, (game) => {
           playCards(game, meta.playerId, msg.cardIds, msg.declaredRanks || {});
         });
         return;
       }
 
-      if (msg.type === 'pass') {
-        await handlePlayerAction(ws, meta, game => pass(game, meta.playerId));
+      if (msg.type === "pass") {
+        await handlePlayerAction(ws, meta, (game) => pass(game, meta.playerId));
         return;
       }
     } catch (error) {
-      sendTo(ws, { type: 'error', message: error.message });
+      sendTo(ws, { type: "error", message: error.message });
     }
   });
 
-  ws.on('close', () => {
+  ws.on("close", () => {
     messageRateLimiter.delete(`command:${connectionId}`);
     const meta = sockets.get(ws);
-    const socketKey = meta?.roomId && meta?.playerId
-      ? playerSocketKey(meta.roomId, meta.playerId)
-      : null;
+    const socketKey =
+      meta?.roomId && meta?.playerId
+        ? playerSocketKey(meta.roomId, meta.playerId)
+        : null;
 
     if (socketKey && playerSockets.get(socketKey) === ws) {
       playerSockets.delete(socketKey);
@@ -487,7 +525,7 @@ wss.on('connection', (ws, request) => {
 
     const game = meta?.roomId ? rooms.get(meta.roomId) : null;
     if (game) {
-      persistRoom(game).catch(error => {
+      persistRoom(game).catch((error) => {
         console.error(`Failed to persist disconnected room: ${error.message}`);
       });
     }
