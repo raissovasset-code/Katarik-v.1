@@ -139,6 +139,16 @@ export function App() {
 
     return [...ordered, ...hand.filter(card => !knownIds.has(card.id))];
   }, [game?.hand, handOrder]);
+  const dragNeighborIds = useMemo(() => {
+    if (!draggedCardId) return new Set();
+    const draggedIndex = orderedHand.findIndex(card => card.id === draggedCardId);
+    if (draggedIndex < 0) return new Set();
+
+    return new Set([
+      orderedHand[draggedIndex - 1]?.id,
+      orderedHand[draggedIndex + 1]?.id,
+    ].filter(Boolean));
+  }, [draggedCardId, orderedHand]);
 
   useEffect(() => {
     localStorage.setItem('katarik_name', name);
@@ -788,6 +798,7 @@ export function App() {
                     onClick={() => toggle(card.id)}
                     draggable
                     dragging={draggedCardId === card.id}
+                    dragNeighbor={dragNeighborIds.has(card.id)}
                     onDragStart={event => {
                       setDraggedCardId(card.id);
                       event.dataTransfer.effectAllowed = 'move';
@@ -971,6 +982,7 @@ function Card({
   tableCompact,
   draggable = false,
   dragging = false,
+  dragNeighbor = false,
   onDragStart,
   onDragEnter,
   onDragOver,
@@ -993,7 +1005,7 @@ function Card({
 
   return (
     <button
-      className={`playing-card ${red ? 'red' : ''} ${selected ? 'selected' : ''} ${table ? 'table-card' : ''} ${tableCompact ? 'compact' : ''} ${dragging ? 'dragging' : ''}`}
+      className={`playing-card ${red ? 'red' : ''} ${selected ? 'selected' : ''} ${table ? 'table-card' : ''} ${tableCompact ? 'compact' : ''} ${dragging ? 'dragging' : ''} ${dragNeighbor ? 'drag-neighbor' : ''}`}
       onClick={onClick}
       draggable={draggable}
       onDragStart={onDragStart}

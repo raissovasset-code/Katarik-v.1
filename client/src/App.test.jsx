@@ -180,10 +180,15 @@ describe('active game interface', () => {
 
     fireEvent.dragStart(five, { dataTransfer });
     fireEvent.dragEnter(eight, { dataTransfer });
-    fireEvent.dragEnd(five, { dataTransfer });
 
     expect([...document.querySelectorAll('.hand-fan .playing-card')]
       .map(element => element.getAttribute('aria-label'))).toEqual(['8♥', '5♠']);
+    expect(screen.getByRole('button', { name: /5/ })).toHaveClass('dragging');
+    expect(screen.getByRole('button', { name: /8/ })).toHaveClass('drag-neighbor');
+
+    fireEvent.dragEnd(five, { dataTransfer });
+    expect(screen.getByRole('button', { name: /5/ })).not.toHaveClass('dragging');
+    expect(screen.getByRole('button', { name: /8/ })).not.toHaveClass('drag-neighbor');
 
     await act(async () => socket.message({
       type: 'state',
