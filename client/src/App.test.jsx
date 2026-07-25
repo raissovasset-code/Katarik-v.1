@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { App } from './App.jsx';
@@ -166,6 +166,32 @@ describe('active game interface', () => {
     }));
 
     expect(screen.queryByRole('button', { name: /5/ })).not.toBeInTheDocument();
+  });
+
+  test('reorders hand cards by dragging and keeps the order after a state update', async () => {
+    const socket = await renderConnectedGame();
+    const five = screen.getByRole('button', { name: /5/ });
+    const eight = screen.getByRole('button', { name: /8/ });
+    const dataTransfer = {
+      effectAllowed: '',
+      dropEffect: '',
+      setData: vi.fn(),
+    };
+
+    fireEvent.dragStart(five, { dataTransfer });
+    fireEvent.dragEnter(eight, { dataTransfer });
+    fireEvent.dragEnd(five, { dataTransfer });
+
+    expect([...document.querySelectorAll('.hand-fan .playing-card')]
+      .map(element => element.getAttribute('aria-label'))).toEqual(['8♥', '5♠']);
+
+    await act(async () => socket.message({
+      type: 'state',
+      game: playingGame(),
+    }));
+
+    expect([...document.querySelectorAll('.hand-fan .playing-card')]
+      .map(element => element.getAttribute('aria-label'))).toEqual(['8♥', '5♠']);
   });
 
   test('shows a server game error on the table', async () => {

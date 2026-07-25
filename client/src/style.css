@@ -1543,6 +1543,20 @@ button:disabled {
   box-shadow: none;
 }
 
+.playing-card[draggable='true'] {
+  cursor: grab;
+  touch-action: none;
+}
+
+.playing-card[draggable='true']:active {
+  cursor: grabbing;
+}
+
+.playing-card.dragging {
+  opacity: 0.55;
+  z-index: 30;
+}
+
 .playing-card.table-card {
   width: 90px;
   margin-left: -16px;

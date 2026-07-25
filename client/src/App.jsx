@@ -109,6 +109,8 @@ export function App() {
   const [mode, setMode] = useState('classic');
   const [game, setGame] = useState(null);
   const [selected, setSelected] = useState([]);
+  const [handOrder, setHandOrder] = useState([]);
+  const [draggedCardId, setDraggedCardId] = useState(null);
   const [error, setError] = useState('');
   const [connected, setConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
@@ -121,15 +123,37 @@ export function App() {
   }));
   const wsRef = useRef(null);
   const nameRef = useRef(name);
+  const pointerDragRef = useRef(null);
+  const suppressCardClickRef = useRef(false);
   const reconnectTimerRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
   const lastMessageAtRef = useRef(Date.now());
   const isActiveGame = Boolean(game && game.status !== 'lobby');
+  const orderedHand = useMemo(() => {
+    const hand = game?.hand || [];
+    const cardsById = new Map(hand.map(card => [card.id, card]));
+    const ordered = handOrder
+      .map(cardId => cardsById.get(cardId))
+      .filter(Boolean);
+    const knownIds = new Set(ordered.map(card => card.id));
+
+    return [...ordered, ...hand.filter(card => !knownIds.has(card.id))];
+  }, [game?.hand, handOrder]);
 
   useEffect(() => {
     localStorage.setItem('katarik_name', name);
     nameRef.current = name;
   }, [name]);
+
+  useEffect(() => {
+    const currentIds = (game?.hand || []).map(card => card.id);
+    const currentIdSet = new Set(currentIds);
+
+    setHandOrder(previous => [
+      ...previous.filter(cardId => currentIdSet.has(cardId)),
+      ...currentIds.filter(cardId => !previous.includes(cardId)),
+    ]);
+  }, [game?.hand]);
 
   useEffect(() => {
     if (!isActiveGame || !error || isConnectionMessage(error)) return undefined;
@@ -248,6 +272,7 @@ export function App() {
           restoringRoom = false;
           setGame(null);
           setSelected([]);
+          setHandOrder([]);
           setJoinCode('');
           localStorage.removeItem('katarik_room');
           window.history.replaceState(null, '', window.location.pathname);
@@ -257,6 +282,7 @@ export function App() {
           restoringRoom = false;
           setGame(null);
           setSelected([]);
+          setHandOrder([]);
           setJoinCode('');
           setKickTarget(null);
           localStorage.removeItem('katarik_room');
@@ -376,11 +402,59 @@ export function App() {
   }
 
   function toggle(cardId) {
+    if (suppressCardClickRef.current) {
+      suppressCardClickRef.current = false;
+      return;
+    }
+
     setSelected(prev =>
       prev.includes(cardId)
         ? prev.filter(id => id !== cardId)
         : [...prev, cardId]
     );
+  }
+
+  function moveCard(draggedId, targetId) {
+    if (!draggedId || draggedId === targetId) return;
+
+    setHandOrder(previous => {
+      const currentOrder = orderedHand.map(card => card.id);
+      const sourceIndex = currentOrder.indexOf(draggedId);
+      const targetIndex = currentOrder.indexOf(targetId);
+      if (sourceIndex < 0 || targetIndex < 0) return previous;
+
+      const nextOrder = [...currentOrder];
+      nextOrder.splice(sourceIndex, 1);
+      nextOrder.splice(targetIndex, 0, draggedId);
+      return nextOrder;
+    });
+  }
+
+  function startPointerDrag(event, cardId) {
+    if (event.pointerType === 'mouse') return;
+    pointerDragRef.current = { cardId, moved: false };
+    setDraggedCardId(cardId);
+  }
+
+  function continuePointerDrag(event) {
+    const drag = pointerDragRef.current;
+    if (!drag) return;
+
+    const target = document
+      .elementFromPoint(event.clientX, event.clientY)
+      ?.closest('[data-hand-card-id]');
+    const targetId = target?.dataset.handCardId;
+    if (!targetId || targetId === drag.cardId) return;
+
+    drag.moved = true;
+    moveCard(drag.cardId, targetId);
+  }
+
+  function finishPointerDrag() {
+    if (!pointerDragRef.current) return;
+    suppressCardClickRef.current = pointerDragRef.current.moved;
+    pointerDragRef.current = null;
+    setDraggedCardId(null);
   }
 
   function play() {
@@ -704,7 +778,7 @@ export function App() {
           </div>
         ) : (
           <div className="hand-fan">
-            {splitHandRows(game.hand).map((row, rowIndex) => (
+            {splitHandRows(orderedHand).map((row, rowIndex) => (
               <div className="hand-row" key={rowIndex}>
                 {row.map((card, index) => (
                   <Card
@@ -712,6 +786,26 @@ export function App() {
                     card={card}
                     selected={selected.includes(card.id)}
                     onClick={() => toggle(card.id)}
+                    draggable
+                    dragging={draggedCardId === card.id}
+                    onDragStart={event => {
+                      setDraggedCardId(card.id);
+                      event.dataTransfer.effectAllowed = 'move';
+                      event.dataTransfer.setData('text/plain', card.id);
+                    }}
+                    onDragEnter={event => {
+                      event.preventDefault();
+                      moveCard(draggedCardId, card.id);
+                    }}
+                    onDragOver={event => {
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = 'move';
+                    }}
+                    onDragEnd={() => setDraggedCardId(null)}
+                    onPointerDown={event => startPointerDrag(event, card.id)}
+                    onPointerMove={continuePointerDrag}
+                    onPointerUp={finishPointerDrag}
+                    onPointerCancel={finishPointerDrag}
                     index={index}
                     total={row.length}
                   />
@@ -869,7 +963,25 @@ function splitTableRows(cards = [], forceTwoRows = false) {
   return rows.length ? rows : [[]];
 }
 
-function Card({ card, selected, onClick, table, tableCompact, index = 0, total = 1 }) {
+function Card({
+  card,
+  selected,
+  onClick,
+  table,
+  tableCompact,
+  draggable = false,
+  dragging = false,
+  onDragStart,
+  onDragEnter,
+  onDragOver,
+  onDragEnd,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
+  index = 0,
+  total = 1,
+}) {
   const red = card.suit === 'H' || card.suit === 'D' || card.rank === 'RED_JOKER';
   const label = cardLabel(card);
 
@@ -881,8 +993,18 @@ function Card({ card, selected, onClick, table, tableCompact, index = 0, total =
 
   return (
     <button
-      className={`playing-card ${red ? 'red' : ''} ${selected ? 'selected' : ''} ${table ? 'table-card' : ''} ${tableCompact ? 'compact' : ''}`}
+      className={`playing-card ${red ? 'red' : ''} ${selected ? 'selected' : ''} ${table ? 'table-card' : ''} ${tableCompact ? 'compact' : ''} ${dragging ? 'dragging' : ''}`}
       onClick={onClick}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      data-hand-card-id={draggable ? card.id : undefined}
       style={style}
       aria-label={label}
     >
