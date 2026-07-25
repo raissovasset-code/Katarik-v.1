@@ -26,6 +26,9 @@ function parseRoom(value, key) {
 export function createMemoryRoomStore() {
   return {
     persistent: false,
+    async isReady() {
+      return true;
+    },
     async loadRooms() {
       return new Map();
     },
@@ -46,6 +49,10 @@ export async function createRedisRoomStore({
 
   return {
     persistent: true,
+
+    async isReady() {
+      return (await client.ping()) === "PONG";
+    },
 
     async loadRooms() {
       const rooms = new Map();

@@ -10,6 +10,7 @@ class FakeRedisClient {
     this.setCalls = [];
     this.deleted = [];
     this.quitCalled = false;
+    this.pingCalls = 0;
   }
 
   async *scanIterator() {
@@ -30,6 +31,11 @@ class FakeRedisClient {
     this.deleted.push(key);
   }
 
+  async ping() {
+    this.pingCalls += 1;
+    return "PONG";
+  }
+
   async quit() {
     this.quitCalled = true;
   }
@@ -38,10 +44,23 @@ class FakeRedisClient {
 test("memory store is a no-op fallback when Redis is not configured", async () => {
   const store = createMemoryRoomStore();
   assert.equal(store.persistent, false);
+  assert.equal(await store.isReady(), true);
   assert.deepEqual(await store.loadRooms(), new Map());
   await store.saveRoom({ roomId: "ABC123" });
   await store.deleteRoom("ABC123");
   await store.close();
+});
+
+test("Redis readiness checks the live connection", async () => {
+  const client = new FakeRedisClient();
+  const store = await createRedisRoomStore({
+    url: "redis://test",
+    ttlMs: 60_000,
+    clientFactory: async () => client,
+  });
+
+  assert.equal(await store.isReady(), true);
+  assert.equal(client.pingCalls, 1);
 });
 
 test("loads valid rooms from Redis and skips malformed entries", async () => {

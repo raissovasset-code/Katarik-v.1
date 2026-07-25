@@ -26,6 +26,7 @@ import {
   touchRoom,
 } from "./room-cleanup.js";
 import { createRedisRoomStore } from "./room-store.js";
+import { createHealthSnapshot, createReadinessSnapshot } from "./health.js";
 import { parseClientMessage } from "./message-validation.js";
 import {
   enforceMessageRateLimit,
@@ -77,6 +78,7 @@ const playerSockets = new Map();
 const messageRateLimiter = new SlidingWindowRateLimiter();
 let nextConnectionId = 1;
 const botTurnTimers = new Map();
+let websocketServer;
 
 if (roomStore.persistent) {
   console.log(`Restored ${rooms.size} rooms from Redis`);
@@ -98,12 +100,16 @@ function hasConnectedPlayers(roomId) {
 }
 
 app.get("/api/health", (req, res) => {
-  res.json({
-    name: "Katarik server",
-    status: "ok",
-    roomStorage: roomStore.persistent ? "redis" : "memory",
-    rooms: rooms.size,
+  res.json(createHealthSnapshot({ roomStore, rooms }));
+});
+
+app.get("/api/ready", async (req, res) => {
+  const snapshot = await createReadinessSnapshot({
+    roomStore,
+    server,
+    websocketServer,
   });
+  res.status(snapshot.status === "ready" ? 200 : 503).json(snapshot);
 });
 
 app.get("*", (req, res, next) => {
@@ -132,6 +138,7 @@ const wss = new WebSocketServer({
     );
   },
 });
+websocketServer = wss;
 
 const roomCleanupTimer = setInterval(async () => {
   try {

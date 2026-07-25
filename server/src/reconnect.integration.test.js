@@ -37,6 +37,35 @@ function openSocket(port = TEST_PORT) {
   });
 }
 
+test("health, readiness, and WebSocket heartbeat are available", async (t) => {
+  const port = TEST_PORT + 1;
+  const child = spawn(process.execPath, ["index.js"], {
+    cwd: __dirname,
+    env: { ...process.env, PORT: String(port), REDIS_URL: "" },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  t.after(() => child.kill());
+  await waitForServer(child, port);
+
+  const healthResponse = await fetch(`http://127.0.0.1:${port}/api/health`);
+  assert.equal(healthResponse.status, 200);
+  assert.equal((await healthResponse.json()).status, "ok");
+
+  const readinessResponse = await fetch(`http://127.0.0.1:${port}/api/ready`);
+  assert.equal(readinessResponse.status, 200);
+  assert.deepEqual(await readinessResponse.json(), {
+    status: "ready",
+    checks: { roomStorage: true, websocket: true },
+  });
+
+  const socket = await openSocket(port);
+  t.after(() => socket.close());
+  const pong = waitForMessage(socket, "pong");
+  socket.send(JSON.stringify({ type: "ping" }));
+  assert.equal((await pong).type, "pong");
+});
+
 function waitForMessage(socket, type) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
