@@ -258,6 +258,8 @@ npm run android:check
 ## Документация проекта
 
 - [Правила игры](GAME_RULES.md)
+- [REST и WebSocket-протокол](docs/API_PROTOCOL.md)
+- [Staging и откат релиза](docs/RELEASE_ROLLBACK.md)
 - [Основной чек-лист](KATARIK_CHECKLIST.md)
 - [История старого чек-листа](PROJECT_CHECKLIST.md)
 
