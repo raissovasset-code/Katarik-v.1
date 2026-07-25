@@ -208,21 +208,11 @@ export function App() {
       }
 
       setDragPosition({ x: event.clientX, y: event.clientY });
-      const candidates = [...document.querySelectorAll('[data-hand-card-id]')]
-        .map(element => ({ element, rect: element.getBoundingClientRect() }))
-        .filter(({ rect }) => (
-          event.clientY >= rect.top - 55 &&
-          event.clientY <= rect.top + Math.min(65, rect.height * 0.45)
-        ))
-        .sort((a, b) => {
-          const rowDistance = Math.abs(event.clientY - a.rect.top) -
-            Math.abs(event.clientY - b.rect.top);
-          if (rowDistance !== 0) return rowDistance;
-          const aCenter = a.rect.left + a.rect.width / 2;
-          const bCenter = b.rect.left + b.rect.width / 2;
-          return Math.abs(event.clientX - aCenter) - Math.abs(event.clientX - bCenter);
-        });
-      const targetId = candidates[0]?.element.dataset.handCardId;
+      const draggedCardHalfHeight = 68;
+      const touchedCard = document
+        .elementFromPoint(event.clientX, event.clientY + draggedCardHalfHeight)
+        ?.closest('[data-hand-card-id]');
+      const targetId = touchedCard?.dataset.handCardId;
       if (targetId && targetId !== drag.cardId) {
         setDropTargetId(targetId);
         moveCardRef.current?.(drag.cardId, targetId);
