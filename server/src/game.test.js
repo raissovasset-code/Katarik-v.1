@@ -121,6 +121,52 @@ test("two-player rounds always deal 18 cards each and burn 19 cards", () => {
   assert.equal(game.burned.length, 19);
 });
 
+test("deals every card exactly once for room sizes from 2 to 11", () => {
+  const modes = ["classic", "pogoni", "elimination"];
+
+  for (const mode of modes) {
+    const minimumPlayers = mode === "elimination" ? 3 : 2;
+
+    for (
+      let playerCount = minimumPlayers;
+      playerCount <= 11;
+      playerCount += 1
+    ) {
+      const game = createGame(`ROOM-${mode}-${playerCount}`, mode);
+      playerIds(playerCount).forEach((id) => addPlayer(game, { id, name: id }));
+
+      startGame(game);
+
+      const hands = game.players.map((item) => item.hand);
+      const dealtCards = hands.flat();
+      const allCards = [...dealtCards, ...game.burned];
+      const cardIds = allCards.map((card) => card.id);
+      const handSizes = hands.map((hand) => hand.length);
+
+      assert.equal(
+        allCards.length,
+        55,
+        `${mode}, ${playerCount} players: every deck card must be accounted for`,
+      );
+      assert.equal(
+        new Set(cardIds).size,
+        55,
+        `${mode}, ${playerCount} players: card ids must not repeat`,
+      );
+      assert.equal(
+        Math.max(...handSizes) - Math.min(...handSizes),
+        0 + Number(playerCount > 2 && 55 % playerCount !== 0),
+        `${mode}, ${playerCount} players: hands must be balanced`,
+      );
+      assert.equal(
+        game.burned.length,
+        playerCount === 2 ? 19 : 0,
+        `${mode}, ${playerCount} players: only two-player games burn cards`,
+      );
+    }
+  }
+});
+
 test("elimination requires at least three players to start", () => {
   const game = createGame("ROOM", "elimination");
   addPlayer(game, { id: "A", name: "A" });
