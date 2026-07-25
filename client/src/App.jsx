@@ -208,11 +208,15 @@ export function App() {
         setDraggedCardId(drag.cardId);
       }
 
-      setDragPosition({ x: event.clientX, y: event.clientY });
-      const previewHeight = document
-        .querySelector('.card-drag-preview .playing-card')
-        ?.getBoundingClientRect().height || 136;
-      const draggedCardBottom = event.clientY + previewHeight / 2;
+      const dragLeft = event.clientX - drag.offsetX;
+      const dragTop = event.clientY - drag.offsetY;
+      setDragPosition({
+        x: dragLeft,
+        y: dragTop,
+        width: drag.width,
+        height: drag.height,
+      });
+      const draggedCardBottom = dragTop + drag.height;
       const touchedCard = [...document.querySelectorAll('[data-hand-card-id]')]
         .map(element => ({ element, rect: element.getBoundingClientRect() }))
         .filter(({ rect }) => (
@@ -522,11 +526,16 @@ export function App() {
 
   function startPointerDrag(event, cardId) {
     if (event.button !== 0 && event.pointerType === 'mouse') return;
+    const cardRect = event.currentTarget.getBoundingClientRect();
     pointerDragRef.current = {
       cardId,
       moved: false,
       startX: event.clientX,
       startY: event.clientY,
+      offsetX: event.clientX - cardRect.left,
+      offsetY: event.clientY - cardRect.top,
+      width: cardRect.width,
+      height: cardRect.height,
     };
     dropPlacementRef.current = null;
   }
@@ -885,7 +894,12 @@ export function App() {
         {draggedCard && dragPosition && (
           <div
             className="card-drag-preview"
-            style={{ left: dragPosition.x, top: dragPosition.y }}
+            style={{
+              left: dragPosition.x,
+              top: dragPosition.y,
+              width: dragPosition.width,
+              height: dragPosition.height,
+            }}
             aria-hidden="true"
           >
             <Card card={draggedCard} dragging />

@@ -179,11 +179,11 @@ describe('active game interface', () => {
     expect(eight).toHaveClass('selected');
 
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
-      if (this.closest('.card-drag-preview')) {
-        return { left: 0, right: 92, top: 0, bottom: 136, width: 92, height: 136 };
+      if (this.dataset?.handCardId === '5S') {
+        return { left: 0, right: 92, top: 100, bottom: 236, width: 92, height: 136 };
       }
       if (this.dataset?.handCardId === '8H') {
-        return { left: 50, right: 142, top: 108, bottom: 244, width: 92, height: 136 };
+        return { left: 50, right: 142, top: 176, bottom: 312, width: 92, height: 136 };
       }
       return { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 };
     });
@@ -192,7 +192,7 @@ describe('active game interface', () => {
       bubbles: true,
       button: 0,
       clientX: 10,
-      clientY: 100,
+      clientY: 168,
     }));
     fireEvent(window, new MouseEvent('pointermove', {
       bubbles: true,
@@ -211,7 +211,7 @@ describe('active game interface', () => {
     fireEvent(window, new MouseEvent('pointermove', {
       bubbles: true,
       clientX: 120,
-      clientY: 40,
+      clientY: 108,
     }));
 
     expect(screen.getByRole('button', { name: /8/ })).toHaveClass('drag-neighbor');
@@ -219,7 +219,7 @@ describe('active game interface', () => {
     fireEvent(window, new MouseEvent('pointerup', {
       bubbles: true,
       clientX: 120,
-      clientY: 40,
+      clientY: 108,
     }));
     expect(screen.getByRole('button', { name: /5/ })).not.toHaveClass('dragging');
     expect(screen.getByRole('button', { name: /8/ })).not.toHaveClass('drag-neighbor');
