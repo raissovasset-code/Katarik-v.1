@@ -40,6 +40,7 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...reactHooks.configs.flat.recommended.rules,
+      "no-unused-vars": ["error", { varsIgnorePattern: "^React$" }],
       "react/jsx-uses-vars": "error",
       "react-hooks/set-state-in-effect": "off",
     },
