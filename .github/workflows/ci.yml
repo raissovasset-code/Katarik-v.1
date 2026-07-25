@@ -34,6 +34,8 @@ jobs:
         run: npm ci --prefix server
       - name: Install client dependencies
         run: npm ci --prefix client
+      - name: Audit dependencies
+        run: npm run audit:dependencies
       - name: Run server tests
         run: npm test
       - name: Run client tests

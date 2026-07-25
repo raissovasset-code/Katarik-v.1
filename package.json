@@ -9,6 +9,7 @@
     "cap:sync": "npm run mobile:build && npx cap sync android",
     "android:check": "node scripts/check-android-env.mjs",
     "android:open": "npx cap open android",
+    "audit:dependencies": "npm audit --audit-level=low && npm audit --audit-level=low --prefix server && npm audit --audit-level=low --prefix client",
     "lint": "eslint client server scripts *.config.js",
     "format": "prettier --write \"client/**/*.{js,jsx,json,css,html}\" \"server/**/*.{js,mjs,json}\" \"scripts/**/*.mjs\" \"*.{js,json}\"",
     "format:check": "prettier --check \"client/**/*.{js,jsx,json,css,html}\" \"server/**/*.{js,mjs,json}\" \"scripts/**/*.mjs\" \"*.{js,json}\"",
@@ -22,15 +23,14 @@
     "train:neural-rl": "npm run train:neural-rl --prefix server --"
   },
   "dependencies": {
-    "@capacitor/android": "^8.4.1",
-    "@capacitor/cli": "^8.4.1",
-    "@capacitor/core": "^8.4.1"
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.5",
-    "@playwright/test": "^1.61.1",
-    "eslint": "^9.39.5",
-    "eslint-plugin-react": "^7.37.5",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.0",
+    "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.7.0",
     "prettier": "^3.9.6"
