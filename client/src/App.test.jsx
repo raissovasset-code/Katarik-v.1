@@ -89,6 +89,17 @@ function playingGame(overrides = {}) {
   };
 }
 
+test("welcome screen links to privacy policy and terms", () => {
+  render(<App />);
+
+  expect(
+    screen.getByRole("link", { name: "Политика конфиденциальности" }),
+  ).toHaveAttribute("href", "/privacy.html");
+  expect(
+    screen.getByRole("link", { name: "Условия использования" }),
+  ).toHaveAttribute("href", "/terms.html");
+});
+
 async function renderConnectedGame(game = playingGame()) {
   render(<App />);
   const socket = TestWebSocket.instances.at(-1);

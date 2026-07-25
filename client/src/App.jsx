@@ -824,6 +824,11 @@ export function App() {
 
             {error && <div className="toast error">{error}</div>}
           </div>
+
+          <nav className="legal-links" aria-label="Правовая информация">
+            <a href="/privacy.html">Политика конфиденциальности</a>
+            <a href="/terms.html">Условия использования</a>
+          </nav>
         </section>
       </main>
     );

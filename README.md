@@ -264,6 +264,9 @@ npm run android:check
 - [Правила игры](GAME_RULES.md)
 - [REST и WebSocket-протокол](docs/API_PROTOCOL.md)
 - [Staging и откат релиза](docs/RELEASE_ROLLBACK.md)
+- [Подписанные Android-релизы](docs/ANDROID_SIGNED_RELEASE.md)
+- [Политика конфиденциальности](docs/PRIVACY_POLICY.md)
+- [Условия использования](docs/TERMS_OF_USE.md)
 - [Основной чек-лист](KATARIK_CHECKLIST.md)
 - [История старого чек-листа](PROJECT_CHECKLIST.md)
 

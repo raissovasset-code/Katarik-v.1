@@ -226,6 +226,25 @@ button:disabled {
   color: #8ff1b8;
 }
 
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 16px;
+  margin-top: 20px;
+  font-size: 12px;
+}
+
+.legal-links a {
+  color: var(--muted);
+  text-underline-offset: 3px;
+}
+
+.legal-links a:hover,
+.legal-links a:focus-visible {
+  color: #8ff1b8;
+}
+
 .mobile-welcome {
   min-height: 100svh;
   padding: max(22px, calc(env(safe-area-inset-top) + 18px)) 14px
