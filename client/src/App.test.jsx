@@ -179,6 +179,9 @@ describe('active game interface', () => {
     expect(eight).toHaveClass('selected');
 
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      if (this.matches('[data-hand-row]')) {
+        return { left: 0, right: 200, top: 176, bottom: 312, width: 200, height: 136 };
+      }
       if (this.dataset?.handCardId === '5S') {
         return { left: 0, right: 92, top: 100, bottom: 236, width: 92, height: 136 };
       }
@@ -200,7 +203,7 @@ describe('active game interface', () => {
       clientY: 10,
     }));
 
-    expect(document.querySelector('.hand-fan .card-placeholder')).toBeInTheDocument();
+    expect(document.querySelector('.hand-fan .card-placeholder')).not.toBeInTheDocument();
     expect([...document.querySelectorAll('.hand-fan .playing-card')]
       .map(element => element.getAttribute('aria-label'))
       .filter(Boolean)).toEqual(['8♥']);
@@ -211,15 +214,16 @@ describe('active game interface', () => {
     fireEvent(window, new MouseEvent('pointermove', {
       bubbles: true,
       clientX: 120,
-      clientY: 108,
+      clientY: 109,
     }));
 
+    expect(document.querySelector('.hand-fan .card-placeholder')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /8/ })).toHaveClass('drag-neighbor');
 
     fireEvent(window, new MouseEvent('pointerup', {
       bubbles: true,
       clientX: 120,
-      clientY: 108,
+      clientY: 109,
     }));
     expect(screen.getByRole('button', { name: /5/ })).not.toHaveClass('dragging');
     expect(screen.getByRole('button', { name: /8/ })).not.toHaveClass('drag-neighbor');

@@ -159,6 +159,20 @@ export function App() {
   const draggedCard = draggedCardId
     ? orderedHand.find(card => card.id === draggedCardId)
     : null;
+  const displayedHand = useMemo(() => {
+    if (!draggedCardId) return orderedHand;
+    const remainingCards = orderedHand.filter(card => card.id !== draggedCardId);
+    if (!dropTargetId) return remainingCards;
+    const targetIndex = remainingCards.findIndex(card => card.id === dropTargetId);
+    if (targetIndex < 0) return remainingCards;
+    const insertionIndex = targetIndex + (dropSide === 'after' ? 1 : 0);
+    const result = [...remainingCards];
+    result.splice(insertionIndex, 0, {
+      id: '__drag-placeholder__',
+      placeholder: true,
+    });
+    return result;
+  }, [draggedCardId, dropSide, dropTargetId, orderedHand]);
 
   useEffect(() => {
     localStorage.setItem('katarik_name', name);
@@ -217,16 +231,23 @@ export function App() {
         height: drag.height,
       });
       const draggedCardBottom = dragTop + drag.height;
-      const touchedCard = [...document.querySelectorAll('[data-hand-card-id]')]
+      const touchedRow = [...document.querySelectorAll('[data-hand-row]')]
         .map(element => ({ element, rect: element.getBoundingClientRect() }))
         .filter(({ rect }) => (
           draggedCardBottom >= rect.top &&
-          draggedCardBottom <= rect.top + 22 &&
-          event.clientX >= rect.left &&
-          event.clientX <= rect.right
+          draggedCardBottom <= rect.top + 22
         ))
         .sort((a, b) => Math.abs(draggedCardBottom - a.rect.top) -
           Math.abs(draggedCardBottom - b.rect.top))[0];
+      const touchedCard = touchedRow
+        ? [...touchedRow.element.querySelectorAll('[data-hand-card-id]')]
+          .map(element => ({ element, rect: element.getBoundingClientRect() }))
+          .sort((a, b) => {
+            const aCenter = a.rect.left + a.rect.width / 2;
+            const bCenter = b.rect.left + b.rect.width / 2;
+            return Math.abs(event.clientX - aCenter) - Math.abs(event.clientX - bCenter);
+          })[0]
+        : null;
       const targetId = touchedCard?.element.dataset.handCardId;
       if (targetId && targetId !== drag.cardId) {
         const side = event.clientX <
@@ -527,15 +548,20 @@ export function App() {
   function startPointerDrag(event, cardId) {
     if (event.button !== 0 && event.pointerType === 'mouse') return;
     const cardRect = event.currentTarget.getBoundingClientRect();
+    const cardStyle = window.getComputedStyle(event.currentTarget);
+    const cardWidth = Number.parseFloat(cardStyle.width) || cardRect.width;
+    const cardHeight = Number.parseFloat(cardStyle.height) || cardRect.height;
+    const relativeX = cardRect.width ? (event.clientX - cardRect.left) / cardRect.width : 0.5;
+    const relativeY = cardRect.height ? (event.clientY - cardRect.top) / cardRect.height : 0.5;
     pointerDragRef.current = {
       cardId,
       moved: false,
       startX: event.clientX,
       startY: event.clientY,
-      offsetX: event.clientX - cardRect.left,
-      offsetY: event.clientY - cardRect.top,
-      width: cardRect.width,
-      height: cardRect.height,
+      offsetX: cardWidth * relativeX,
+      offsetY: cardHeight * relativeY,
+      width: cardWidth,
+      height: cardHeight,
     };
     dropPlacementRef.current = null;
   }
@@ -861,10 +887,10 @@ export function App() {
           </div>
         ) : (
           <div className="hand-fan">
-            {splitHandRows(orderedHand).map((row, rowIndex) => (
-              <div className="hand-row" key={rowIndex}>
+            {splitHandRows(displayedHand).map((row, rowIndex) => (
+              <div className="hand-row" data-hand-row key={rowIndex}>
                 {row.map((card, index) => (
-                  card.id === draggedCardId ? (
+                  card.placeholder ? (
                     <div
                       className="playing-card card-placeholder"
                       key={card.id}
