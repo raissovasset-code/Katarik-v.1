@@ -222,10 +222,19 @@ describe('active game interface', () => {
     expect(document.querySelector('.hand-row')?.children[1]).toHaveClass('card-placeholder');
     expect(screen.getByRole('button', { name: /8/ })).toHaveClass('drag-neighbor');
 
+    fireEvent(window, new MouseEvent('pointermove', {
+      bubbles: true,
+      clientX: 120,
+      clientY: 200,
+    }));
+
+    expect(document.querySelector('.hand-row')?.children[1]).toHaveClass('card-placeholder');
+    expect(screen.getByRole('button', { name: /8/ })).toHaveClass('drag-neighbor');
+
     fireEvent(window, new MouseEvent('pointerup', {
       bubbles: true,
       clientX: 120,
-      clientY: 109,
+      clientY: 200,
     }));
     expect(screen.getByRole('button', { name: /5/ })).not.toHaveClass('dragging');
     expect(screen.getByRole('button', { name: /8/ })).not.toHaveClass('drag-neighbor');

@@ -242,7 +242,7 @@ export function App() {
         .map(element => ({ element, rect: element.getBoundingClientRect() }))
         .filter(({ rect }) => (
           draggedCardBottom >= rect.top &&
-          draggedCardBottom <= rect.top + 22
+          draggedCardBottom <= rect.top + rect.height * 0.85
         ))
         .sort((a, b) => Math.abs(draggedCardBottom - a.rect.top) -
           Math.abs(draggedCardBottom - b.rect.top))[0];
