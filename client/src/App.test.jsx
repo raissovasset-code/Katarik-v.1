@@ -169,36 +169,61 @@ describe('active game interface', () => {
   });
 
   test('reorders hand cards by dragging and keeps the order after a state update', async () => {
+    const user = userEvent.setup();
     const socket = await renderConnectedGame();
     const five = screen.getByRole('button', { name: /5/ });
     const eight = screen.getByRole('button', { name: /8/ });
-    Object.defineProperty(document, 'elementFromPoint', {
-      configurable: true,
-      value: vi.fn(() => eight),
+    await user.click(five);
+    await user.click(eight);
+    expect(five).toHaveClass('selected');
+    expect(eight).toHaveClass('selected');
+
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      const left = this.dataset?.handCardId === '8H' ? 50 : 0;
+      return {
+        left,
+        right: left + 92,
+        top: 100,
+        bottom: 230,
+        width: 92,
+        height: 130,
+        x: left,
+        y: 100,
+        toJSON: () => ({}),
+      };
     });
 
-    fireEvent.pointerDown(five, {
-      pointerType: 'mouse',
+    fireEvent(five, new MouseEvent('pointerdown', {
+      bubbles: true,
       button: 0,
       clientX: 10,
-      clientY: 10,
-    });
-    fireEvent.pointerMove(window, {
-      pointerType: 'mouse',
-      clientX: 40,
-      clientY: 10,
-    });
+      clientY: 100,
+    }));
+    fireEvent(window, new MouseEvent('pointermove', {
+      bubbles: true,
+      clientX: 80,
+      clientY: 220,
+    }));
 
     expect([...document.querySelectorAll('.hand-fan .playing-card')]
       .map(element => element.getAttribute('aria-label'))).toEqual(['8♥']);
     expect(document.querySelector('.card-drag-preview .playing-card')).toHaveClass('dragging');
+    expect(screen.getByRole('button', { name: /8/ })).not.toHaveClass('selected');
+    expect(screen.getByRole('button', { name: /8/ })).not.toHaveClass('drag-neighbor');
+
+    fireEvent(window, new MouseEvent('pointermove', {
+      bubbles: true,
+      clientX: 80,
+      clientY: 105,
+    }));
+
     expect(screen.getByRole('button', { name: /8/ })).toHaveClass('drag-neighbor');
 
-    fireEvent.pointerUp(window, {
-      pointerType: 'mouse',
-      clientX: 40,
-      clientY: 10,
-    });
+    fireEvent(window, new MouseEvent('pointerup', {
+      bubbles: true,
+      clientX: 80,
+      clientY: 105,
+    }));
     expect(screen.getByRole('button', { name: /5/ })).not.toHaveClass('dragging');
     expect(screen.getByRole('button', { name: /8/ })).not.toHaveClass('drag-neighbor');
 

@@ -112,6 +112,7 @@ export function App() {
   const [handOrder, setHandOrder] = useState([]);
   const [draggedCardId, setDraggedCardId] = useState(null);
   const [dragPosition, setDragPosition] = useState(null);
+  const [dropTargetId, setDropTargetId] = useState(null);
   const [error, setError] = useState('');
   const [connected, setConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
@@ -142,7 +143,7 @@ export function App() {
     return [...ordered, ...hand.filter(card => !knownIds.has(card.id))];
   }, [game?.hand, handOrder]);
   const dragNeighborIds = useMemo(() => {
-    if (!draggedCardId) return new Set();
+    if (!draggedCardId || !dropTargetId) return new Set();
     const draggedIndex = orderedHand.findIndex(card => card.id === draggedCardId);
     if (draggedIndex < 0) return new Set();
 
@@ -150,7 +151,7 @@ export function App() {
       orderedHand[draggedIndex - 1]?.id,
       orderedHand[draggedIndex + 1]?.id,
     ].filter(Boolean));
-  }, [draggedCardId, orderedHand]);
+  }, [draggedCardId, dropTargetId, orderedHand]);
   const draggedCard = draggedCardId
     ? orderedHand.find(card => card.id === draggedCardId)
     : null;
@@ -202,16 +203,31 @@ export function App() {
 
       if (!drag.moved) {
         drag.moved = true;
+        setSelected([]);
         setDraggedCardId(drag.cardId);
       }
 
       setDragPosition({ x: event.clientX, y: event.clientY });
-      const target = document
-        .elementFromPoint(event.clientX, event.clientY)
-        ?.closest('[data-hand-card-id]');
-      const targetId = target?.dataset.handCardId;
+      const candidates = [...document.querySelectorAll('[data-hand-card-id]')]
+        .map(element => ({ element, rect: element.getBoundingClientRect() }))
+        .filter(({ rect }) => (
+          event.clientY >= rect.top - 55 &&
+          event.clientY <= rect.top + Math.min(65, rect.height * 0.45)
+        ))
+        .sort((a, b) => {
+          const rowDistance = Math.abs(event.clientY - a.rect.top) -
+            Math.abs(event.clientY - b.rect.top);
+          if (rowDistance !== 0) return rowDistance;
+          const aCenter = a.rect.left + a.rect.width / 2;
+          const bCenter = b.rect.left + b.rect.width / 2;
+          return Math.abs(event.clientX - aCenter) - Math.abs(event.clientX - bCenter);
+        });
+      const targetId = candidates[0]?.element.dataset.handCardId;
       if (targetId && targetId !== drag.cardId) {
+        setDropTargetId(targetId);
         moveCardRef.current?.(drag.cardId, targetId);
+      } else {
+        setDropTargetId(null);
       }
     }
 
@@ -223,6 +239,7 @@ export function App() {
       pointerDragRef.current = null;
       setDraggedCardId(null);
       setDragPosition(null);
+      setDropTargetId(null);
     }
 
     window.addEventListener('pointermove', handlePointerMove);
