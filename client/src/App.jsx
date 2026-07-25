@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
+import {
+  createGameAudio,
+  getGameSounds,
+  readSoundEnabled,
+  writeSoundEnabled,
+} from "./game-audio.js";
 import "./style.css";
 
 function defaultWsUrl() {
@@ -131,6 +137,7 @@ export function App() {
   const [inviteCopied, setInviteCopied] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [kickTarget, setKickTarget] = useState(null);
+  const [soundEnabled, setSoundEnabled] = useState(readSoundEnabled);
   const [viewport, setViewport] = useState(() => ({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -144,6 +151,10 @@ export function App() {
   const reconnectTimerRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
   const lastMessageAtRef = useRef(Date.now());
+  const previousGameRef = useRef(null);
+  const soundEnabledRef = useRef(soundEnabled);
+  const audioRef = useRef(null);
+  if (!audioRef.current) audioRef.current = createGameAudio();
   const isActiveGame = Boolean(game && game.status !== "lobby");
   const orderedHand = useMemo(() => {
     const hand = game?.hand || [];
@@ -205,6 +216,19 @@ export function App() {
     localStorage.setItem("katarik_name", name);
     nameRef.current = name;
   }, [name]);
+
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    function unlockAudio() {
+      void audioRef.current?.unlock();
+    }
+
+    window.addEventListener("pointerdown", unlockAudio, { once: true });
+    return () => window.removeEventListener("pointerdown", unlockAudio);
+  }, []);
 
   useEffect(() => {
     const currentIds = (game?.hand || []).map((card) => card.id);
@@ -422,6 +446,17 @@ export function App() {
         if (msg.type === "state") {
           restoringRoom = false;
           clearConnectionError();
+          const sounds = getGameSounds(
+            previousGameRef.current,
+            msg.game,
+            user.id,
+          );
+          previousGameRef.current = msg.game;
+          if (soundEnabledRef.current) {
+            sounds.forEach((sound, index) =>
+              audioRef.current?.play(sound, index * 0.11),
+            );
+          }
           setGame(msg.game);
           const handCardIds = new Set(
             (msg.game?.hand || []).map((card) => card.id),
@@ -433,6 +468,7 @@ export function App() {
 
         if (msg.type === "leftRoom") {
           restoringRoom = false;
+          previousGameRef.current = null;
           setGame(null);
           setSelected([]);
           setHandOrder([]);
@@ -443,6 +479,7 @@ export function App() {
 
         if (msg.type === "kicked") {
           restoringRoom = false;
+          previousGameRef.current = null;
           setGame(null);
           setSelected([]);
           setHandOrder([]);
@@ -619,6 +656,28 @@ export function App() {
     setSelected([]);
   }
 
+  function toggleSound() {
+    const nextValue = !soundEnabled;
+    soundEnabledRef.current = nextValue;
+    setSoundEnabled(nextValue);
+    writeSoundEnabled(nextValue);
+    if (nextValue) {
+      void audioRef.current?.unlock();
+      audioRef.current?.play("turn");
+    }
+  }
+
+  const soundButton = (
+    <button
+      className="ghost-button sound-toggle"
+      onClick={toggleSound}
+      aria-label={soundEnabled ? "Выключить звук" : "Включить звук"}
+      title={soundEnabled ? "Выключить звук" : "Включить звук"}
+    >
+      <span aria-hidden="true">{soundEnabled ? "🔊" : "🔇"}</span>
+    </button>
+  );
+
   function leaveRoom() {
     if (game?.status === "playing" || game?.status === "round_finished") {
       setLeaveConfirmOpen(true);
@@ -681,6 +740,7 @@ export function App() {
   if (!game) {
     return (
       <main className={`welcome ${isMobileLayout ? "mobile-welcome" : ""}`}>
+        <div className="welcome-sound-toggle">{soundButton}</div>
         <section className="welcome-card">
           <div className="brand">
             <div className="brand-mark">♠ ♥ ♦ ♣</div>
@@ -778,6 +838,7 @@ export function App() {
               {game.status === "lobby" && (
                 <span className="mode-chip">{modeName(game.mode)}</span>
               )}
+              {soundButton}
               <button className="ghost-button" onClick={copyInvite}>
                 {inviteCopied ? "Скопировано" : "Пригласить"}
               </button>
