@@ -1,0 +1,75 @@
+name: Staging Release Check
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  staging:
+    name: Production build with isolated Redis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+      - name: Install server dependencies
+        run: npm ci --prefix server
+      - name: Install client dependencies
+        run: npm ci --prefix client
+      - name: Build production client
+        run: npm run build --prefix client
+      - name: Start isolated staging server
+        env:
+          PORT: 3001
+          REDIS_URL: redis://127.0.0.1:6379
+          ALLOWED_ORIGINS: http://127.0.0.1:3001
+        run: |
+          npm start --prefix server > staging-server.log 2>&1 &
+          echo $! > staging-server.pid
+      - name: Wait for readiness
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3001/api/ready; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat staging-server.log
+          exit 1
+      - name: Check staging readiness and WebSocket
+        env:
+          PRODUCTION_URL: http://127.0.0.1:3001
+        run: npm run monitor:production --prefix server
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-server-log
+          path: staging-server.log
+          retention-days: 7
