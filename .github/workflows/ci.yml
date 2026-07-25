@@ -55,6 +55,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Install Capacitor dependencies
         run: npm ci
+      - name: Install client dependencies
+        run: npm ci --prefix client
+      - name: Build client assets
+        run: npm run build --prefix client
       - name: Sync Capacitor Android project
         run: npx cap sync android
       - name: Make Gradle wrapper executable
