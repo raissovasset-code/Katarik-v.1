@@ -1,3 +1,5 @@
+import { errorContext, logger } from "./logger.js";
+
 const ROOM_KEY_PREFIX = "katarik:room:";
 
 function roomKey(roomId) {
@@ -18,7 +20,12 @@ function parseRoom(value, key) {
     }
     return game;
   } catch (error) {
-    console.error(`Skipped invalid persisted room ${key}: ${error.message}`);
+    logger.error("persisted_room_invalid", {
+      roomId: key.startsWith(ROOM_KEY_PREFIX)
+        ? key.slice(ROOM_KEY_PREFIX.length)
+        : "unknown",
+      ...errorContext(error),
+    });
     return null;
   }
 }
@@ -91,7 +98,7 @@ async function defaultRedisClientFactory(url) {
   const { createClient } = await import("redis");
   const client = createClient({ url });
   client.on("error", (error) => {
-    console.error(`Redis error: ${error.message}`);
+    logger.error("redis_error", errorContext(error));
   });
   await client.connect();
   return client;

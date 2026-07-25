@@ -38,6 +38,7 @@ import { createOriginPolicy, parseAllowedOrigins } from "./origin-policy.js";
 import { chooseBotAction } from "./bot-strategy.js";
 import { chooseNeuralAction, PUBLISHED_NEURAL_MODEL } from "./neural-bot.js";
 import { randomUUID } from "node:crypto";
+import { errorContext, logger } from "./logger.js";
 
 const PORT = Number(process.env.PORT || 3001);
 const ROOM_TTL_MS = parsePositiveDuration(
@@ -81,11 +82,12 @@ const botTurnTimers = new Map();
 let websocketServer;
 
 if (roomStore.persistent) {
-  console.log(`Restored ${rooms.size} rooms from Redis`);
+  logger.info("rooms_restored", {
+    rooms: rooms.size,
+    storage: "redis",
+  });
 } else {
-  console.warn(
-    "REDIS_URL is not configured; rooms will not survive a server restart",
-  );
+  logger.warn("volatile_room_storage", { storage: "memory" });
 }
 
 function playerSocketKey(roomId, playerId) {
@@ -124,7 +126,7 @@ app.get("*", (req, res, next) => {
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`Katarik server on :${PORT}`);
+  logger.info("server_started", { port: PORT });
 });
 
 const wss = new WebSocketServer({
@@ -154,10 +156,10 @@ const roomCleanupTimer = setInterval(async () => {
     messageRateLimiter.sweep(MAX_RATE_LIMIT_WINDOW_MS);
 
     if (removedRoomIds.length > 0) {
-      console.log(`Removed ${removedRoomIds.length} expired rooms`);
+      logger.info("rooms_expired", { removedRooms: removedRoomIds.length });
     }
   } catch (error) {
-    console.error(`Room cleanup failed: ${error.message}`);
+    logger.error("room_cleanup_failed", errorContext(error));
   }
 }, ROOM_CLEANUP_INTERVAL_MS);
 roomCleanupTimer.unref?.();
@@ -251,7 +253,10 @@ function scheduleBotTurn(roomId) {
       await persistRoom(currentGame);
       broadcast(roomId);
     } catch (error) {
-      console.error(`Bot turn failed in room ${roomId}: ${error.message}`);
+      logger.error("bot_turn_failed", {
+        roomId,
+        ...errorContext(error),
+      });
     }
   }, BOT_TURN_DELAY_MS);
 
@@ -302,8 +307,13 @@ async function leaveRoom(ws) {
       rooms.delete(roomId);
       clearBotTurn(roomId);
       await roomStore.deleteRoom(roomId);
+      logger.info("room_deleted", { roomId });
     } else {
       await persistRoom(game);
+      logger.info("player_left", {
+        roomId,
+        players: game.players.length,
+      });
       broadcast(roomId);
     }
   }
@@ -322,6 +332,11 @@ async function handleCreateRoom(ws, msg) {
   game.hostPlayerId = player.id;
   bindPlayerSocket(ws, code, player.id);
   await persistRoom(game);
+  logger.info("room_created", {
+    roomId: code,
+    mode: game.mode,
+    players: game.players.length,
+  });
 
   sendTo(ws, { type: "roomCreated", roomId: code });
   broadcast(code);
@@ -346,6 +361,10 @@ async function handleJoinRoom(ws, msg) {
     claimExistingPlayerSession(existingPlayer, msg);
     bindPlayerSocket(ws, roomId, existingPlayer.id);
     await persistRoom(game);
+    logger.info("player_reconnected", {
+      roomId,
+      players: game.players.length,
+    });
     broadcast(roomId);
     return;
   }
@@ -358,6 +377,10 @@ async function handleJoinRoom(ws, msg) {
   addPlayer(game, player);
   bindPlayerSocket(ws, roomId, player.id);
   await persistRoom(game);
+  logger.info("player_joined", {
+    roomId,
+    players: game.players.length,
+  });
   broadcast(roomId);
 }
 
@@ -376,6 +399,10 @@ async function handleAddBot(meta) {
     isBot: true,
   });
   await persistRoom(game);
+  logger.info("bot_added", {
+    roomId: meta.roomId,
+    players: game.players.length,
+  });
   broadcast(meta.roomId);
 }
 
@@ -415,6 +442,10 @@ async function handleKickPlayer(ws, meta, msg) {
   }
 
   await persistRoom(game);
+  logger.info("player_kicked", {
+    roomId: meta.roomId,
+    players: game.players.length,
+  });
 
   if (targetSocket) {
     playerSockets.delete(targetKey);
@@ -533,7 +564,10 @@ wss.on("connection", (ws, request) => {
     const game = meta?.roomId ? rooms.get(meta.roomId) : null;
     if (game) {
       persistRoom(game).catch((error) => {
-        console.error(`Failed to persist disconnected room: ${error.message}`);
+        logger.error("disconnected_room_persist_failed", {
+          roomId: meta.roomId,
+          ...errorContext(error),
+        });
       });
     }
 
