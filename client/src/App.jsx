@@ -113,6 +113,7 @@ export function App() {
   const [draggedCardId, setDraggedCardId] = useState(null);
   const [dragPosition, setDragPosition] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
+  const [dropSide, setDropSide] = useState('before');
   const [error, setError] = useState('');
   const [connected, setConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
@@ -127,6 +128,7 @@ export function App() {
   const nameRef = useRef(name);
   const pointerDragRef = useRef(null);
   const moveCardRef = useRef(null);
+  const dropPlacementRef = useRef(null);
   const suppressCardClickRef = useRef(false);
   const reconnectTimerRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
@@ -144,20 +146,19 @@ export function App() {
   }, [game?.hand, handOrder]);
   const dragNeighborIds = useMemo(() => {
     if (!draggedCardId || !dropTargetId) return new Set();
-    const draggedIndex = orderedHand.findIndex(card => card.id === draggedCardId);
-    if (draggedIndex < 0) return new Set();
+    const remainingCards = orderedHand.filter(card => card.id !== draggedCardId);
+    const targetIndex = remainingCards.findIndex(card => card.id === dropTargetId);
+    if (targetIndex < 0) return new Set();
+    const insertionIndex = targetIndex + (dropSide === 'after' ? 1 : 0);
 
     return new Set([
-      orderedHand[draggedIndex - 1]?.id,
-      orderedHand[draggedIndex + 1]?.id,
+      remainingCards[insertionIndex - 1]?.id,
+      remainingCards[insertionIndex]?.id,
     ].filter(Boolean));
-  }, [draggedCardId, dropTargetId, orderedHand]);
+  }, [draggedCardId, dropSide, dropTargetId, orderedHand]);
   const draggedCard = draggedCardId
     ? orderedHand.find(card => card.id === draggedCardId)
     : null;
-  const displayedHand = draggedCardId
-    ? orderedHand.filter(card => card.id !== draggedCardId)
-    : orderedHand;
 
   useEffect(() => {
     localStorage.setItem('katarik_name', name);
@@ -208,15 +209,31 @@ export function App() {
       }
 
       setDragPosition({ x: event.clientX, y: event.clientY });
-      const draggedCardHalfHeight = 68;
-      const touchedCard = document
-        .elementFromPoint(event.clientX, event.clientY + draggedCardHalfHeight)
-        ?.closest('[data-hand-card-id]');
-      const targetId = touchedCard?.dataset.handCardId;
+      const previewHeight = document
+        .querySelector('.card-drag-preview .playing-card')
+        ?.getBoundingClientRect().height || 136;
+      const draggedCardBottom = event.clientY + previewHeight / 2;
+      const touchedCard = [...document.querySelectorAll('[data-hand-card-id]')]
+        .map(element => ({ element, rect: element.getBoundingClientRect() }))
+        .filter(({ rect }) => (
+          draggedCardBottom >= rect.top &&
+          draggedCardBottom <= rect.top + 22 &&
+          event.clientX >= rect.left &&
+          event.clientX <= rect.right
+        ))
+        .sort((a, b) => Math.abs(draggedCardBottom - a.rect.top) -
+          Math.abs(draggedCardBottom - b.rect.top))[0];
+      const targetId = touchedCard?.element.dataset.handCardId;
       if (targetId && targetId !== drag.cardId) {
+        const side = event.clientX <
+          touchedCard.rect.left + touchedCard.rect.width / 2
+          ? 'before'
+          : 'after';
+        dropPlacementRef.current = { targetId, side };
         setDropTargetId(targetId);
-        moveCardRef.current?.(drag.cardId, targetId);
+        setDropSide(side);
       } else {
+        dropPlacementRef.current = null;
         setDropTargetId(null);
       }
     }
@@ -226,7 +243,12 @@ export function App() {
       if (!drag) return;
 
       suppressCardClickRef.current = drag.moved;
+      const placement = dropPlacementRef.current;
+      if (drag.moved && placement) {
+        moveCardRef.current?.(drag.cardId, placement.targetId, placement.side);
+      }
       pointerDragRef.current = null;
+      dropPlacementRef.current = null;
       setDraggedCardId(null);
       setDragPosition(null);
       setDropTargetId(null);
@@ -482,18 +504,17 @@ export function App() {
     );
   }
 
-  function moveCard(draggedId, targetId) {
+  function moveCard(draggedId, targetId, side = 'before') {
     if (!draggedId || draggedId === targetId) return;
 
     setHandOrder(previous => {
       const currentOrder = orderedHand.map(card => card.id);
-      const sourceIndex = currentOrder.indexOf(draggedId);
-      const targetIndex = currentOrder.indexOf(targetId);
-      if (sourceIndex < 0 || targetIndex < 0) return previous;
-
-      const nextOrder = [...currentOrder];
-      nextOrder.splice(sourceIndex, 1);
-      nextOrder.splice(targetIndex, 0, draggedId);
+      if (!currentOrder.includes(draggedId)) return previous;
+      const nextOrder = currentOrder.filter(cardId => cardId !== draggedId);
+      const targetIndex = nextOrder.indexOf(targetId);
+      if (targetIndex < 0) return previous;
+      const insertionIndex = targetIndex + (side === 'after' ? 1 : 0);
+      nextOrder.splice(insertionIndex, 0, draggedId);
       return nextOrder;
     });
   }
@@ -507,6 +528,7 @@ export function App() {
       startX: event.clientX,
       startY: event.clientY,
     };
+    dropPlacementRef.current = null;
   }
 
   function play() {
@@ -830,20 +852,31 @@ export function App() {
           </div>
         ) : (
           <div className="hand-fan">
-            {splitHandRows(displayedHand).map((row, rowIndex) => (
+            {splitHandRows(orderedHand).map((row, rowIndex) => (
               <div className="hand-row" key={rowIndex}>
                 {row.map((card, index) => (
-                  <Card
-                    key={card.id}
-                    card={card}
-                    selected={selected.includes(card.id)}
-                    onClick={() => toggle(card.id)}
-                    dragNeighbor={dragNeighborIds.has(card.id)}
-                    onPointerDown={event => startPointerDrag(event, card.id)}
-                    handCard
-                    index={index}
-                    total={row.length}
-                  />
+                  card.id === draggedCardId ? (
+                    <div
+                      className="playing-card card-placeholder"
+                      key={card.id}
+                      style={{
+                        '--card-transform': `translateX(${(index - (row.length - 1) / 2) * -7}px) rotate(0deg)`,
+                      }}
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Card
+                      key={card.id}
+                      card={card}
+                      selected={selected.includes(card.id)}
+                      onClick={() => toggle(card.id)}
+                      dragNeighbor={dragNeighborIds.has(card.id)}
+                      onPointerDown={event => startPointerDrag(event, card.id)}
+                      handCard
+                      index={index}
+                      total={row.length}
+                    />
+                  )
                 ))}
               </div>
             ))}

@@ -178,9 +178,14 @@ describe('active game interface', () => {
     expect(five).toHaveClass('selected');
     expect(eight).toHaveClass('selected');
 
-    Object.defineProperty(document, 'elementFromPoint', {
-      configurable: true,
-      value: vi.fn((x, y) => (x === 80 && y >= 100 ? eight : null)),
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      if (this.closest('.card-drag-preview')) {
+        return { left: 0, right: 92, top: 0, bottom: 136, width: 92, height: 136 };
+      }
+      if (this.dataset?.handCardId === '8H') {
+        return { left: 50, right: 142, top: 108, bottom: 244, width: 92, height: 136 };
+      }
+      return { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 };
     });
 
     fireEvent(five, new MouseEvent('pointerdown', {
@@ -191,19 +196,21 @@ describe('active game interface', () => {
     }));
     fireEvent(window, new MouseEvent('pointermove', {
       bubbles: true,
-      clientX: 80,
+      clientX: 120,
       clientY: 10,
     }));
 
+    expect(document.querySelector('.hand-fan .card-placeholder')).toBeInTheDocument();
     expect([...document.querySelectorAll('.hand-fan .playing-card')]
-      .map(element => element.getAttribute('aria-label'))).toEqual(['8♥']);
+      .map(element => element.getAttribute('aria-label'))
+      .filter(Boolean)).toEqual(['8♥']);
     expect(document.querySelector('.card-drag-preview .playing-card')).toHaveClass('dragging');
     expect(screen.getByRole('button', { name: /8/ })).not.toHaveClass('selected');
     expect(screen.getByRole('button', { name: /8/ })).not.toHaveClass('drag-neighbor');
 
     fireEvent(window, new MouseEvent('pointermove', {
       bubbles: true,
-      clientX: 80,
+      clientX: 120,
       clientY: 40,
     }));
 
@@ -211,7 +218,7 @@ describe('active game interface', () => {
 
     fireEvent(window, new MouseEvent('pointerup', {
       bubbles: true,
-      clientX: 80,
+      clientX: 120,
       clientY: 40,
     }));
     expect(screen.getByRole('button', { name: /5/ })).not.toHaveClass('dragging');

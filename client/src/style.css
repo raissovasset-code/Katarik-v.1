@@ -1566,6 +1566,13 @@ button:disabled {
   outline-offset: -3px;
 }
 
+.playing-card.card-placeholder {
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px dashed rgba(255, 255, 255, 0.28);
+  box-shadow: none;
+  pointer-events: none;
+}
+
 .card-drag-preview {
   position: fixed;
   width: 92px;
