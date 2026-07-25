@@ -6,6 +6,7 @@
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
     "test": "node --test",
+    "monitor:production": "node scripts/monitor-production.mjs",
     "simulate:bots": "node scripts/simulate-bots.mjs",
     "train:bot": "node scripts/train-bot.mjs",
     "train:neural-bot": "node scripts/train-neural-bot.mjs",

@@ -1,0 +1,97 @@
+name: Production Monitor
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */3 * * *"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/production-monitor.yml"
+      - "server/scripts/monitor-production.mjs"
+      - "server/src/production-monitor.js"
+      - "server/src/production-monitor.test.js"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: production-monitor
+  cancel-in-progress: false
+
+jobs:
+  production:
+    name: Readiness and WebSocket heartbeat
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install server dependencies
+        run: npm ci --prefix server
+      - name: Check production
+        run: node server/scripts/monitor-production.mjs
+      - name: Create or update outage alert
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "[monitor] Production server unavailable";
+            const { owner, repo } = context.repo;
+            const issues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: "open",
+              per_page: 100,
+            });
+            const existing = issues.data.find((issue) => issue.title === title);
+            const body = [
+              "Автоматическая проверка readiness или WebSocket завершилась ошибкой.",
+              "",
+              `Workflow: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              `Время: ${new Date().toISOString()}`,
+            ].join("\n");
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({ owner, repo, title, body });
+            }
+      - name: Close recovered outage alert
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "[monitor] Production server unavailable";
+            const { owner, repo } = context.repo;
+            const issues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: "open",
+              per_page: 100,
+            });
+
+            for (const issue of issues.data.filter((item) => item.title === title)) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: `Production снова доступен. Проверено: ${new Date().toISOString()}`,
+              });
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issue.number,
+                state: "closed",
+              });
+            }
