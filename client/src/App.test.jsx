@@ -128,6 +128,46 @@ describe('active game interface', () => {
     expect(screen.getByText('Ждем ход другого игрока')).toBeInTheDocument();
   });
 
+  test('keeps selected cards when another player updates the game state', async () => {
+    const user = userEvent.setup();
+    const socket = await renderConnectedGame(playingGame({
+      currentPlayerId: 'player-2',
+    }));
+    const selectedCard = screen.getByRole('button', { name: /5/ });
+
+    await user.click(selectedCard);
+    expect(selectedCard).toHaveClass('selected');
+
+    await act(async () => socket.message({
+      type: 'state',
+      game: playingGame({
+        currentPlayerId: 'player-1',
+        table: {
+          playerId: 'player-2',
+          cards: [card('9D', '9', 'D')],
+          combo: { type: 'single', high: 6, length: 1 },
+        },
+      }),
+    }));
+
+    expect(screen.getByRole('button', { name: /5/ })).toHaveClass('selected');
+  });
+
+  test('removes selected cards that are no longer in the hand', async () => {
+    const user = userEvent.setup();
+    const socket = await renderConnectedGame();
+
+    await user.click(screen.getByRole('button', { name: /5/ }));
+    await act(async () => socket.message({
+      type: 'state',
+      game: playingGame({
+        hand: [card('8H', '8', 'H')],
+      }),
+    }));
+
+    expect(screen.queryByRole('button', { name: /5/ })).not.toBeInTheDocument();
+  });
+
   test('shows a server game error on the table', async () => {
     const socket = await renderConnectedGame();
 
