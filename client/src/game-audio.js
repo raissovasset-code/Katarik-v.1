@@ -170,6 +170,7 @@ export function createGameAudio(
   AudioContextConstructor = globalThis.AudioContext ||
     globalThis.webkitAudioContext,
   AudioConstructor = globalThis.Audio,
+  schedule = globalThis.setTimeout,
 ) {
   let context = null;
   let bombAudio = null;
@@ -188,6 +189,12 @@ export function createGameAudio(
   }
 
   function play(effect, startDelay = 0) {
+    const cardSample = resolveCardSample(effect);
+    if (cardSample && AudioConstructor) {
+      playCardSample(cardSample, startDelay);
+      return;
+    }
+
     if (effect === "bomb" && AudioConstructor) {
       bombAudio ||= new AudioConstructor("/audio/bomb-muted.wav");
       bombAudio.currentTime = 0;
@@ -198,6 +205,25 @@ export function createGameAudio(
     }
 
     playSynth(effect, startDelay);
+  }
+
+  function playCardSample({ count, interval }, startDelay) {
+    for (let index = 0; index < count; index += 1) {
+      const delayMs = Math.max(0, startDelay * 1000 + index * interval);
+      const startSample = () => {
+        const audio = new AudioConstructor("/audio/card-hit.mp3");
+        audio.currentTime = 0;
+        audio.volume = 0.9;
+        const playback = audio.play();
+        playback?.catch(() => playSynth("cards"));
+      };
+
+      if (delayMs > 0 && schedule) {
+        schedule(startSample, delayMs);
+      } else {
+        startSample();
+      }
+    }
   }
 
   function playSynth(effect, startDelay = 0) {
@@ -229,6 +255,20 @@ export function createGameAudio(
   }
 
   return { play, unlock };
+}
+
+function resolveCardSample(effect) {
+  if (effect === "cards") return { count: 1, interval: 0 };
+  if (effect === "pair") return { count: 2, interval: 100 };
+  if (effect.startsWith("row:")) {
+    const count = Number.parseInt(effect.slice(4), 10);
+    return {
+      count: Math.max(1, Math.min(count || 1, 13)),
+      interval: 90,
+    };
+  }
+
+  return null;
 }
 
 function resolveSoundPattern(effect) {

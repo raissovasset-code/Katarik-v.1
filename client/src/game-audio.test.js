@@ -88,47 +88,64 @@ describe("game audio", () => {
     expect(soundFor("doubleStraight", 8)).toEqual(["bomb"]);
   });
 
-  test("repeats the card sound for pairs and every card in a straight", async () => {
-    const starts = [];
-    class AudioContext {
-      constructor() {
-        this.currentTime = 0;
-        this.destination = {};
-        this.state = "running";
+  test("uses the supplied card sample once for a single card", () => {
+    const played = [];
+    class Audio {
+      constructor(source) {
+        this.source = source;
       }
 
-      createOscillator() {
-        return {
-          connect() {},
-          frequency: { setValueAtTime() {} },
-          start: () => starts.push(true),
-          stop() {},
-          type: "sine",
-        };
-      }
-
-      createGain() {
-        return {
-          connect() {},
-          gain: {
-            exponentialRampToValueAtTime() {},
-            setValueAtTime() {},
-          },
-        };
+      play() {
+        played.push({
+          source: this.source,
+          currentTime: this.currentTime,
+          volume: this.volume,
+        });
+        return Promise.resolve();
       }
     }
 
-    const audio = createGameAudio(AudioContext);
-    audio.play("pair");
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(starts).toHaveLength(4);
+    const audio = createGameAudio(undefined, Audio);
+    audio.play("cards");
 
-    starts.length = 0;
+    expect(played).toEqual([
+      {
+        source: "/audio/card-hit.mp3",
+        currentTime: 0,
+        volume: 0.9,
+      },
+    ]);
+  });
+
+  test("repeats the supplied sample quickly for pairs and every card in a straight", () => {
+    const played = [];
+    const scheduled = [];
+    class Audio {
+      constructor(source) {
+        this.source = source;
+      }
+
+      play() {
+        played.push(this.source);
+        return Promise.resolve();
+      }
+    }
+    const schedule = (callback, delay) => scheduled.push({ callback, delay });
+    const audio = createGameAudio(undefined, Audio, schedule);
+
+    audio.play("pair");
+    expect(played).toEqual(["/audio/card-hit.mp3"]);
+    expect(scheduled.map(({ delay }) => delay)).toEqual([100]);
+    scheduled.shift().callback();
+    expect(played).toHaveLength(2);
+
+    played.length = 0;
+    scheduled.length = 0;
     audio.play("row:5");
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(starts).toHaveLength(10);
+    expect(played).toEqual(["/audio/card-hit.mp3"]);
+    expect(scheduled.map(({ delay }) => delay)).toEqual([90, 180, 270, 360]);
+    scheduled.forEach(({ callback }) => callback());
+    expect(played).toHaveLength(5);
   });
 
   test("plays the approved WAV asset for a bomb", () => {

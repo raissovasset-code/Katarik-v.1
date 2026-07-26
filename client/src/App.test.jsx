@@ -68,6 +68,12 @@ class TestAudioContext {
   }
 }
 
+class TestAudio {
+  play() {
+    return Promise.resolve();
+  }
+}
+
 function card(id, rank, suit = "S") {
   return { id, rank, suit, type: "normal" };
 }
@@ -113,6 +119,7 @@ beforeEach(() => {
   TestAudioContext.starts = [];
   globalThis.WebSocket = TestWebSocket;
   globalThis.AudioContext = TestAudioContext;
+  globalThis.Audio = TestAudio;
   sessionStorage.setItem("katarik_user_id", "player-1");
   sessionStorage.setItem("katarik_session_token", "test-token");
   localStorage.setItem("katarik_name", "Асет");
