@@ -25,6 +25,7 @@ const DESKTOP_GAME_HEIGHT = 900;
 const MIN_DESKTOP_SCALE = 0.72;
 const MAX_DISPLAY_NAME_LENGTH = 8;
 const TURN_ALARM_DELAY_MS = 30_000;
+const AUTO_PASS_HOLD_MS = 1_000;
 
 function displayNameWithLimit(value, maxLength, fallback = "—") {
   const symbols = Array.from(String(value || fallback));
@@ -139,6 +140,7 @@ export function App() {
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [kickTarget, setKickTarget] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(readSoundEnabled);
+  const [autoPassArmed, setAutoPassArmed] = useState(false);
   const [viewport, setViewport] = useState(() => ({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -154,6 +156,9 @@ export function App() {
   const lastMessageAtRef = useRef(Date.now());
   const previousGameRef = useRef(null);
   const soundEnabledRef = useRef(soundEnabled);
+  const passHoldTimerRef = useRef(null);
+  const suppressPassClickRef = useRef(false);
+  const autoPassRoundRef = useRef(null);
   const audioRef = useRef(null);
   if (!audioRef.current) audioRef.current = createGameAudio();
   const isActiveGame = Boolean(game && game.status !== "lobby");
@@ -221,6 +226,52 @@ export function App() {
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
+
+  useEffect(() => {
+    const unavailable =
+      !connected ||
+      game?.status !== "playing" ||
+      !game.table ||
+      game.roundNumber !== autoPassRoundRef.current;
+    if (!unavailable) return;
+
+    window.clearTimeout(passHoldTimerRef.current);
+    passHoldTimerRef.current = null;
+    if (autoPassArmed) setAutoPassArmed(false);
+  }, [autoPassArmed, connected, game?.roundNumber, game?.status, game?.table]);
+
+  useEffect(() => {
+    if (
+      !autoPassArmed ||
+      !connected ||
+      game?.status !== "playing" ||
+      game.currentPlayerId !== user.id ||
+      !game.table
+    ) {
+      return;
+    }
+
+    setAutoPassArmed(false);
+    wsRef.current?.send(
+      JSON.stringify({
+        type: "pass",
+        playerId: user.id,
+        sessionToken: user.sessionToken,
+        name: nameRef.current || user.name,
+      }),
+    );
+  }, [
+    autoPassArmed,
+    connected,
+    game?.currentPlayerId,
+    game?.status,
+    game?.table,
+    user.id,
+    user.name,
+    user.sessionToken,
+  ]);
+
+  useEffect(() => () => window.clearTimeout(passHoldTimerRef.current), []);
 
   useEffect(() => {
     if (
@@ -676,6 +727,40 @@ export function App() {
   function play() {
     send("play", { cardIds: selected });
     setSelected([]);
+  }
+
+  function startPassHold() {
+    if (!connected || !game?.table || autoPassArmed) return;
+
+    window.clearTimeout(passHoldTimerRef.current);
+    autoPassRoundRef.current = game.roundNumber;
+    passHoldTimerRef.current = window.setTimeout(() => {
+      suppressPassClickRef.current = true;
+      setAutoPassArmed(true);
+      navigator.vibrate?.(40);
+    }, AUTO_PASS_HOLD_MS);
+  }
+
+  function finishPassHold() {
+    window.clearTimeout(passHoldTimerRef.current);
+    passHoldTimerRef.current = null;
+    window.setTimeout(() => {
+      suppressPassClickRef.current = false;
+    }, 0);
+  }
+
+  function handlePassClick() {
+    if (suppressPassClickRef.current) {
+      suppressPassClickRef.current = false;
+      return;
+    }
+
+    if (autoPassArmed) {
+      setAutoPassArmed(false);
+      return;
+    }
+
+    if (isMyTurn && game?.table) send("pass");
   }
 
   function toggleSound() {
@@ -1194,11 +1279,21 @@ export function App() {
                   Походить{selected.length ? ` (${selected.length})` : ""}
                 </button>
                 <button
-                  className="pass-button"
-                  disabled={!connected || !isMyTurn || !game.table}
-                  onClick={() => send("pass")}
+                  className={`pass-button ${autoPassArmed ? "auto-pass-armed" : ""}`}
+                  disabled={!connected || !game.table}
+                  onClick={handlePassClick}
+                  onContextMenu={(event) => event.preventDefault()}
+                  onPointerDown={startPassHold}
+                  onPointerUp={finishPassHold}
+                  onPointerCancel={finishPassHold}
+                  onPointerLeave={finishPassHold}
+                  title={
+                    autoPassArmed
+                      ? "Автопас включён. Нажмите, чтобы отменить"
+                      : "Удерживайте 1 секунду, чтобы включить автопас"
+                  }
                 >
-                  Пас
+                  {autoPassArmed ? "Автопас ✓" : "Пас"}
                 </button>
               </div>
 

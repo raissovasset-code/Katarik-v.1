@@ -193,7 +193,7 @@ describe("active game interface", () => {
     expect(screen.getByText("Ваш ход")).toBeInTheDocument();
   });
 
-  test("keeps play and pass disabled while another player is moving", async () => {
+  test("keeps play disabled but allows holding pass during another turn", async () => {
     const user = userEvent.setup();
     await renderConnectedGame(
       playingGame({
@@ -208,8 +208,77 @@ describe("active game interface", () => {
 
     await user.click(screen.getByRole("button", { name: "5♠" }));
     expect(screen.getByRole("button", { name: "Походить (1)" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Пас" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Пас" })).toBeEnabled();
     expect(screen.getByText("Ждем ход другого игрока")).toBeInTheDocument();
+  });
+
+  test("arms auto-pass after a one-second hold and passes when the turn arrives", async () => {
+    vi.useFakeTimers();
+
+    try {
+      const socket = await renderConnectedGame(
+        playingGame({
+          currentPlayerId: "player-2",
+          table: {
+            playerId: "player-2",
+            cards: [card("7D", "7", "D")],
+            combo: { type: "single", high: 4, length: 1 },
+          },
+        }),
+      );
+      const passButton = screen.getByRole("button", { name: "Пас" });
+
+      fireEvent.pointerDown(passButton);
+      await act(async () => vi.advanceTimersByTime(999));
+      expect(passButton).toHaveTextContent("Пас");
+
+      await act(async () => vi.advanceTimersByTime(1));
+      expect(passButton).toHaveTextContent("Автопас ✓");
+      expect(socket.sent.at(-1)?.type).not.toBe("pass");
+
+      await act(async () =>
+        socket.message({
+          type: "state",
+          game: playingGame({
+            currentPlayerId: "player-1",
+            table: {
+              playerId: "player-2",
+              cards: [card("7D", "7", "D")],
+              combo: { type: "single", high: 4, length: 1 },
+            },
+          }),
+        }),
+      );
+
+      expect(socket.sent.at(-1)).toMatchObject({
+        type: "pass",
+        playerId: "player-1",
+      });
+      expect(passButton).toHaveTextContent("Пас");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("passes immediately on a short click during the own turn", async () => {
+    const user = userEvent.setup();
+    const socket = await renderConnectedGame(
+      playingGame({
+        table: {
+          playerId: "player-2",
+          cards: [card("7D", "7", "D")],
+          combo: { type: "single", high: 4, length: 1 },
+        },
+      }),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Пас" }));
+
+    expect(socket.sent.at(-1)).toMatchObject({
+      type: "pass",
+      playerId: "player-1",
+    });
+    expect(screen.getByRole("button", { name: "Пас" })).toBeInTheDocument();
   });
 
   test("keeps selected cards when another player updates the game state", async () => {

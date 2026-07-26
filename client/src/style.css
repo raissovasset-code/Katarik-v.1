@@ -1714,6 +1714,8 @@ button:disabled {
   border-color: rgba(239, 98, 98, 0.3);
   background: rgba(239, 98, 98, 0.12);
   color: #ffd0d0;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .pass-button:hover:not(:disabled) {
@@ -1725,6 +1727,18 @@ button:disabled {
   border-color: rgba(239, 98, 98, 0.16);
   background: rgba(239, 98, 98, 0.08);
   color: rgba(255, 208, 208, 0.55);
+}
+
+.pass-button.auto-pass-armed {
+  border-color: rgba(243, 189, 97, 0.72);
+  background: rgba(243, 189, 97, 0.22);
+  color: #ffe2ab;
+  box-shadow: 0 0 18px rgba(243, 189, 97, 0.24);
+}
+
+.pass-button.auto-pass-armed:hover:not(:disabled) {
+  border-color: rgba(243, 189, 97, 0.9);
+  background: rgba(243, 189, 97, 0.3);
 }
 
 .hint {
