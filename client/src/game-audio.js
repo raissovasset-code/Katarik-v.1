@@ -216,7 +216,7 @@ export function createGameAudio(
     }
 
     if (effect === "bomb" && AudioConstructor) {
-      bombAudio ||= new AudioConstructor("/audio/bomb-muted.wav");
+      bombAudio ||= new AudioConstructor("/audio/bomb.mp3");
       bombAudio.currentTime = 0;
       bombAudio.volume = 0.95;
       const playback = bombAudio.play();

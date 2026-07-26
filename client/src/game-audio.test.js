@@ -175,7 +175,7 @@ describe("game audio", () => {
     expect(played).toHaveLength(5);
   });
 
-  test("plays the approved WAV asset for a bomb", () => {
+  test("plays the approved MP3 asset for a bomb", () => {
     const played = [];
     class Audio {
       constructor(source) {
@@ -199,7 +199,7 @@ describe("game audio", () => {
 
     expect(played).toEqual([
       {
-        source: "/audio/bomb-muted.wav",
+        source: "/audio/bomb.mp3",
         currentTime: 0,
         volume: 0.95,
       },
