@@ -62,6 +62,7 @@ export function createGame(roomId, mode = "classic") {
     passedPlayerIds: [],
     pogonReadyPlayerId: null,
     roundStarterId: null,
+    roundNumber: 0,
     dealOffset: 0,
     places: [],
     loserId: null,
@@ -403,6 +404,7 @@ function shuffle(cards) {
 }
 
 function dealRound(game, players) {
+  game.roundNumber = (game.roundNumber || 0) + 1;
   const deck = createDeck();
   const isTwoPlayerRound = players.length === 2;
   const burnedCount = isTwoPlayerRound

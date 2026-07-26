@@ -83,6 +83,7 @@ function playingGame(overrides = {}) {
     roomId: "ABC123",
     mode: "classic",
     status: "playing",
+    roundNumber: 1,
     hostPlayerId: "player-1",
     currentPlayerId: "player-1",
     table: null,
@@ -257,7 +258,7 @@ describe("active game interface", () => {
     expect(screen.queryByRole("button", { name: /5/ })).not.toBeInTheDocument();
   });
 
-  test("reorders hand cards by dragging and keeps the order after a state update", async () => {
+  test("keeps a dragged hand order during a round and resets it for a new round", async () => {
     const user = userEvent.setup();
     const socket = await renderConnectedGame();
     const five = screen.getByRole("button", { name: /5/ });
@@ -404,6 +405,19 @@ describe("active game interface", () => {
         element.getAttribute("aria-label"),
       ),
     ).toEqual(["8♥", "5♠"]);
+
+    await act(async () =>
+      socket.message({
+        type: "state",
+        game: playingGame({ roundNumber: 2 }),
+      }),
+    );
+
+    expect(
+      [...document.querySelectorAll(".hand-fan .playing-card")].map((element) =>
+        element.getAttribute("aria-label"),
+      ),
+    ).toEqual(["5♠", "8♥"]);
   });
 
   test("shows a server game error on the table", async () => {

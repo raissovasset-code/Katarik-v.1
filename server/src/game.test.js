@@ -91,6 +91,7 @@ test("startGame creates a playable room state", () => {
   startGame(game);
 
   assert.equal(game.status, "playing");
+  assert.equal(game.roundNumber, 1);
   assert.ok(game.currentPlayerId);
   assert.equal(game.players.length, 2);
   assert.ok(player(game, "A").hand.length > 0);
@@ -114,6 +115,7 @@ test("two-player rounds always deal 18 cards each and burn 19 cards", () => {
   game.roundWinnerId = "A";
   nextRound(game);
 
+  assert.equal(game.roundNumber, 2);
   assert.deepEqual(
     game.players.map((item) => item.hand.length),
     [18, 18],

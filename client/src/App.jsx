@@ -463,11 +463,11 @@ export function App() {
         if (msg.type === "state") {
           restoringRoom = false;
           clearConnectionError();
-          const sounds = getGameSounds(
-            previousGameRef.current,
-            msg.game,
-            user.id,
-          );
+          const previousGame = previousGameRef.current;
+          const isNewRound =
+            Boolean(previousGame) &&
+            msg.game?.roundNumber !== previousGame.roundNumber;
+          const sounds = getGameSounds(previousGame, msg.game, user.id);
           previousGameRef.current = msg.game;
           if (soundEnabledRef.current) {
             sounds.forEach((sound, index) =>
@@ -478,9 +478,14 @@ export function App() {
           const handCardIds = new Set(
             (msg.game?.hand || []).map((card) => card.id),
           );
-          setSelected((current) =>
-            current.filter((cardId) => handCardIds.has(cardId)),
-          );
+          if (isNewRound) {
+            setHandOrder([...handCardIds]);
+            setSelected([]);
+          } else {
+            setSelected((current) =>
+              current.filter((cardId) => handCardIds.has(cardId)),
+            );
+          }
         }
 
         if (msg.type === "leftRoom") {
