@@ -254,7 +254,41 @@ describe("active game interface", () => {
         type: "pass",
         playerId: "player-1",
       });
-      expect(passButton).toHaveTextContent("Пас");
+      expect(passButton).toHaveTextContent("Автопас ✓");
+
+      const firstPassCount = socket.sent.filter(
+        (message) => message.type === "pass",
+      ).length;
+      await act(async () =>
+        socket.message({
+          type: "state",
+          game: playingGame({
+            currentPlayerId: "player-2",
+            table: null,
+          }),
+        }),
+      );
+      expect(passButton).toHaveTextContent("Автопас ✓");
+      expect(passButton).toBeEnabled();
+
+      await act(async () =>
+        socket.message({
+          type: "state",
+          game: playingGame({
+            currentPlayerId: "player-1",
+            table: {
+              playerId: "player-2",
+              cards: [card("8D", "8", "D")],
+              combo: { type: "single", high: 5, length: 1 },
+            },
+          }),
+        }),
+      );
+
+      expect(
+        socket.sent.filter((message) => message.type === "pass"),
+      ).toHaveLength(firstPassCount + 1);
+      expect(passButton).toHaveTextContent("Автопас ✓");
     } finally {
       vi.useRealTimers();
     }

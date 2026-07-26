@@ -159,6 +159,7 @@ export function App() {
   const passHoldTimerRef = useRef(null);
   const suppressPassClickRef = useRef(false);
   const autoPassRoundRef = useRef(null);
+  const autoPassSentRef = useRef(false);
   const audioRef = useRef(null);
   if (!audioRef.current) audioRef.current = createGameAudio();
   const isActiveGame = Boolean(game && game.status !== "lobby");
@@ -231,7 +232,6 @@ export function App() {
     const unavailable =
       !connected ||
       game?.status !== "playing" ||
-      !game.table ||
       game.roundNumber !== autoPassRoundRef.current;
     if (!unavailable) return;
 
@@ -248,10 +248,14 @@ export function App() {
       game.currentPlayerId !== user.id ||
       !game.table
     ) {
+      if (!autoPassArmed || game?.currentPlayerId !== user.id || !game?.table) {
+        autoPassSentRef.current = false;
+      }
       return;
     }
 
-    setAutoPassArmed(false);
+    if (autoPassSentRef.current) return;
+    autoPassSentRef.current = true;
     wsRef.current?.send(
       JSON.stringify({
         type: "pass",
@@ -1280,7 +1284,7 @@ export function App() {
                 </button>
                 <button
                   className={`pass-button ${autoPassArmed ? "auto-pass-armed" : ""}`}
-                  disabled={!connected || !game.table}
+                  disabled={!connected || (!game.table && !autoPassArmed)}
                   onClick={handlePassClick}
                   onContextMenu={(event) => event.preventDefault()}
                   onPointerDown={startPassHold}
