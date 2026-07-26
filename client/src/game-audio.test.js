@@ -86,6 +86,33 @@ describe("game audio", () => {
     expect(soundFor("triple", 3)).toEqual(["triple"]);
     expect(soundFor("quad", 4)).toEqual(["quad"]);
     expect(soundFor("doubleStraight", 8)).toEqual(["bomb"]);
+
+    expect(
+      getGameSounds(
+        game(),
+        game({
+          table: {
+            playerId: "player-2",
+            cards: [{ id: "BLACK_JOKER", rank: "BLACK_JOKER" }],
+            combo: { type: "single" },
+          },
+        }),
+        "player-1",
+      ),
+    ).toEqual(["blackJoker"]);
+    expect(
+      getGameSounds(
+        game(),
+        game({
+          table: {
+            playerId: "player-2",
+            cards: [{ id: "RED_JOKER", rank: "RED_JOKER" }],
+            combo: { type: "single" },
+          },
+        }),
+        "player-1",
+      ),
+    ).toEqual(["cards"]);
   });
 
   test("uses the supplied card sample once for a single card", () => {
@@ -173,6 +200,35 @@ describe("game audio", () => {
     expect(played).toEqual([
       {
         source: "/audio/bomb-muted.wav",
+        currentTime: 0,
+        volume: 0.95,
+      },
+    ]);
+  });
+
+  test("plays the trimmed laugh only for the black joker", () => {
+    const played = [];
+    class Audio {
+      constructor(source) {
+        this.source = source;
+      }
+
+      play() {
+        played.push({
+          source: this.source,
+          currentTime: this.currentTime,
+          volume: this.volume,
+        });
+        return Promise.resolve();
+      }
+    }
+
+    const audio = createGameAudio(undefined, Audio);
+    audio.play("blackJoker");
+
+    expect(played).toEqual([
+      {
+        source: "/audio/black-joker-laugh.mp3",
         currentTime: 0,
         volume: 0.95,
       },

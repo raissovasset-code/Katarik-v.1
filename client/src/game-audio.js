@@ -174,6 +174,7 @@ export function createGameAudio(
 ) {
   let context = null;
   let bombAudio = null;
+  let blackJokerAudio = null;
 
   function getContext() {
     if (!AudioContextConstructor) return null;
@@ -192,6 +193,15 @@ export function createGameAudio(
     const cardSample = resolveCardSample(effect);
     if (cardSample && AudioConstructor) {
       playCardSample(cardSample, startDelay);
+      return;
+    }
+
+    if (effect === "blackJoker" && AudioConstructor) {
+      blackJokerAudio ||= new AudioConstructor("/audio/black-joker-laugh.mp3");
+      blackJokerAudio.currentTime = 0;
+      blackJokerAudio.volume = 0.95;
+      const playback = blackJokerAudio.play();
+      playback?.catch(() => playSynth("cards", startDelay));
       return;
     }
 
@@ -299,6 +309,14 @@ function playedCombinationSound(previousGame, nextGame) {
   }
 
   const comboType = nextGame.table.combo?.type;
+  const playedCards = nextGame.table.cards || [];
+  if (
+    playedCards.length === 1 &&
+    (playedCards[0].id === "BLACK_JOKER" ||
+      playedCards[0].rank === "BLACK_JOKER")
+  ) {
+    return "blackJoker";
+  }
   if (comboType === "pair") return "pair";
   if (comboType === "triple") return "triple";
   if (comboType === "quad") return "quad";
