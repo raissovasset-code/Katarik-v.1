@@ -112,7 +112,7 @@ describe("game audio", () => {
         }),
         "player-1",
       ),
-    ).toEqual(["cards"]);
+    ).toEqual(["redJoker"]);
   });
 
   test("uses the supplied card sample once for a single card", () => {
@@ -229,6 +229,35 @@ describe("game audio", () => {
     expect(played).toEqual([
       {
         source: "/audio/black-joker-laugh.mp3",
+        currentTime: 0,
+        volume: 0.95,
+      },
+    ]);
+  });
+
+  test("plays the approved sound only for the red joker", () => {
+    const played = [];
+    class Audio {
+      constructor(source) {
+        this.source = source;
+      }
+
+      play() {
+        played.push({
+          source: this.source,
+          currentTime: this.currentTime,
+          volume: this.volume,
+        });
+        return Promise.resolve();
+      }
+    }
+
+    const audio = createGameAudio(undefined, Audio);
+    audio.play("redJoker");
+
+    expect(played).toEqual([
+      {
+        source: "/audio/red-joker-sound.mp3",
         currentTime: 0,
         volume: 0.95,
       },
