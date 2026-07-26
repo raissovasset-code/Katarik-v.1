@@ -267,6 +267,7 @@ npm run android:check
 - [Подписанные Android-релизы](docs/ANDROID_SIGNED_RELEASE.md)
 - [Политика конфиденциальности](docs/PRIVACY_POLICY.md)
 - [Условия использования](docs/TERMS_OF_USE.md)
+- [Поддержка, диагностика и восстановление](docs/SUPPORT_RUNBOOK.md)
 - [Основной чек-лист](KATARIK_CHECKLIST.md)
 - [История старого чек-листа](PROJECT_CHECKLIST.md)
 
