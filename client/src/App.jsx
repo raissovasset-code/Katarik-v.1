@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import {
   createGameAudio,
   getGameSounds,
+  isMoveErrorMessage,
   readSoundEnabled,
   writeSoundEnabled,
 } from "./game-audio.js";
@@ -580,6 +581,9 @@ export function App() {
             setGame(null);
           }
 
+          if (soundEnabledRef.current && isMoveErrorMessage(msg.message)) {
+            audioRef.current?.play("moveError");
+          }
           setError(msg.message);
         }
       };

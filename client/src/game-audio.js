@@ -140,6 +140,12 @@ export function getGameSounds(previousGame, nextGame, playerId) {
   if (!nextGame) return [];
 
   const combinationSound = playedCombinationSound(previousGame, nextGame);
+  const roundStarted =
+    Boolean(previousGame) &&
+    nextGame.status === "playing" &&
+    nextGame.roundNumber !== previousGame.roundNumber;
+  if (roundStarted) return ["roundStart"];
+
   if (previousGame?.status !== "finished" && nextGame.status === "finished") {
     return [
       ...(combinationSound ? [combinationSound] : []),
@@ -175,6 +181,10 @@ export function createGameAudio(
   let context = null;
   let bombAudio = null;
   let tripleAudio = null;
+  let quadAudio = null;
+  let passAudio = null;
+  let roundStartAudio = null;
+  let moveErrorAudio = null;
   let blackJokerAudio = null;
   let redJokerAudio = null;
 
@@ -222,6 +232,42 @@ export function createGameAudio(
       tripleAudio.volume = 0.95;
       const playback = tripleAudio.play();
       playback?.catch(() => playSynth(effect, startDelay));
+      return;
+    }
+
+    if (effect === "quad" && AudioConstructor) {
+      quadAudio ||= new AudioConstructor("/audio/quad.mp3");
+      quadAudio.currentTime = 0;
+      quadAudio.volume = 0.95;
+      const playback = quadAudio.play();
+      playback?.catch(() => playSynth(effect, startDelay));
+      return;
+    }
+
+    if (effect === "pass" && AudioConstructor) {
+      passAudio ||= new AudioConstructor("/audio/pass.mp3");
+      passAudio.currentTime = 0;
+      passAudio.volume = 0.95;
+      const playback = passAudio.play();
+      playback?.catch(() => playSynth(effect, startDelay));
+      return;
+    }
+
+    if (effect === "roundStart" && AudioConstructor) {
+      roundStartAudio ||= new AudioConstructor("/audio/round-start.mp3");
+      roundStartAudio.currentTime = 0;
+      roundStartAudio.volume = 0.95;
+      const playback = roundStartAudio.play();
+      playback?.catch(() => playSynth("cards", startDelay));
+      return;
+    }
+
+    if (effect === "moveError" && AudioConstructor) {
+      moveErrorAudio ||= new AudioConstructor("/audio/move-error.mp3");
+      moveErrorAudio.currentTime = 0;
+      moveErrorAudio.volume = 0.95;
+      const playback = moveErrorAudio.play();
+      playback?.catch(() => playSynth("pass", startDelay));
       return;
     }
 
@@ -366,4 +412,23 @@ function didPlayerWin(game, playerId) {
   }
 
   return game.roundWinnerId === playerId;
+}
+
+const MOVE_ERROR_PATTERNS = [
+  /ход другого игрока/i,
+  /недопустимая комбинация/i,
+  /комбинация не бьет/i,
+  /нельзя сыграть .*дважды/i,
+  /карты не найдены в руке/i,
+  /нельзя оставлять ДВК/i,
+  /неверный список карт/i,
+  /нельзя пасовать первым ходом/i,
+  /игра не идет/i,
+];
+
+export function isMoveErrorMessage(message) {
+  return (
+    typeof message === "string" &&
+    MOVE_ERROR_PATTERNS.some((pattern) => pattern.test(message))
+  );
 }

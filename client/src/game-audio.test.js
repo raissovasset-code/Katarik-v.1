@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   createGameAudio,
   getGameSounds,
+  isMoveErrorMessage,
   readSoundEnabled,
   SOUND_STORAGE_KEY,
   writeSoundEnabled,
@@ -62,6 +63,23 @@ describe("game audio", () => {
     expect(getGameSounds(game({ table }), game({ table }), "player-1")).toEqual(
       [],
     );
+  });
+
+  test("reports the start of every new round", () => {
+    expect(
+      getGameSounds(
+        game({ roundNumber: 1 }),
+        game({ roundNumber: 2 }),
+        "player-1",
+      ),
+    ).toEqual(["roundStart"]);
+    expect(
+      getGameSounds(
+        game({ status: "lobby", roundNumber: 0 }),
+        game({ roundNumber: 1 }),
+        "player-1",
+      ),
+    ).toEqual(["roundStart"]);
   });
 
   test("maps every supported combination to its own sound", () => {
@@ -233,6 +251,51 @@ describe("game audio", () => {
         volume: 0.95,
       },
     ]);
+  });
+
+  test.each([
+    ["quad", "/audio/quad.mp3"],
+    ["pass", "/audio/pass.mp3"],
+    ["roundStart", "/audio/round-start.mp3"],
+    ["moveError", "/audio/move-error.mp3"],
+  ])("plays the supplied MP3 asset for %s", (effect, source) => {
+    const played = [];
+    class Audio {
+      constructor(audioSource) {
+        this.source = audioSource;
+      }
+
+      play() {
+        played.push({
+          source: this.source,
+          currentTime: this.currentTime,
+          volume: this.volume,
+        });
+        return Promise.resolve();
+      }
+    }
+
+    const audio = createGameAudio(undefined, Audio);
+    audio.play(effect);
+
+    expect(played).toEqual([{ source, currentTime: 0, volume: 0.95 }]);
+  });
+
+  test("recognizes only errors related to a move", () => {
+    [
+      "Сейчас ход другого игрока",
+      "Недопустимая комбинация",
+      "Эта комбинация не бьет стол",
+      "Нельзя сыграть одну карту дважды",
+      "Карты не найдены в руке",
+      "Нельзя оставлять ДВК без обычной карты",
+      "Неверный список карт",
+      "Нельзя пасовать первым ходом",
+      "Игра не идет",
+    ].forEach((message) => expect(isMoveErrorMessage(message)).toBe(true));
+
+    expect(isMoveErrorMessage("Комната не найдена")).toBe(false);
+    expect(isMoveErrorMessage("Соединение потеряно")).toBe(false);
   });
 
   test("plays the trimmed laugh only for the black joker", () => {
