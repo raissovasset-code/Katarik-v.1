@@ -8,7 +8,7 @@ This project is ready to be opened as an Android app through Capacitor.
 - Android project is created in `android/`.
 - The app id is `com.katarik.game`.
 - The app name is `Katarik`.
-- The Android release version is `1.0.0` (`versionCode 1`).
+- The Android release version is `1.0.1` (`versionCode 2`).
 - The mobile build connects to the online server:
   `wss://katarik-5g25.onrender.com`.
 

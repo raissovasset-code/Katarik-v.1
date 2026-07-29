@@ -9,7 +9,7 @@
 | Параметр | Значение |
 | --- | --- |
 | Application ID | `com.katarik.game` |
-| Версия | `versionName 1.0.0`, `versionCode 1` |
+| Версия | `versionName 1.0.1`, `versionCode 2` |
 | Keystore на рабочем компьютере | `android/katarik-release-key.jks` |
 | Локальные параметры подписи | `android/signing.properties` |
 | Безопасный шаблон | `android/signing.properties.example` |
