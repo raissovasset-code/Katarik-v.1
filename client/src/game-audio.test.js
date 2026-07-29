@@ -206,6 +206,35 @@ describe("game audio", () => {
     ]);
   });
 
+  test("plays the supplied MP3 asset for three equal cards", () => {
+    const played = [];
+    class Audio {
+      constructor(source) {
+        this.source = source;
+      }
+
+      play() {
+        played.push({
+          source: this.source,
+          currentTime: this.currentTime,
+          volume: this.volume,
+        });
+        return Promise.resolve();
+      }
+    }
+
+    const audio = createGameAudio(undefined, Audio);
+    audio.play("triple");
+
+    expect(played).toEqual([
+      {
+        source: "/audio/triple.mp3",
+        currentTime: 0,
+        volume: 0.95,
+      },
+    ]);
+  });
+
   test("plays the trimmed laugh only for the black joker", () => {
     const played = [];
     class Audio {

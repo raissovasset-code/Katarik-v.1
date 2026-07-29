@@ -174,6 +174,7 @@ export function createGameAudio(
 ) {
   let context = null;
   let bombAudio = null;
+  let tripleAudio = null;
   let blackJokerAudio = null;
   let redJokerAudio = null;
 
@@ -212,6 +213,15 @@ export function createGameAudio(
       redJokerAudio.volume = 0.95;
       const playback = redJokerAudio.play();
       playback?.catch(() => playSynth("cards", startDelay));
+      return;
+    }
+
+    if (effect === "triple" && AudioConstructor) {
+      tripleAudio ||= new AudioConstructor("/audio/triple.mp3");
+      tripleAudio.currentTime = 0;
+      tripleAudio.volume = 0.95;
+      const playback = tripleAudio.play();
+      playback?.catch(() => playSynth(effect, startDelay));
       return;
     }
 
